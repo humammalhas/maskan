@@ -3,7 +3,11 @@ package app.maskan.chat.data.remote.providers
 import app.maskan.chat.data.remote.AnthropicMessage
 import app.maskan.chat.data.remote.AnthropicRequest
 import app.maskan.chat.data.remote.AnthropicService
+import app.maskan.chat.data.remote.AnthropicStreamEvent
 import app.maskan.chat.data.remote.Message
+import app.maskan.chat.data.remote.parseSSEStream
+import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.json.Json
 
 class AnthropicProvider(
     private val config: ProviderConfig,
@@ -20,12 +24,9 @@ class AnthropicProvider(
     override val keyAcquisitionUrl: String = config.keyAcquisitionUrl
     override val pricingInfo: String = config.pricingInfo
 
-    override suspend fun sendMessage(
-        apiKey: String,
-        model: String,
-        messages: List<Message>,
-        baseUrl: String?
-    ): String {
+    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
+
+    private fun buildRequest(model: String, messages: List<Message>, stream: Boolean): Pair<String?, AnthropicRequest> {
         val systemPrompt = messages
             .filter { it.role == "system" }
             .joinToString("\n") { it.content }
@@ -35,12 +36,22 @@ class AnthropicProvider(
             .filter { it.role != "system" }
             .map { AnthropicMessage(role = it.role, content = it.content) }
 
-        val request = AnthropicRequest(
+        return systemPrompt to AnthropicRequest(
             model = model,
             maxTokens = 4096,
             system = systemPrompt,
-            messages = conversationMessages
+            messages = conversationMessages,
+            stream = stream
         )
+    }
+
+    override suspend fun sendMessage(
+        apiKey: String,
+        model: String,
+        messages: List<Message>,
+        baseUrl: String?
+    ): String {
+        val (_, request) = buildRequest(model, messages, stream = false)
 
         val response = apiService.createMessage(
             apiKey = apiKey,
@@ -57,5 +68,22 @@ class AnthropicProvider(
             ?.joinToString("\n")
             ?.takeIf { it.isNotBlank() }
             ?: throw Exception("Empty response from Anthropic API")
+    }
+
+    override fun sendMessageStreaming(
+        apiKey: String,
+        model: String,
+        messages: List<Message>,
+        baseUrl: String?
+    ): Flow<String> {
+        val (_, request) = buildRequest(model, messages, stream = true)
+        val call = apiService.createMessageStream(
+            apiKey = apiKey,
+            request = request
+        )
+        return parseSSEStream(call) { data ->
+            val event = json.decodeFromString<AnthropicStreamEvent>(data)
+            if (event.type == "content_block_delta") event.delta?.text else null
+        }
     }
 }

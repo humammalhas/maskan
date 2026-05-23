@@ -6,6 +6,7 @@ import retrofit2.HttpException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
+import kotlinx.serialization.SerializationException
 import javax.net.ssl.SSLException
 
 object ErrorMapper {
@@ -16,6 +17,7 @@ object ErrorMapper {
             is UnknownHostException -> context.getString(R.string.error_dns_failed)
             is ConnectException -> context.getString(R.string.error_connection_refused)
             is SocketTimeoutException -> context.getString(R.string.error_timeout)
+            is SerializationException -> context.getString(R.string.error_serialization)
             is SSLException -> context.getString(R.string.error_ssl)
             is java.io.IOException -> context.getString(R.string.error_no_internet)
             else -> mapByMessage(context, throwable)

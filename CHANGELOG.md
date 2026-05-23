@@ -2,6 +2,49 @@
 
 All notable changes to Maskan are documented here.
 
+## [2.2.0] — 2026-05-23
+
+### Added
+- SQLCipher database encryption — all conversations encrypted at rest
+- Dark mode — follows system theme automatically
+- Copy/select text from AI responses (SelectionContainer)
+- Multi-line chat input (up to 5 lines)
+- Context windowing — max 50 messages per API call to prevent token overflow
+- SettingsViewModel — Settings screen now uses proper ViewModel pattern
+- Accessibility labels on all functional icons
+- EncryptedSharedPreferences crash recovery for Android Keystore corruption
+- Lint configuration with baseline (50 existing warnings captured)
+
+### Changed
+- compileSdk/targetSdk bumped to 35 (Android 15)
+- Kotlin 2.0.21 → 2.1.20, Compose BOM 2024.10.01 → 2025.04.01
+- Room 2.6.1 → 2.7.1, all other dependencies updated to latest
+- ConversationListScreen split from 795 lines into 10 focused files
+- ViewModels now use ViewModelProvider.Factory (survive rotation)
+- Chat input preserves text on rotation (rememberSaveable)
+- First-launch detection uses setup flag instead of API key check (fixes local-only providers)
+- AnimatedVisibility on message bubbles now actually animates
+- menuAnchor() updated to MenuAnchorType API (fixes Compose deprecation)
+
+### Fixed
+- Anthropic model IDs: claude-sonnet-4-6, claude-opus-4-6, claude-haiku-4-5-20251001
+- OpenAI model IDs: added gpt-4.1, gpt-4.1-mini, removed legacy gpt-4-turbo, gpt-3.5-turbo
+- Groq: removed deprecated mixtral-8x7b-32768 and gemma2-9b-it
+- Gemini: removed gemini-2.0-flash (shutting down), added gemini-3-flash, gemini-3.1-pro
+- Mistral: replaced deprecated mistral-medium-latest with open-mistral-nemo
+- Together AI: added Llama 4 Scout model
+- Gemini API key no longer appears in HTTP logs (custom log redaction)
+- HTTP logging only active in debug builds (BuildConfig.DEBUG guard)
+- Streaming errors no longer leave empty assistant messages in database
+- User messages deleted from DB on API failure (no orphan messages)
+- SSE parser handles malformed JSON gracefully (skips bad lines instead of crashing)
+- ErrorMapper now handles SerializationException
+- LocalProvider service cache bounded to 5 entries
+- PreferenceRepository no longer shares encrypted prefs file with KeyRepository
+- Network security config: includeSubdomains enabled for cloud providers
+- Dead DeepSeekApiService.kt removed
+- ProGuard header fixed (PrismAI → Maskan)
+
 ## [2.1.0] — 2026-05-23
 
 ### Added

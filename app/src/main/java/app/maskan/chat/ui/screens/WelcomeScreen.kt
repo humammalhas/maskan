@@ -28,8 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.maskan.chat.R
-import app.maskan.chat.ui.theme.SoftCoral
-import app.maskan.chat.ui.theme.WarmPeach
+import app.maskan.chat.ui.theme.maskanColors
 import androidx.compose.material.icons.filled.Language
 
 @Composable
@@ -39,7 +38,7 @@ fun WelcomeScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(WarmPeach)
+            .background(MaterialTheme.maskanColors.warmPeach)
             .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -47,7 +46,7 @@ fun WelcomeScreen(
         Text(
             text = "مسكن",
             fontSize = 48.sp,
-            color = SoftCoral
+            color = MaterialTheme.maskanColors.softCoral
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -70,17 +69,17 @@ fun WelcomeScreen(
         Spacer(modifier = Modifier.height(40.dp))
 
         FeatureRow(
-            icon = { Icon(Icons.Filled.Lock, contentDescription = null, tint = SoftCoral, modifier = Modifier.size(24.dp)) },
+            icon = { Icon(Icons.Filled.Lock, contentDescription = "Privacy", tint = MaterialTheme.maskanColors.softCoral, modifier = Modifier.size(24.dp)) },
             text = stringResource(R.string.welcome_feature_encrypted)
         )
         Spacer(modifier = Modifier.height(16.dp))
         FeatureRow(
-            icon = { Icon(Icons.Filled.Security, contentDescription = null, tint = SoftCoral, modifier = Modifier.size(24.dp)) },
+            icon = { Icon(Icons.Filled.Security, contentDescription = "Security", tint = MaterialTheme.maskanColors.softCoral, modifier = Modifier.size(24.dp)) },
             text = stringResource(R.string.welcome_feature_no_tracking)
         )
         Spacer(modifier = Modifier.height(16.dp))
         FeatureRow(
-            icon = { Icon(Icons.Filled.Language, contentDescription = null, tint = SoftCoral, modifier = Modifier.size(24.dp)) },
+            icon = { Icon(Icons.Filled.Language, contentDescription = "Language", tint = MaterialTheme.maskanColors.softCoral, modifier = Modifier.size(24.dp)) },
             text = stringResource(R.string.welcome_feature_arabic_first)
         )
 
@@ -92,7 +91,7 @@ fun WelcomeScreen(
                 .fillMaxWidth()
                 .height(52.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = SoftCoral)
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.maskanColors.softCoral)
         ) {
             Text(
                 text = stringResource(R.string.welcome_get_started),

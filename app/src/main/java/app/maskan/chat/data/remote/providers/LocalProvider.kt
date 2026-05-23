@@ -1,8 +1,11 @@
 package app.maskan.chat.data.remote.providers
 
+import app.maskan.chat.data.remote.ChatCompletionChunk
 import app.maskan.chat.data.remote.ChatCompletionRequest
 import app.maskan.chat.data.remote.Message
 import app.maskan.chat.data.remote.OpenAiCompatibleService
+import app.maskan.chat.data.remote.parseSSEStream
+import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -25,10 +28,14 @@ class LocalProvider(
     override val keyAcquisitionUrl: String = config.keyAcquisitionUrl
     override val pricingInfo: String = config.pricingInfo
 
-    private val serviceCache = mutableMapOf<String, OpenAiCompatibleService>()
+    private val serviceCache = LinkedHashMap<String, OpenAiCompatibleService>(8, 0.75f, false)
 
     private fun getService(baseUrl: String): OpenAiCompatibleService {
         val normalizedUrl = if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
+        serviceCache[normalizedUrl]?.let { return it }
+        if (serviceCache.size >= 5) {
+            serviceCache.remove(serviceCache.keys.first())
+        }
         return serviceCache.getOrPut(normalizedUrl) {
             Retrofit.Builder()
                 .baseUrl(normalizedUrl)
@@ -39,18 +46,21 @@ class LocalProvider(
         }
     }
 
+    private fun resolveUrl(baseUrl: String?): String {
+        val effectiveUrl = baseUrl ?: defaultBaseUrl
+        if (effectiveUrl.isBlank()) {
+            throw Exception("No server URL configured. Please enter your $displayName server URL in Settings.")
+        }
+        return effectiveUrl
+    }
+
     override suspend fun sendMessage(
         apiKey: String,
         model: String,
         messages: List<Message>,
         baseUrl: String?
     ): String {
-        val effectiveUrl = baseUrl ?: defaultBaseUrl
-        if (effectiveUrl.isBlank()) {
-            throw Exception("No server URL configured. Please enter your $displayName server URL in Settings.")
-        }
-
-        val service = getService(effectiveUrl)
+        val service = getService(resolveUrl(baseUrl))
         val request = ChatCompletionRequest(
             model = model,
             messages = messages
@@ -63,5 +73,27 @@ class LocalProvider(
 
         return response.choices.firstOrNull()?.message?.content
             ?: throw Exception("Empty response from $displayName")
+    }
+
+    override fun sendMessageStreaming(
+        apiKey: String,
+        model: String,
+        messages: List<Message>,
+        baseUrl: String?
+    ): Flow<String> {
+        val service = getService(resolveUrl(baseUrl))
+        val request = ChatCompletionRequest(
+            model = model,
+            messages = messages,
+            stream = true
+        )
+        val call = service.createChatCompletionStream(
+            authorization = if (apiKey.isNotBlank()) "Bearer $apiKey" else "",
+            request = request
+        )
+        return parseSSEStream(call) { data ->
+            val chunk = json.decodeFromString<ChatCompletionChunk>(data)
+            chunk.choices.firstOrNull()?.delta?.content
+        }
     }
 }

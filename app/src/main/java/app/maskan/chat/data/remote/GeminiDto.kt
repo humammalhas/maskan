@@ -44,3 +44,9 @@ data class GeminiError(
     val message: String? = null,
     val status: String? = null
 )
+
+@Serializable
+data class GeminiStreamChunk(
+    val candidates: List<GeminiCandidate>? = null,
+    val error: GeminiError? = null
+)

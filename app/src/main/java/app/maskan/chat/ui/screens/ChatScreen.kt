@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -44,6 +45,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,9 +56,7 @@ import app.maskan.chat.R
 import app.maskan.chat.data.local.MessageEntity
 import app.maskan.chat.data.local.localizedName
 import app.maskan.chat.data.repository.PreferenceRepository
-import app.maskan.chat.ui.theme.AssistantBubble
-import app.maskan.chat.ui.theme.SoftLavender
-import app.maskan.chat.ui.theme.UserBubble
+import app.maskan.chat.ui.theme.maskanColors
 import app.maskan.chat.ui.viewmodel.ChatViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -71,7 +71,7 @@ fun ChatScreen(
     onNavigateBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var inputText by remember { mutableStateOf("") }
+    var inputText by rememberSaveable { mutableStateOf("") }
     val listState = rememberLazyListState()
     var showCustomPromptDialog by remember { mutableStateOf(false) }
 
@@ -113,7 +113,7 @@ fun ChatScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = SoftLavender
+                    containerColor = MaterialTheme.maskanColors.softLavender
                 ),
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -150,7 +150,7 @@ fun ChatScreen(
                             inputText = ""
                         }
                     },
-                    isLoading = uiState.isLoading
+                    isLoading = uiState.isLoading || uiState.isStreaming
                 )
             }
         }
@@ -262,10 +262,13 @@ private fun MessageBubble(
     message: MessageEntity,
     isUser: Boolean
 ) {
-    val backgroundColor = if (isUser) UserBubble else AssistantBubble
+    val backgroundColor = if (isUser) MaterialTheme.maskanColors.userBubble else MaterialTheme.maskanColors.assistantBubble
+
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { visible = true }
 
     AnimatedVisibility(
-        visible = true,
+        visible = visible,
         enter = fadeIn() + slideInVertically { it / 2 }
     ) {
         Column(
@@ -284,11 +287,13 @@ private fun MessageBubble(
                 ),
                 colors = CardDefaults.cardColors(containerColor = backgroundColor)
             ) {
-                Text(
-                    text = message.content,
-                    modifier = Modifier.padding(12.dp),
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                SelectionContainer {
+                    Text(
+                        text = message.content,
+                        modifier = Modifier.padding(12.dp),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
             }
             Text(
                 text = formatTime(message.timestamp),
@@ -323,9 +328,10 @@ private fun MessageInputBar(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = MaterialTheme.colorScheme.outline
             ),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
             keyboardActions = KeyboardActions(onSend = { if (!isLoading) onSend() }),
-            singleLine = true,
+            singleLine = false,
+            maxLines = 5,
             enabled = !isLoading
         )
         Spacer(modifier = Modifier.width(8.dp))
@@ -352,7 +358,8 @@ private fun MessageInputBar(
     }
 }
 
+private val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+
 private fun formatTime(timestamp: Long): String {
-    val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
-    return sdf.format(Date(timestamp))
+    return timeFormat.format(Date(timestamp))
 }

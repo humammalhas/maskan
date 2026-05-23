@@ -5,14 +5,21 @@
             <certificates src="system" />
         </trust-anchors>
     </base-config>
+    <!--
+         Cloud API providers: cleartext (HTTP) is forbidden.
+         includeSubdomains="true" so that any future sub-path or
+         regional subdomain is also forced over HTTPS.
+         Base-config keeps cleartext permitted so that local providers
+         (Ollama, LM Studio) reachable on localhost / LAN IPs work over HTTP.
+    -->
     <domain-config cleartextTrafficPermitted="false">
-        <domain includeSubdomains="false">api.deepseek.com</domain>
-        <domain includeSubdomains="false">api.openai.com</domain>
-        <domain includeSubdomains="false">api.groq.com</domain>
-        <domain includeSubdomains="false">api.together.xyz</domain>
-        <domain includeSubdomains="false">api.mistral.ai</domain>
-        <domain includeSubdomains="false">openrouter.ai</domain>
-        <domain includeSubdomains="false">api.anthropic.com</domain>
-        <domain includeSubdomains="false">generativelanguage.googleapis.com</domain>
+        <domain includeSubdomains="true">api.deepseek.com</domain>
+        <domain includeSubdomains="true">api.openai.com</domain>
+        <domain includeSubdomains="true">api.groq.com</domain>
+        <domain includeSubdomains="true">api.together.xyz</domain>
+        <domain includeSubdomains="true">api.mistral.ai</domain>
+        <domain includeSubdomains="true">openrouter.ai</domain>
+        <domain includeSubdomains="true">api.anthropic.com</domain>
+        <domain includeSubdomains="true">generativelanguage.googleapis.com</domain>
     </domain-config>
 </network-security-config>

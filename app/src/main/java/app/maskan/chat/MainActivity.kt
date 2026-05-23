@@ -5,16 +5,17 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.lifecycle.ViewModelProvider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.appcompat.app.AppCompatDelegate
-import app.maskan.chat.data.repository.ChatRepository
-import app.maskan.chat.data.repository.KeyRepository
-import app.maskan.chat.data.repository.LocaleRepository
 import app.maskan.chat.data.repository.PreferenceRepository
 import app.maskan.chat.navigation.Routes
 import app.maskan.chat.ui.screens.AboutScreen
@@ -23,8 +24,8 @@ import app.maskan.chat.ui.screens.ConversationListScreen
 import app.maskan.chat.ui.screens.SettingsScreen
 import app.maskan.chat.ui.screens.WelcomeScreen
 import app.maskan.chat.ui.theme.MaskanTheme
-import app.maskan.chat.ui.viewmodel.ChatViewModel
 import app.maskan.chat.ui.viewmodel.ConversationListViewModel
+import app.maskan.chat.ui.viewmodel.SettingsViewModel
 
 class MainActivity : ComponentActivity() {
 
@@ -32,9 +33,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
 
-        val conversationListViewModel = app.provideConversationListViewModel()
-        val chatViewModel = app.provideChatViewModel()
+        val factory = MaskanViewModelFactory(app)
+        val conversationListViewModel = ViewModelProvider(this, factory)[ConversationListViewModel::class.java]
+        val settingsViewModel = ViewModelProvider(this, factory)[SettingsViewModel::class.java]
 
         val isArabic = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val lm = getSystemService(LocaleManager::class.java)
@@ -43,17 +46,14 @@ class MainActivity : ComponentActivity() {
             AppCompatDelegate.getApplicationLocales().get(0)?.language == "ar"
         }
 
-        val isFirstLaunch = app.keyRepository.getAllStoredProviderIds().isEmpty()
+        val isFirstLaunch = !app.preferenceRepository.hasCompletedSetup()
 
         setContent {
             MaskanTheme(isArabic = isArabic) {
                 AppNavigation(
                     conversationListViewModel = conversationListViewModel,
-                    chatViewModel = chatViewModel,
-                    keyRepository = app.keyRepository,
-                    localeRepository = app.localeRepository,
+                    settingsViewModel = settingsViewModel,
                     preferenceRepository = app.preferenceRepository,
-                    chatRepository = app.chatRepository,
                     onRestart = { recreate() },
                     isFirstLaunch = isFirstLaunch
                 )
@@ -65,11 +65,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun AppNavigation(
     conversationListViewModel: ConversationListViewModel,
-    chatViewModel: ChatViewModel,
-    keyRepository: KeyRepository,
-    localeRepository: LocaleRepository,
+    settingsViewModel: SettingsViewModel,
     preferenceRepository: PreferenceRepository,
-    chatRepository: ChatRepository,
     onRestart: () -> Unit,
     isFirstLaunch: Boolean
 ) {
@@ -83,6 +80,7 @@ private fun AppNavigation(
         composable(Routes.WELCOME) {
             WelcomeScreen(
                 onGetStarted = {
+                    preferenceRepository.setCompletedSetup()
                     navController.navigate(Routes.SETTINGS + "?firstLaunch=true") {
                         popUpTo(Routes.WELCOME) { inclusive = true }
                     }
@@ -107,6 +105,8 @@ private fun AppNavigation(
             arguments = listOf(navArgument("conversationId") { type = NavType.LongType })
         ) { backStackEntry ->
             val conversationId = backStackEntry.arguments?.getLong("conversationId") ?: return@composable
+            val app = LocalContext.current.applicationContext as MaskanApplication
+            val chatViewModel = remember(conversationId) { app.provideChatViewModel() }
             ChatScreen(
                 viewModel = chatViewModel,
                 conversationId = conversationId,
@@ -124,10 +124,7 @@ private fun AppNavigation(
         ) { backStackEntry ->
             val isFirstLaunchSettings = backStackEntry.arguments?.getBoolean("firstLaunch") ?: false
             SettingsScreen(
-                keyRepository = keyRepository,
-                localeRepository = localeRepository,
-                preferenceRepository = preferenceRepository,
-                chatRepository = chatRepository,
+                viewModel = settingsViewModel,
                 onNavigateBack = {
                     if (isFirstLaunchSettings) {
                         navController.navigate(Routes.CONVERSATION_LIST) {
@@ -141,8 +138,6 @@ private fun AppNavigation(
                 },
                 onNavigateToAbout = { navController.navigate(Routes.ABOUT) },
                 onLocaleChanged = { onRestart() },
-                currentModel = chatViewModel.uiState.value.selectedModel,
-                onModelChanged = { model -> chatViewModel.setSelectedModel(model) },
                 isFirstLaunch = isFirstLaunchSettings
             )
         }

@@ -1,4 +1,4 @@
-﻿# PrismAI ProGuard Rules
+﻿# Maskan ProGuard Rules
 
 # Keep kotlinx.serialization
 -keepattributes *Annotation*, InnerClasses
@@ -18,7 +18,6 @@
 -dontwarn com.google.errorprone.annotations.**
 
 # Keep Retrofit interfaces
--keep,allowobfuscation interface app.maskan.chat.data.remote.DeepSeekApiService
 -keep,allowobfuscation interface app.maskan.chat.data.remote.OpenAiCompatibleService
 -keep,allowobfuscation interface app.maskan.chat.data.remote.AnthropicService
 -keep,allowobfuscation interface app.maskan.chat.data.remote.GeminiService

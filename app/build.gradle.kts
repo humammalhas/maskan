@@ -18,14 +18,14 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "app.maskan.chat"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "app.maskan.chat"
         minSdk = 26
-        targetSdk = 34
-        versionCode = 3
-        versionName = "2.1.0"
+        targetSdk = 35
+        versionCode = 4
+        versionName = "2.2.0"
     }
 
     signingConfigs {
@@ -62,6 +62,31 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            isUniversalApk = true
+        }
+    }
+
+    lint {
+        abortOnError = true
+        baseline = file("lint-baseline.xml")
+    }
+}
+
+val abiCodes = mapOf("armeabi-v7a" to 1, "arm64-v8a" to 2, "x86" to 3, "x86_64" to 4)
+androidComponents {
+    onVariants { variant ->
+        variant.outputs.forEach { output ->
+            val abi = output.filters.find { it.filterType == com.android.build.api.variant.FilterConfiguration.FilterType.ABI }?.identifier
+            val abiCode = abiCodes[abi] ?: 0
+            output.versionCode.set((output.versionCode.get() ?: 0) * 10 + abiCode)
+        }
     }
 }
 
@@ -116,6 +141,10 @@ dependencies {
 
     // Security
     implementation(libs.security.crypto)
+
+    // SQLCipher
+    implementation(libs.sqlcipher)
+    implementation(libs.sqlite)
 }
 
 

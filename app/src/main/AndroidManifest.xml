@@ -13,7 +13,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Maskan"
         android:networkSecurityConfig="@xml/network_security_config"
-        tools:targetApi="34">
+        tools:targetApi="35">
 
         <activity
             android:name=".MainActivity"

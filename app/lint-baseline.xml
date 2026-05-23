@@ -1,0 +1,542 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 8.10.0" type="baseline" client="gradle" dependencies="false" name="AGP (8.10.0)" variant="all" version="8.10.0">
+
+    <issue
+        id="AndroidGradlePluginVersion"
+        message="A newer version of com.android.application than 8.10.0 is available: 9.2.1. (There is also a newer version of 8.10.𝑥 available, if upgrading to 9.2.1 is difficult: 8.10.1)"
+        errorLine1="agp = &quot;8.10.0&quot;"
+        errorLine2="      ~~~~~~~~">
+        <location
+            file="$HOME/Desktop/PrivacyAI/gradle/libs.versions.toml"
+            line="2"
+            column="7"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.compose:compose-bom than 2025.04.01 is available: 2026.05.01"
+        errorLine1="compose-bom = &quot;2025.04.01&quot;"
+        errorLine2="              ~~~~~~~~~~~~">
+        <location
+            file="$HOME/Desktop/PrivacyAI/gradle/libs.versions.toml"
+            line="4"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.room:room-compiler than 2.7.1 is available: 2.8.4"
+        errorLine1="room = &quot;2.7.1&quot;"
+        errorLine2="       ~~~~~~~">
+        <location
+            file="$HOME/Desktop/PrivacyAI/gradle/libs.versions.toml"
+            line="5"
+            column="8"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.room:room-ktx than 2.7.1 is available: 2.8.4"
+        errorLine1="room = &quot;2.7.1&quot;"
+        errorLine2="       ~~~~~~~">
+        <location
+            file="$HOME/Desktop/PrivacyAI/gradle/libs.versions.toml"
+            line="5"
+            column="8"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.room:room-runtime than 2.7.1 is available: 2.8.4"
+        errorLine1="room = &quot;2.7.1&quot;"
+        errorLine2="       ~~~~~~~">
+        <location
+            file="$HOME/Desktop/PrivacyAI/gradle/libs.versions.toml"
+            line="5"
+            column="8"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.security:security-crypto than 1.1.0-alpha06 is available: 1.1.0"
+        errorLine1="security-crypto = &quot;1.1.0-alpha06&quot;"
+        errorLine2="                  ~~~~~~~~~~~~~~~">
+        <location
+            file="$HOME/Desktop/PrivacyAI/gradle/libs.versions.toml"
+            line="10"
+            column="19"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.lifecycle:lifecycle-runtime-compose than 2.9.0 is available: 2.10.0"
+        errorLine1="lifecycle = &quot;2.9.0&quot;"
+        errorLine2="            ~~~~~~~">
+        <location
+            file="$HOME/Desktop/PrivacyAI/gradle/libs.versions.toml"
+            line="11"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.lifecycle:lifecycle-runtime-ktx than 2.9.0 is available: 2.10.0"
+        errorLine1="lifecycle = &quot;2.9.0&quot;"
+        errorLine2="            ~~~~~~~">
+        <location
+            file="$HOME/Desktop/PrivacyAI/gradle/libs.versions.toml"
+            line="11"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.lifecycle:lifecycle-viewmodel-compose than 2.9.0 is available: 2.10.0"
+        errorLine1="lifecycle = &quot;2.9.0&quot;"
+        errorLine2="            ~~~~~~~">
+        <location
+            file="$HOME/Desktop/PrivacyAI/gradle/libs.versions.toml"
+            line="11"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.core:core-ktx than 1.15.0 is available: 1.18.0"
+        errorLine1="core-ktx = &quot;1.15.0&quot;"
+        errorLine2="           ~~~~~~~~">
+        <location
+            file="$HOME/Desktop/PrivacyAI/gradle/libs.versions.toml"
+            line="13"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.activity:activity-compose than 1.10.1 is available: 1.13.0"
+        errorLine1="activity-compose = &quot;1.10.1&quot;"
+        errorLine2="                   ~~~~~~~~">
+        <location
+            file="$HOME/Desktop/PrivacyAI/gradle/libs.versions.toml"
+            line="14"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.appcompat:appcompat than 1.7.0 is available: 1.7.1"
+        errorLine1="appcompat = &quot;1.7.0&quot;"
+        errorLine2="            ~~~~~~~">
+        <location
+            file="$HOME/Desktop/PrivacyAI/gradle/libs.versions.toml"
+            line="15"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.navigation:navigation-compose than 2.9.0 is available: 2.9.8"
+        errorLine1="navigation-compose = &quot;2.9.0&quot;"
+        errorLine2="                     ~~~~~~~">
+        <location
+            file="$HOME/Desktop/PrivacyAI/gradle/libs.versions.toml"
+            line="16"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="Aligned16KB"
+        message="The native library `arm64-v8a/libsqlcipher.so` (from `net.zetetic:android-database-sqlcipher:4.5.4`) is not 16 KB aligned"
+        errorLine1="sqlcipher = { group = &quot;net.zetetic&quot;, name = &quot;android-database-sqlcipher&quot;, version.ref = &quot;sqlcipher&quot; }"
+        errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="$HOME/Desktop/PrivacyAI/gradle/libs.versions.toml"
+            line="68"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="Aligned16KB"
+        message="The native library `arm64-v8a/libsqlcipher.so` (from `net.zetetic:android-database-sqlcipher:4.5.4`) is not 16 KB aligned">
+        <location
+            file="$GRADLE_USER_HOME/caches/9.0.0/transforms/2a0f817ca5c530f68ee8776cd4e4cab5/transformed/android-database-sqlcipher-4.5.4/jni/arm64-v8a/libsqlcipher.so"/>
+    </issue>
+
+    <issue
+        id="Aligned16KB"
+        message="The native library `arm64-v8a/libsqlcipher.so` (from `net.zetetic:android-database-sqlcipher:4.5.4`) is not 16 KB aligned">
+        <location
+            file="$GRADLE_USER_HOME/caches/9.0.0/transforms/2a0f817ca5c530f68ee8776cd4e4cab5/transformed/android-database-sqlcipher-4.5.4/jni/arm64-v8a/libsqlcipher.so"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;conversations&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;delete_folder_confirm_detail&quot;>Delete \&apos;%1$s\&apos; and %2$d conversations inside? This cannot be undone.&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="70"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="InsecureBaseConfiguration"
+        message="Insecure Base Configuration"
+        errorLine1="    &lt;base-config cleartextTrafficPermitted=&quot;true&quot;>"
+        errorLine2="                                            ~~~~">
+        <location
+            file="src/main/res/xml/network_security_config.xml"
+            line="3"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="DataExtractionRules"
+        message="The attribute `android:allowBackup` is deprecated from Android 12 and higher and may be removed in future versions. Consider adding the attribute `android:dataExtractionRules` specifying an `@xml` resource which configures cloud backups and device transfers on Android 12 and higher."
+        errorLine1="        android:allowBackup=&quot;false&quot;"
+        errorLine2="                             ~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="9"
+            column="30"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="This folder configuration (`v26`) is unnecessary; `minSdkVersion` is 26. Merge all the resources in this folder into `mipmap-anydpi`.">
+        <location
+            file="src/main/res/mipmap-anydpi-v26"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.font.notosans_arabic` appears to be unused"
+        errorLine1="&lt;font-family xmlns:app=&quot;http://schemas.android.com/apk/res-auto&quot;>"
+        errorLine2="^">
+        <location
+            file="src/main/res/font/notosans_arabic.xml"
+            line="2"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.delete_confirmation` appears to be unused"
+        errorLine1="    &lt;string name=&quot;delete_confirmation&quot;>Are you sure you want to delete this conversation?&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="13"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.api_key_label` appears to be unused"
+        errorLine1="    &lt;string name=&quot;api_key_label&quot;>DeepSeek API Key&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="32"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.test_connection_testing` appears to be unused"
+        errorLine1="    &lt;string name=&quot;test_connection_testing&quot;>Testing…&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="40"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.instructions_title` appears to be unused"
+        errorLine1="    &lt;string name=&quot;instructions_title&quot;>How to get a DeepSeek API Key&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="55"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.instructions_text` appears to be unused"
+        errorLine1="    &lt;string name=&quot;instructions_text&quot;>Go to platform.deepseek.com and sign up or log in.\nAdd  to your account (top up) - this is a pay-as-you-go API.\nNavigate to the &amp;quot;API Keys&amp;quot; section.\nCreate a new API key and copy it.\nPaste the key above - it will be stored securely on your device.\nYour key is only used to talk to DeepSeek, never shared anywhere else.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="56"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.folders` appears to be unused"
+        errorLine1="    &lt;string name=&quot;folders&quot;>Folders&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="63"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.api_key_hint_banner` appears to be unused"
+        errorLine1="    &lt;string name=&quot;api_key_hint_banner&quot;>Get your free DeepSeek API key at platform.deepseek.com — it stays encrypted on your device&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="94"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.error_empty_response` appears to be unused"
+        errorLine1="    &lt;string name=&quot;error_empty_response&quot;>Empty response from API.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="123"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.error_network` appears to be unused"
+        errorLine1="    &lt;string name=&quot;error_network&quot;>Could not connect to server. Check your internet connection.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="125"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.error_auth_expired` appears to be unused"
+        errorLine1="    &lt;string name=&quot;error_auth_expired&quot;>Your API key has expired. Generate a new one from your provider\&apos;s dashboard.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="129"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.error_server_overloaded` appears to be unused"
+        errorLine1="    &lt;string name=&quot;error_server_overloaded&quot;>The AI provider is overloaded. Try again shortly.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="135"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UseOfNonLambdaOffsetOverload"
+        message="State backed values should use the lambda overload of Modifier.offset"
+        errorLine1="                modifier = Modifier.offset(y = fabOffset.dp)"
+        errorLine2="                                    ~~~~~~">
+        <location
+            file="src/main/java/app/maskan/chat/ui/screens/ConversationListScreen.kt"
+            line="179"
+            column="37"/>
+    </issue>
+
+    <issue
+        id="TypographyEllipsis"
+        message="Replace &quot;...&quot; with ellipsis character (…, &amp;#8230;) ?"
+        errorLine1="    &lt;string name=&quot;message_placeholder&quot;>Type a message...&lt;/string>"
+        errorLine2="                                       ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="20"
+            column="40"/>
+    </issue>
+
+    <issue
+        id="TypographyEllipsis"
+        message="Replace &quot;...&quot; with ellipsis character (…, &amp;#8230;) ?"
+        errorLine1="    &lt;string name=&quot;api_key_placeholder&quot;>sk-...&lt;/string>"
+        errorLine2="                                       ~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="33"
+            column="40"/>
+    </issue>
+
+    <issue
+        id="MonochromeLauncherIcon"
+        message="The application adaptive icon is missing a monochrome tag"
+        errorLine1="&lt;adaptive-icon xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
+        errorLine2="^">
+        <location
+            file="src/main/res/mipmap-anydpi-v26/ic_launcher.xml"
+            line="2"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="MonochromeLauncherIcon"
+        message="The application adaptive roundIcon is missing a monochrome tag"
+        errorLine1="&lt;adaptive-icon xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
+        errorLine2="^">
+        <location
+            file="src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml"
+            line="2"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(&quot;https://github.com/humammalhas/maskan&quot;))"
+        errorLine2="                                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/app/maskan/chat/ui/screens/AboutScreen.kt"
+            line="120"
+            column="57"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(&quot;https://github.com/humammalhas/maskan/issues&quot;))"
+        errorLine2="                                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/app/maskan/chat/ui/screens/AboutScreen.kt"
+            line="128"
+            column="57"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toColorInt` instead?"
+        errorLine1="    return try { Color(android.graphics.Color.parseColor(hex)) } catch (_: Exception) { FOLDER_PASTELS.first() }"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/app/maskan/chat/ui/screens/ConversationListScreen.kt"
+            line="90"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="            sharedPreferences.edit()"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/app/maskan/chat/data/repository/KeyRepository.kt"
+            line="18"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        sharedPreferences.edit().putString(providerKeyName(providerId), key).apply()"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/app/maskan/chat/data/repository/KeyRepository.kt"
+            line="35"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        sharedPreferences.edit().remove(providerKeyName(providerId)).apply()"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/app/maskan/chat/data/repository/KeyRepository.kt"
+            line="44"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        sharedPreferences.edit().putString(providerModelName(providerId), model).apply()"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/app/maskan/chat/data/repository/KeyRepository.kt"
+            line="67"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        sharedPreferences.edit().putString(providerBaseUrlName(providerId), url).apply()"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/app/maskan/chat/data/repository/KeyRepository.kt"
+            line="71"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        sharedPreferences.edit().putString(KEY_DEFAULT_PROVIDER, providerId).apply()"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/app/maskan/chat/data/repository/KeyRepository.kt"
+            line="83"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        sharedPreferences.edit().putString(KEY_LOCALE, localeCode).apply()"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/app/maskan/chat/data/repository/LocaleRepository.kt"
+            line="26"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        sharedPreferences.edit().putString(KEY_DEFAULT_DIALECT, dialect.id).apply()"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/app/maskan/chat/data/repository/PreferenceRepository.kt"
+            line="21"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        plainPreferences.edit().putBoolean(KEY_COMPLETED_SETUP, true).apply()"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/app/maskan/chat/data/repository/PreferenceRepository.kt"
+            line="28"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="ConstantLocale"
+        message="Assigning `Locale.getDefault()` to a final static field is suspicious; this code will not work correctly if the user changes locale while the app is running"
+        errorLine1="private val timeFormat = SimpleDateFormat(&quot;HH:mm&quot;, Locale.getDefault())"
+        errorLine2="                                                   ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/app/maskan/chat/ui/screens/ChatScreen.kt"
+            line="363"
+            column="52"/>
+    </issue>
+
+</issues>

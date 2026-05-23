@@ -141,4 +141,5 @@
     <string name="error_provider_not_found">مزود ذكاء اصطناعي غير معروف. أعد الضبط في الإعدادات.</string>
     <string name="error_empty_response_detail">أعاد الذكاء الاصطناعي استجابة فارغة. حاول إرسال رسالتك مرة أخرى.</string>
     <string name="error_conversation_not_found">تعذّر العثور على هذه المحادثة. ربما تم حذفها.</string>
+    <string name="error_serialization">تنسيق استجابة غير متوقع من المزود. حاول مرة أخرى أو بدّل النموذج.</string>
 </resources>

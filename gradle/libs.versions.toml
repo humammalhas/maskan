@@ -1,19 +1,21 @@
 [versions]
-agp = "8.5.2"
-kotlin = "2.0.21"
-compose-bom = "2024.10.01"
-room = "2.6.1"
+agp = "8.10.0"
+kotlin = "2.1.20"
+compose-bom = "2025.04.01"
+room = "2.7.1"
 retrofit = "2.11.0"
 okhttp = "4.12.0"
-kotlinx-serialization = "1.6.3"
-kotlinx-coroutines = "1.8.1"
+kotlinx-serialization = "1.7.3"
+kotlinx-coroutines = "1.10.1"
 security-crypto = "1.1.0-alpha06"
-lifecycle = "2.8.2"
-ksp = "2.0.21-1.0.28"
-core-ktx = "1.13.1"
-activity-compose = "1.9.0"
+lifecycle = "2.9.0"
+ksp = "2.1.20-1.0.32"
+core-ktx = "1.15.0"
+activity-compose = "1.10.1"
 appcompat = "1.7.0"
-navigation-compose = "2.7.7"
+navigation-compose = "2.9.0"
+sqlcipher = "4.6.1"
+sqlite = "2.4.0"
 
 [libraries]
 # AndroidX Core
@@ -62,6 +64,10 @@ kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 
 # Security
 security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "security-crypto" }
+
+# SQLCipher
+sqlcipher = { group = "net.zetetic", name = "sqlcipher-android", version.ref = "sqlcipher" }
+sqlite = { group = "androidx.sqlite", name = "sqlite", version.ref = "sqlite" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

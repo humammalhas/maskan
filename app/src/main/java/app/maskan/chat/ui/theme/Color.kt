@@ -2,10 +2,7 @@
 
 import androidx.compose.ui.graphics.Color
 
-// ── Pastel Color Palette ───────────────────────────────────────────────
-// A warm, soft, unique palette that gives the app a distinct personality.
-// Avoids standard blue Material defaults for a more distinctive look.
-
+// ── Light Pastel Palette ─────────────────────────────────────────────
 val WarmPeach = Color(0xFFFFDAB9)
 val MintGreen = Color(0xFFB2F2BB)
 val SoftLavender = Color(0xFFE6E6FA)
@@ -14,13 +11,27 @@ val SoftCoral = Color(0xFFFFA07A)
 val WarmSand = Color(0xFFE8D0A0)
 val SkyBlue = Color(0xFFB0E0E6)
 
+// ── Dark Palette ─────────────────────────────────────────────────────
+val WarmPeachDark = Color(0xFF483828)
+val MintGreenDark = Color(0xFF283A2C)
+val SoftLavenderDark = Color(0xFF322E48)
+val PalePinkDark = Color(0xFF422A34)
+val SoftCoralDark = Color(0xFFCC7A58)
+val WarmSandDark = Color(0xFF443820)
+val SkyBlueDark = Color(0xFF2A4555)
+
 // Text colors
 val DarkText = Color(0xFF2D2D2D)
+val LightText = Color(0xFFE8E0D8)
 val MediumGray = Color(0xFF666666)
 val LightGray = Color(0xFFF0F0F0)
 val White = Color(0xFFFFFFFF)
 
-// Bubble colors
-val UserBubble = Color(0xFFFFE4E1) // misty rose
-val AssistantBubble = Color(0xFFF0FFF0) // honeydew
+// Bubble colors — light
+val UserBubble = Color(0xFFFFE4E1)
+val AssistantBubble = Color(0xFFF0FFF0)
+
+// Bubble colors — dark
+val UserBubbleDark = Color(0xFF352828)
+val AssistantBubbleDark = Color(0xFF263030)
 

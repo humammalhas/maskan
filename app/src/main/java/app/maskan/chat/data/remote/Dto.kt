@@ -64,3 +64,25 @@ data class ChatCompletionResponse(
     val usage: Usage?
 )
 
+@Serializable
+data class StreamChoice(
+    val index: Int,
+    val delta: StreamDelta,
+    @SerialName("finish_reason")
+    val finishReason: String? = null
+)
+
+@Serializable
+data class StreamDelta(
+    val role: String? = null,
+    val content: String? = null
+)
+
+@Serializable
+data class ChatCompletionChunk(
+    val id: String = "",
+    @SerialName("object")
+    val obj: String = "",
+    val choices: List<StreamChoice> = emptyList()
+)
+

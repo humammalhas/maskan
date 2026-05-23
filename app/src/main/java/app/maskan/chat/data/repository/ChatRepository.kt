@@ -12,6 +12,7 @@ import app.maskan.chat.data.remote.ChatCompletionResponse
 import app.maskan.chat.data.remote.Message
 import app.maskan.chat.data.remote.providers.ProviderRegistry
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 
 class ChatRepository(
     private val conversationDao: ConversationDao,
@@ -99,6 +100,7 @@ class ChatRepository(
         userContent: String,
         model: String = "deepseek-chat"
     ): Result<ChatCompletionResponse> {
+        var userMessageId: Long? = null
         return try {
             val conversation = conversationDao.getConversationById(conversationId)
                 ?: return Result.failure(Exception("Conversation not found"))
@@ -117,17 +119,21 @@ class ChatRepository(
                 }
             }
 
-            saveMessage(conversationId, "user", userContent)
+            userMessageId = saveMessage(conversationId, "user", userContent)
 
             val messages = buildMessageList(conversationId)
 
             val providerId = conversation.providerId
             val provider = ProviderRegistry.getProvider(providerId)
-                ?: return Result.failure(Exception("Unknown provider: $providerId"))
+                ?: run {
+                    messageDao.deleteMessageById(userMessageId)
+                    return Result.failure(Exception("Unknown provider: $providerId"))
+                }
 
             val apiKey = keyRepository.getApiKey(providerId) ?: ""
             val isLocalProvider = provider.supportsCustomBaseUrl
             if (apiKey.isBlank() && !isLocalProvider) {
+                messageDao.deleteMessageById(userMessageId)
                 return Result.failure(Exception("API key not set. Please add your API key in Settings."))
             }
 
@@ -154,6 +160,7 @@ class ChatRepository(
                 usage = null
             ))
         } catch (e: Exception) {
+            userMessageId?.let { messageDao.deleteMessageById(it) }
             Result.failure(e)
         }
     }
@@ -167,6 +174,87 @@ class ChatRepository(
             "custom" -> null
             else -> conversation.systemPromptId?.let { Presets.getById(it) }
         }
+
+    fun sendMessageStreaming(
+        conversationId: Long,
+        userContent: String,
+        model: String = "deepseek-chat"
+    ): Flow<StreamEvent> = flow {
+        val conversation = conversationDao.getConversationById(conversationId)
+            ?: throw Exception("Conversation not found")
+
+        val existingMessages = messageDao.getMessagesForConversationOnce(conversationId)
+        val hasSystemMessage = existingMessages.any { it.role == "system" }
+
+        if (conversation.systemPromptId != null && !hasSystemMessage) {
+            val preset = resolvePreset(conversation)
+            if (preset != null) {
+                val isArabic = localeRepository.getLocale() == "ar"
+                val systemContent = if (isArabic) preset.systemPromptAr else preset.systemPromptEn
+                if (systemContent.isNotBlank()) {
+                    saveMessage(conversationId, "system", systemContent)
+                }
+            }
+        }
+
+        saveMessage(conversationId, "user", userContent)
+
+        val messages = buildMessageList(conversationId)
+
+        val providerId = conversation.providerId
+        val provider = ProviderRegistry.getProvider(providerId)
+            ?: throw Exception("Unknown provider: $providerId")
+
+        val apiKey = keyRepository.getApiKey(providerId) ?: ""
+        val isLocalProvider = provider.supportsCustomBaseUrl
+        if (apiKey.isBlank() && !isLocalProvider) {
+            throw Exception("API key not set. Please add your API key in Settings.")
+        }
+
+        val effectiveModel = conversation.modelId ?: model
+        val storedBaseUrl = keyRepository.getBaseUrl(providerId)
+
+        val assistantMessageId = saveMessage(conversationId, "assistant", "")
+        emit(StreamEvent.Started(assistantMessageId))
+
+        try {
+            val fullContent = StringBuilder()
+            provider.sendMessageStreaming(apiKey, effectiveModel, messages, storedBaseUrl)
+                .collect { token ->
+                    fullContent.append(token)
+                    val snapshot = fullContent.toString()
+                    messageDao.updateMessageContent(assistantMessageId, snapshot)
+                    emit(StreamEvent.Token(snapshot))
+                }
+
+            val finalContent = fullContent.toString()
+            if (finalContent.isBlank()) {
+                throw Exception("Empty response from ${provider.displayName}")
+            }
+        } catch (e: Exception) {
+            val current = messageDao.getMessagesForConversationOnce(conversationId)
+                .find { it.id == assistantMessageId }
+            if (current == null || current.content.isBlank()) {
+                messageDao.deleteMessageById(assistantMessageId)
+            }
+            throw e
+        }
+
+        if (conversation.title == "New Chat") {
+            val title = userContent.take(50).let {
+                if (it.length == 50) "$it..." else it
+            }
+            conversationDao.updateConversationTitle(conversationId, title)
+        }
+
+        emit(StreamEvent.Done)
+    }
+
+    sealed class StreamEvent {
+        data class Started(val messageId: Long) : StreamEvent()
+        data class Token(val fullContent: String) : StreamEvent()
+        data object Done : StreamEvent()
+    }
 
     suspend fun testConnection(providerId: String): Result<String> {
         return try {
@@ -192,6 +280,16 @@ class ChatRepository(
 
     private suspend fun buildMessageList(conversationId: Long): List<Message> {
         val entities = messageDao.getMessagesForConversationOnce(conversationId)
-        return entities.map { Message(role = it.role, content = it.content) }
+        val messages = entities.map { Message(role = it.role, content = it.content) }
+
+        val systemMessages = messages.filter { it.role == "system" }
+        val nonSystemMessages = messages.filter { it.role != "system" }
+        val recentMessages = nonSystemMessages.takeLast(MAX_CONTEXT_MESSAGES)
+
+        return systemMessages + recentMessages
+    }
+
+    companion object {
+        const val MAX_CONTEXT_MESSAGES = 50
     }
 }

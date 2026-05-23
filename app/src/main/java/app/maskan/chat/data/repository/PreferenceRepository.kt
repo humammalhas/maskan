@@ -2,23 +2,15 @@ package app.maskan.chat.data.repository
 
 import android.content.Context
 import android.content.SharedPreferences
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
 import app.maskan.chat.data.model.Dialect
 
 class PreferenceRepository(context: Context) {
 
-    private val masterKey = MasterKey.Builder(context)
-        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        .build()
+    private val sharedPreferences: SharedPreferences =
+        createEncryptedPrefsOrFallback(context, PREFS_NAME)
 
-    private val sharedPreferences: SharedPreferences = EncryptedSharedPreferences.create(
-        context,
-        PREFS_NAME,
-        masterKey,
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
+    private val plainPreferences: SharedPreferences =
+        context.getSharedPreferences(PLAIN_PREFS_NAME, Context.MODE_PRIVATE)
 
     fun getDefaultDialect(): Dialect {
         val id = sharedPreferences.getString(KEY_DEFAULT_DIALECT, null)
@@ -29,8 +21,18 @@ class PreferenceRepository(context: Context) {
         sharedPreferences.edit().putString(KEY_DEFAULT_DIALECT, dialect.id).apply()
     }
 
+    fun hasCompletedSetup(): Boolean =
+        plainPreferences.getBoolean(KEY_COMPLETED_SETUP, false)
+
+    fun setCompletedSetup() {
+        plainPreferences.edit().putBoolean(KEY_COMPLETED_SETUP, true).apply()
+    }
+
     companion object {
-        private const val PREFS_NAME = "maskan_secure_prefs"
+        // Must differ from KeyRepository.PREFS_NAME to avoid sharing the same encrypted file.
+        private const val PREFS_NAME = "maskan_secure_preferences"
+        private const val PLAIN_PREFS_NAME = "maskan_prefs"
         private const val KEY_DEFAULT_DIALECT = "default_dialect"
+        private const val KEY_COMPLETED_SETUP = "completed_setup"
     }
 }

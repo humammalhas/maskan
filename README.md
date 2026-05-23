@@ -35,12 +35,14 @@ Your API keys are encrypted with AES-256-GCM on device. Your conversations never
 
 - **Bring Your Own Key (BYOK)** — use your own API keys directly, no middlemen, no subscription
 - **11 AI providers** — cloud and local, one app
-- **Encrypted on device** — API keys stored with AES-256-GCM via Android Keystore
+- **Encrypted on device** — API keys stored with AES-256-GCM via Android Keystore, conversations encrypted with SQLCipher
 - **Network-locked** — `network_security_config.xml` restricts traffic to only enabled provider hosts
 - **Arabic-first design** — full RTL layout with proper Arabic typography
+- **Dark mode** — follows system theme automatically
 - **Dialect-aware translation** — translate to Levantine, Egyptian, Gulf, Maghrebi, or MSA
 - **12 system prompt presets** — General Assistant, Arabic Writing Coach, Code Reviewer, Classical Arabic Reader, and more
 - **Classical Arabic literary helper** — vocabulary, i'rab, balagha analysis
+- **Copy & select** — long-press AI responses to copy text
 - **Folder organization** — group conversations with custom pastel colors
 - **No Google Play Services** — works on GrapheneOS, CalyxOS, LineageOS
 - **Open source** — GPL-3.0-only, reproducible builds
@@ -89,16 +91,16 @@ cd maskan
 **Requirements:**
 
 - JDK 17+
-- Android SDK with API level 34
-- Kotlin 2.0.21
-- Gradle 8.10+
+- Android SDK with API level 35
+- Kotlin 2.1.20
+- Gradle 9.0+
 
 ---
 
 ## Privacy & Security
 
 - **API keys**: AES-256-GCM encrypted via Android Keystore
-- **Conversations**: stored locally in Room database, never uploaded
+- **Conversations**: encrypted with SQLCipher, stored locally only, never uploaded
 - **Network**: locked to provider hosts via `network_security_config.xml`
 - **No third-party SDKs**: no analytics, no crash reporting, no ads
 - **No Google Play Services**: no dependency on Google infrastructure
@@ -109,13 +111,13 @@ cd maskan
 
 ## Tech Stack
 
-- Kotlin 2.0.21
-- Jetpack Compose + Material 3
-- Room (local-only storage)
-- Retrofit + OkHttp + kotlinx.serialization
+- Kotlin 2.1.20
+- Jetpack Compose + Material 3 (BOM 2025.04.01)
+- Room 2.7.1 + SQLCipher 4.5.4 (encrypted local storage)
+- Retrofit 2.11.0 + OkHttp 4.12.0 + kotlinx.serialization 1.7.3
 - EncryptedSharedPreferences (AES-256-GCM)
 - Manual DI (no Hilt, no Dagger)
-- Min SDK 26 (Android 8.0) · Target SDK 34 (Android 14)
+- Min SDK 26 (Android 8.0) · Target SDK 35 (Android 15)
 
 ---
 
@@ -153,9 +155,12 @@ published by the Free Software Foundation.
 - استخدم مفتاح API الخاص بك مباشرةً — لا وسطاء ولا اشتراكات
 - 11 مزوّد ذكاء اصطناعي (سحابي ومحلي)
 - تشفير المفاتيح على جهازك باستخدام AES-256-GCM
+- تشفير المحادثات باستخدام SQLCipher
 - التطبيق مُقيَّد شبكياً بمزودي الخدمة المفعّلين فقط
 - واجهة عربية كاملة مع دعم RTL
+- الوضع الداكن يتبع إعداد النظام تلقائياً
 - ترجمة تراعي اللهجات: الشامي، المصري، الخليجي، المغاربي، والفصحى
+- نسخ النصوص من ردود الذكاء الاصطناعي
 - 12 قالب محادثة جاهز
 - يعمل بدون خدمات Google Play
 - مصدر مفتوح بترخيص GPL-3.0

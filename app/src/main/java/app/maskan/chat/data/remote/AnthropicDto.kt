@@ -51,3 +51,17 @@ data class AnthropicUsage(
     @SerialName("output_tokens")
     val outputTokens: Int
 )
+
+@Serializable
+data class AnthropicStreamEvent(
+    val type: String,
+    val delta: AnthropicStreamDelta? = null
+)
+
+@Serializable
+data class AnthropicStreamDelta(
+    val type: String? = null,
+    val text: String? = null,
+    @SerialName("stop_reason")
+    val stopReason: String? = null
+)

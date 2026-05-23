@@ -1,6 +1,7 @@
 package app.maskan.chat.data.remote.providers
 
 import app.maskan.chat.data.remote.Message
+import kotlinx.coroutines.flow.Flow
 
 interface AiProvider {
     val id: String
@@ -19,4 +20,11 @@ interface AiProvider {
         messages: List<Message>,
         baseUrl: String? = null
     ): String
+
+    fun sendMessageStreaming(
+        apiKey: String,
+        model: String,
+        messages: List<Message>,
+        baseUrl: String? = null
+    ): Flow<String>
 }

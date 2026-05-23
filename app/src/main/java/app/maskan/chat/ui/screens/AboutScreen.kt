@@ -36,8 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.maskan.chat.R
-import app.maskan.chat.ui.theme.MintGreen
-import app.maskan.chat.ui.theme.SoftLavender
+import app.maskan.chat.ui.theme.maskanColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,7 +58,7 @@ fun AboutScreen(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.about_title)) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = SoftLavender),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.maskanColors.softLavender),
                 navigationIcon = {
                     TextButton(onClick = onNavigateBack) {
                         Text(stringResource(R.string.about_back))
@@ -94,8 +93,8 @@ fun AboutScreen(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Filled.Lock,
-                    contentDescription = null,
-                    tint = MintGreen,
+                    contentDescription = "Security and privacy",
+                    tint = MaterialTheme.maskanColors.mintGreen,
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))

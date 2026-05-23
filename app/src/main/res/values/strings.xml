@@ -141,4 +141,5 @@
     <string name="error_provider_not_found">Unknown AI provider. Please reconfigure in Settings.</string>
     <string name="error_empty_response_detail">The AI returned an empty response. Try sending your message again.</string>
     <string name="error_conversation_not_found">This conversation could not be found. It may have been deleted.</string>
+    <string name="error_serialization">Unexpected response format from provider. Try again or switch models.</string>
 </resources>

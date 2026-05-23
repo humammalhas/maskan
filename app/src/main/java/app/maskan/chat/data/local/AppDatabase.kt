@@ -6,6 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 
 @Database(
     entities = [ConversationEntity::class, MessageEntity::class, FolderEntity::class],
@@ -28,13 +29,15 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
-        fun getInstance(context: Context): AppDatabase {
+        fun getInstance(context: Context, passphrase: ByteArray): AppDatabase {
             return INSTANCE ?: synchronized(this) {
+                val factory = SupportOpenHelperFactory(passphrase)
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
                     "privacyai_database"
                 )
+                    .openHelperFactory(factory)
                     .addMigrations(MIGRATION_3_4)
                     .build()
                 INSTANCE = instance

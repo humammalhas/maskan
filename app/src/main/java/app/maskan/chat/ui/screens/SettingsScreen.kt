@@ -24,6 +24,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -36,7 +37,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,79 +46,48 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import app.maskan.chat.R
-import androidx.compose.ui.platform.LocalContext
-import app.maskan.chat.MaskanApplication
 import app.maskan.chat.data.local.isAppArabic
 import app.maskan.chat.data.model.Dialect
-import app.maskan.chat.data.remote.providers.ProviderConfigs
-import app.maskan.chat.data.remote.providers.ProviderRegistry
-import app.maskan.chat.data.repository.ChatRepository
-import app.maskan.chat.data.repository.KeyRepository
-import app.maskan.chat.data.repository.LocaleRepository
-import app.maskan.chat.data.repository.PreferenceRepository
-import app.maskan.chat.util.ErrorMapper
+import app.maskan.chat.ui.viewmodel.SettingsViewModel
+import app.maskan.chat.ui.viewmodel.TestConnectionState
 import androidx.compose.foundation.layout.Arrangement
-import app.maskan.chat.ui.theme.MintGreen
-import app.maskan.chat.ui.theme.SkyBlue
+import app.maskan.chat.ui.theme.maskanColors
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import kotlinx.coroutines.launch
+import androidx.compose.runtime.collectAsState
 
-private sealed class TestConnectionState {
-    data object Idle : TestConnectionState()
-    data object Testing : TestConnectionState()
-    data class Success(val message: String) : TestConnectionState()
-    data class Error(val message: String) : TestConnectionState()
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    keyRepository: KeyRepository,
-    localeRepository: LocaleRepository,
-    preferenceRepository: PreferenceRepository,
-    chatRepository: ChatRepository,
+    viewModel: SettingsViewModel,
     onNavigateBack: () -> Unit,
     onNavigateToAbout: () -> Unit = {},
     onLocaleChanged: () -> Unit = {},
-    currentModel: String = "deepseek-chat",
     onModelChanged: (String) -> Unit = {},
     isFirstLaunch: Boolean = false
 ) {
     val isArabic = isAppArabic()
-    val app = LocalContext.current.applicationContext as MaskanApplication
+    val state by viewModel.uiState.collectAsState()
 
-    val allProviders = remember { ProviderRegistry.getAllProviders() }
-    var selectedProvider by remember {
-        val storedId = keyRepository.getDefaultProviderId()
-        val storedProvider = storedId?.let { ProviderRegistry.getProvider(it) }
-        mutableStateOf(storedProvider ?: ProviderRegistry.getDefaultProvider())
-    }
+    val allProviders = viewModel.allProviders
+    val selectedProvider = state.selectedProvider
+    val apiKey = state.apiKey
+    val baseUrl = state.baseUrl
+    val selectedModel = state.selectedModel
+    val isSaved = state.isSaved
+    val testState = state.testState
+    val selectedDialect = state.selectedDialect
 
-    var apiKey by remember { mutableStateOf(keyRepository.getApiKey(selectedProvider.id) ?: "") }
-    var baseUrl by remember { mutableStateOf(keyRepository.getBaseUrl(selectedProvider.id) ?: selectedProvider.defaultBaseUrl) }
     var isKeyVisible by remember { mutableStateOf(false) }
-    var isSaved by remember { mutableStateOf(false) }
     var providerExpanded by remember { mutableStateOf(false) }
     var modelExpanded by remember { mutableStateOf(false) }
-    var selectedModel by remember {
-        val model = keyRepository.getSelectedModel(selectedProvider.id) ?: selectedProvider.defaultModel
-        mutableStateOf(model)
-    }
     var languageExpanded by remember { mutableStateOf(false) }
     var dialectExpanded by remember { mutableStateOf(false) }
 
-    val scope = rememberCoroutineScope()
-    var testState by remember { mutableStateOf<TestConnectionState>(TestConnectionState.Idle) }
-    val context = LocalContext.current
-
     val providerConfig = remember(selectedProvider.id) {
-        ProviderConfigs.ALL.firstOrNull { it.id == selectedProvider.id }
+        viewModel.getProviderConfig()
     }
-
-    val savedLocale = remember { localeRepository.getLocale() }
-    val selectedLanguage = remember { mutableStateOf(savedLocale) }
-    var selectedDialect by remember { mutableStateOf(preferenceRepository.getDefaultDialect()) }
 
     data class LanguageOption(val code: String, val label: String)
     val languageOptions = listOf(
@@ -132,7 +101,7 @@ fun SettingsScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.settings_title)) },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MintGreen
+                    containerColor = MaterialTheme.maskanColors.mintGreen
                 ),
                 navigationIcon = {
                     TextButton(onClick = onNavigateBack) {
@@ -156,7 +125,7 @@ fun SettingsScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = SkyBlue.copy(alpha = 0.4f))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.maskanColors.skyBlue.copy(alpha = 0.4f))
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),
@@ -200,7 +169,7 @@ fun SettingsScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .menuAnchor(),
+                        .menuAnchor(MenuAnchorType.PrimaryNotEditable),
                     colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
                 )
 
@@ -212,16 +181,10 @@ fun SettingsScreen(
                         DropdownMenuItem(
                             text = { Text(if (isArabic) provider.nameAr else provider.displayName) },
                             onClick = {
-                                selectedProvider = provider
+                                viewModel.selectProvider(provider)
                                 providerExpanded = false
-                                apiKey = keyRepository.getApiKey(provider.id) ?: ""
-                                baseUrl = keyRepository.getBaseUrl(provider.id) ?: provider.defaultBaseUrl
-                                isSaved = false
                                 isKeyVisible = false
-                                testState = TestConnectionState.Idle
-                                selectedModel = keyRepository.getSelectedModel(provider.id) ?: provider.defaultModel
-                                onModelChanged(selectedModel)
-                                keyRepository.setDefaultProviderId(provider.id)
+                                onModelChanged(viewModel.uiState.value.selectedModel)
                             }
                         )
                     }
@@ -251,13 +214,13 @@ fun SettingsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(SkyBlue.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.maskanColors.skyBlue.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
                         .padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Info,
-                        contentDescription = null,
+                        contentDescription = "API key instructions",
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(18.dp)
                     )
@@ -277,11 +240,7 @@ fun SettingsScreen(
 
             OutlinedTextField(
                 value = apiKey,
-                onValueChange = {
-                    apiKey = it
-                    isSaved = false
-                    testState = TestConnectionState.Idle
-                },
+                onValueChange = { viewModel.updateApiKey(it) },
                 label = { Text("${selectedProvider.displayName} API Key") },
                 placeholder = { Text(stringResource(R.string.api_key_placeholder)) },
                 visualTransformation = if (isKeyVisible)
@@ -293,8 +252,8 @@ fun SettingsScreen(
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Filled.Lock,
-                        contentDescription = null,
-                        tint = MintGreen,
+                        contentDescription = "API key secured",
+                        tint = MaterialTheme.maskanColors.mintGreen,
                         modifier = Modifier.size(20.dp)
                     )
                 },
@@ -320,10 +279,7 @@ fun SettingsScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
             Button(
-                onClick = {
-                    keyRepository.saveApiKey(selectedProvider.id, apiKey)
-                    isSaved = true
-                },
+                onClick = { viewModel.saveApiKey() },
                 enabled = apiKey.isNotBlank() || selectedProvider.supportsCustomBaseUrl
             ) {
                 Text(stringResource(R.string.save_key_button))
@@ -339,24 +295,7 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
             Button(
-                onClick = {
-                    testState = TestConnectionState.Testing
-                    scope.launch {
-                        val result = chatRepository.testConnection(selectedProvider.id)
-                        testState = result.fold(
-                            onSuccess = {
-                                TestConnectionState.Success(
-                                    context.getString(R.string.test_connection_success)
-                                )
-                            },
-                            onFailure = {
-                                TestConnectionState.Error(
-                                    ErrorMapper.mapToUserMessage(context, it)
-                                )
-                            }
-                        )
-                    }
-                },
+                onClick = { viewModel.testConnection() },
                 enabled = isSaved && testState !is TestConnectionState.Testing
             ) {
                 if (testState is TestConnectionState.Testing) {
@@ -408,7 +347,7 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = baseUrl,
-                    onValueChange = { baseUrl = it },
+                    onValueChange = { viewModel.updateBaseUrl(it) },
                     label = { Text(stringResource(R.string.server_url_label)) },
                     placeholder = { Text(selectedProvider.defaultBaseUrl.ifBlank { "http://192.168.1.50:11434" }) },
                     modifier = Modifier.fillMaxWidth(),
@@ -422,10 +361,7 @@ fun SettingsScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
-                    onClick = {
-                        keyRepository.saveBaseUrl(selectedProvider.id, baseUrl)
-                        isSaved = true
-                    },
+                    onClick = { viewModel.saveBaseUrl() },
                     enabled = baseUrl.isNotBlank()
                 ) {
                     Text(stringResource(R.string.save_url_button))
@@ -455,7 +391,7 @@ fun SettingsScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .menuAnchor(),
+                        .menuAnchor(MenuAnchorType.PrimaryNotEditable),
                     colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
                 )
 
@@ -467,10 +403,9 @@ fun SettingsScreen(
                         DropdownMenuItem(
                             text = { Text(model) },
                             onClick = {
-                                selectedModel = model
+                                viewModel.selectModel(model)
                                 modelExpanded = false
                                 onModelChanged(model)
-                                keyRepository.saveSelectedModel(selectedProvider.id, model)
                             }
                         )
                     }
@@ -486,9 +421,8 @@ fun SettingsScreen(
                     onValueChange = {
                         customModel = it
                         if (it.isNotBlank()) {
-                            selectedModel = it
+                            viewModel.selectModel(it)
                             onModelChanged(it)
-                            keyRepository.saveSelectedModel(selectedProvider.id, it)
                         }
                     },
                     label = { Text(stringResource(R.string.custom_model_id_label)) },
@@ -513,9 +447,8 @@ fun SettingsScreen(
                     onValueChange = {
                         customModel = it
                         if (it.isNotBlank()) {
-                            selectedModel = it
+                            viewModel.selectModel(it)
                             onModelChanged(it)
-                            keyRepository.saveSelectedModel(selectedProvider.id, it)
                         }
                     },
                     label = { Text(stringResource(R.string.model_name_label)) },
@@ -553,7 +486,7 @@ fun SettingsScreen(
                 onExpandedChange = { languageExpanded = !languageExpanded }
             ) {
                 OutlinedTextField(
-                    value = languageOptions.firstOrNull { it.code == selectedLanguage.value }?.label ?: stringResource(R.string.language_system_default),
+                    value = languageOptions.firstOrNull { it.code == state.selectedLocale }?.label ?: stringResource(R.string.language_system_default),
                     onValueChange = {},
                     readOnly = true,
                     label = { Text(stringResource(R.string.language_label)) },
@@ -562,7 +495,7 @@ fun SettingsScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .menuAnchor(),
+                        .menuAnchor(MenuAnchorType.PrimaryNotEditable),
                     colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
                 )
 
@@ -574,10 +507,8 @@ fun SettingsScreen(
                         DropdownMenuItem(
                             text = { Text(option.label) },
                             onClick = {
-                                selectedLanguage.value = option.code
+                                viewModel.selectLanguage(option.code)
                                 languageExpanded = false
-                                localeRepository.saveLocale(option.code)
-                                app.applyLocale(option.code)
                                 onLocaleChanged()
                             }
                         )
@@ -610,7 +541,7 @@ fun SettingsScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .menuAnchor(),
+                        .menuAnchor(MenuAnchorType.PrimaryNotEditable),
                     colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
                 )
 
@@ -627,9 +558,8 @@ fun SettingsScreen(
                                 )
                             },
                             onClick = {
-                                selectedDialect = dialect
+                                viewModel.selectDialect(dialect)
                                 dialectExpanded = false
-                                preferenceRepository.setDefaultDialect(dialect)
                             }
                         )
                     }

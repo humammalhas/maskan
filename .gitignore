@@ -66,3 +66,4 @@ keystore.properties
 *.bak
 *.hprof
 captures/
+build_*.txt

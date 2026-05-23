@@ -9,15 +9,18 @@ import app.maskan.chat.data.local.SystemPromptPreset
 import app.maskan.chat.data.model.Dialect
 import app.maskan.chat.data.remote.providers.ProviderRegistry
 import app.maskan.chat.data.repository.ChatRepository
+import app.maskan.chat.data.repository.KeyRepository
 import app.maskan.chat.util.ErrorMapper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 
 data class ChatUiState(
     val messages: List<MessageEntity> = emptyList(),
     val isLoading: Boolean = false,
+    val isStreaming: Boolean = false,
     val error: String? = null,
     val selectedProviderId: String = "deepseek",
     val selectedModel: String = ProviderRegistry.getDefaultProvider().defaultModel,
@@ -27,7 +30,8 @@ data class ChatUiState(
 
 class ChatViewModel(
     application: Application,
-    private val chatRepository: ChatRepository
+    private val chatRepository: ChatRepository,
+    private val keyRepository: KeyRepository
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(ChatUiState())
@@ -57,7 +61,14 @@ class ChatViewModel(
                 "custom" -> null
                 else -> Presets.getById(conversation.systemPromptId)
             }
+            val providerId = conversation?.providerId ?: "deepseek"
+            val model = keyRepository.getSelectedModel(providerId)
+                ?: ProviderRegistry.getProvider(providerId)?.defaultModel
+                ?: ProviderRegistry.getDefaultProvider().defaultModel
+
             _uiState.value = _uiState.value.copy(
+                selectedProviderId = providerId,
+                selectedModel = model,
                 currentPreset = preset,
                 presetSelected = conversation?.systemPromptId != null
             )
@@ -97,25 +108,31 @@ class ChatViewModel(
         if (content.isBlank()) return
 
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            _uiState.value = _uiState.value.copy(isLoading = true, isStreaming = false, error = null)
 
-            val result = chatRepository.sendMessage(
+            chatRepository.sendMessageStreaming(
                 conversationId = currentConversationId,
                 userContent = content,
                 model = _uiState.value.selectedModel
-            )
-
-            result.fold(
-                onSuccess = {
-                    _uiState.value = _uiState.value.copy(isLoading = false)
-                },
-                onFailure = { error ->
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        error = ErrorMapper.mapToUserMessage(getApplication(), error)
-                    )
+            ).catch { error ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    isStreaming = false,
+                    error = ErrorMapper.mapToUserMessage(getApplication(), error)
+                )
+            }.collect { event ->
+                when (event) {
+                    is ChatRepository.StreamEvent.Started -> {
+                        _uiState.value = _uiState.value.copy(isLoading = false, isStreaming = true)
+                    }
+                    is ChatRepository.StreamEvent.Token -> {
+                        // Room Flow auto-updates messages via getMessagesForConversation
+                    }
+                    is ChatRepository.StreamEvent.Done -> {
+                        _uiState.value = _uiState.value.copy(isStreaming = false)
+                    }
                 }
-            )
+            }
         }
     }
 

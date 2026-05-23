@@ -43,11 +43,7 @@ import app.maskan.chat.data.local.isAppArabic
 import app.maskan.chat.data.local.localizedDescription
 import app.maskan.chat.data.local.localizedName
 import app.maskan.chat.data.model.Dialect
-import app.maskan.chat.ui.theme.MintGreen
-import app.maskan.chat.ui.theme.PalePink
-import app.maskan.chat.ui.theme.SkyBlue
-import app.maskan.chat.ui.theme.SoftLavender
-import app.maskan.chat.ui.theme.WarmSand
+import app.maskan.chat.ui.theme.maskanColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -186,7 +182,7 @@ private fun DialectBottomSheet(
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = if (selected)
-                            SkyBlue
+                            MaterialTheme.maskanColors.skyBlue
                         else
                             MaterialTheme.colorScheme.surfaceVariant
                     ),
@@ -214,10 +210,11 @@ private fun DialectBottomSheet(
     }
 }
 
+@Composable
 private fun categoryColor(category: PresetCategory) = when (category) {
-    PresetCategory.ARABIC_SPECIFIC -> WarmSand
-    PresetCategory.TRANSLATION -> SkyBlue
-    PresetCategory.CODE -> MintGreen
-    PresetCategory.WRITING -> PalePink
-    PresetCategory.CONVERSATION -> SoftLavender
+    PresetCategory.ARABIC_SPECIFIC -> MaterialTheme.maskanColors.warmSand
+    PresetCategory.TRANSLATION -> MaterialTheme.maskanColors.skyBlue
+    PresetCategory.CODE -> MaterialTheme.maskanColors.mintGreen
+    PresetCategory.WRITING -> MaterialTheme.maskanColors.palePink
+    PresetCategory.CONVERSATION -> MaterialTheme.maskanColors.softLavender
 }

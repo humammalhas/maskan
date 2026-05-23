@@ -4,8 +4,12 @@ import app.maskan.chat.data.remote.GeminiContent
 import app.maskan.chat.data.remote.GeminiPart
 import app.maskan.chat.data.remote.GeminiRequest
 import app.maskan.chat.data.remote.GeminiService
+import app.maskan.chat.data.remote.GeminiStreamChunk
 import app.maskan.chat.data.remote.GeminiSystemInstruction
 import app.maskan.chat.data.remote.Message
+import app.maskan.chat.data.remote.parseSSEStream
+import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.json.Json
 
 class GeminiProvider(
     private val config: ProviderConfig,
@@ -22,12 +26,9 @@ class GeminiProvider(
     override val keyAcquisitionUrl: String = config.keyAcquisitionUrl
     override val pricingInfo: String = config.pricingInfo
 
-    override suspend fun sendMessage(
-        apiKey: String,
-        model: String,
-        messages: List<Message>,
-        baseUrl: String?
-    ): String {
+    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
+
+    private fun buildRequest(messages: List<Message>): GeminiRequest {
         val systemMessages = messages.filter { it.role == "system" }
         val systemInstruction = systemMessages
             .joinToString("\n") { it.content }
@@ -43,10 +44,19 @@ class GeminiProvider(
                 )
             }
 
-        val request = GeminiRequest(
+        return GeminiRequest(
             contents = contents,
             systemInstruction = systemInstruction
         )
+    }
+
+    override suspend fun sendMessage(
+        apiKey: String,
+        model: String,
+        messages: List<Message>,
+        baseUrl: String?
+    ): String {
+        val request = buildRequest(messages)
 
         val response = apiService.generateContent(
             model = model,
@@ -66,5 +76,28 @@ class GeminiProvider(
             ?.joinToString("\n")
             ?.takeIf { it.isNotBlank() }
             ?: throw Exception("Empty response from Gemini API")
+    }
+
+    override fun sendMessageStreaming(
+        apiKey: String,
+        model: String,
+        messages: List<Message>,
+        baseUrl: String?
+    ): Flow<String> {
+        val request = buildRequest(messages)
+        val call = apiService.streamGenerateContent(
+            model = model,
+            apiKey = apiKey,
+            request = request
+        )
+        return parseSSEStream(call) { data ->
+            val chunk = json.decodeFromString<GeminiStreamChunk>(data)
+            chunk.candidates
+                ?.firstOrNull()
+                ?.content
+                ?.parts
+                ?.firstOrNull()
+                ?.text
+        }
     }
 }
