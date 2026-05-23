@@ -37,9 +37,7 @@ class ChatViewModel(
     private var messageCollectionJob: kotlinx.coroutines.Job? = null
 
     fun loadConversation(conversationId: Long) {
-        if (currentConversationId == conversationId) return
-
-        // Cancel any previous message collection and reset state
+        // Always cancel previous collection and reset state to avoid stale data
         messageCollectionJob?.cancel()
         currentConversationId = conversationId
         _uiState.value = ChatUiState(
