@@ -34,12 +34,20 @@ class ChatViewModel(
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
     private var currentConversationId: Long = -1
+    private var messageCollectionJob: kotlinx.coroutines.Job? = null
 
     fun loadConversation(conversationId: Long) {
         if (currentConversationId == conversationId) return
-        currentConversationId = conversationId
 
-        viewModelScope.launch {
+        // Cancel any previous message collection and reset state
+        messageCollectionJob?.cancel()
+        currentConversationId = conversationId
+        _uiState.value = ChatUiState(
+            selectedProviderId = _uiState.value.selectedProviderId,
+            selectedModel = _uiState.value.selectedModel
+        )
+
+        messageCollectionJob = viewModelScope.launch {
             val conversation = chatRepository.getConversationById(conversationId)
             val preset = when (conversation?.systemPromptId) {
                 null -> null
