@@ -5,6 +5,8 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.speech.RecognizerIntent
+import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import android.util.Base64
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -38,6 +40,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -56,6 +59,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -97,6 +101,41 @@ fun ChatScreen(
     val listState = rememberLazyListState()
     var showCustomPromptDialog by remember { mutableStateOf(false) }
     var showExportDialog by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val app = context.applicationContext as MaskanApplication
+    val tts = remember { mutableStateOf<TextToSpeech?>(null) }
+    var speakingMessageId by remember { mutableStateOf<Long?>(null) }
+
+    DisposableEffect(Unit) {
+        tts.value = TextToSpeech(context) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                val locale = when (app.localeRepository.getLocale()) {
+                    "ar" -> Locale("ar", "SA")
+                    "th" -> Locale("th", "TH")
+                    "en" -> Locale("en", "US")
+                    else -> Locale.getDefault()
+                }
+                tts.value?.setLanguage(locale)
+                tts.value?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                    override fun onStart(utteranceId: String?) {}
+                    override fun onDone(utteranceId: String?) {
+                        speakingMessageId = null
+                    }
+                    @Deprecated("Deprecated in Java")
+                    override fun onError(utteranceId: String?) {
+                        speakingMessageId = null
+                    }
+                })
+            } else {
+                Toast.makeText(context, context.getString(R.string.voice_narration_unavailable), Toast.LENGTH_SHORT).show()
+            }
+        }
+        onDispose {
+            tts.value?.stop()
+            tts.value?.shutdown()
+        }
+    }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
@@ -274,7 +313,18 @@ fun ChatScreen(
                 ) { message ->
                     MessageBubble(
                         message = message,
-                        isUser = message.role == "user"
+                        isUser = message.role == "user",
+                        isSpeaking = speakingMessageId == message.id,
+                        onSpeakToggle = {
+                            if (speakingMessageId == message.id) {
+                                tts.value?.stop()
+                                speakingMessageId = null
+                            } else {
+                                tts.value?.stop()
+                                speakingMessageId = message.id
+                                tts.value?.speak(message.content, TextToSpeech.QUEUE_FLUSH, null, message.id.toString())
+                            }
+                        }
                     )
                 }
             }
@@ -364,7 +414,9 @@ private fun CustomPromptDialog(
 @Composable
 private fun MessageBubble(
     message: MessageEntity,
-    isUser: Boolean
+    isUser: Boolean,
+    isSpeaking: Boolean = false,
+    onSpeakToggle: () -> Unit = {}
 ) {
     val backgroundColor = if (isUser) MaterialTheme.maskanColors.userBubble else MaterialTheme.maskanColors.assistantBubble
 
@@ -421,12 +473,30 @@ private fun MessageBubble(
                     }
                 }
             }
-            Text(
-                text = formatTime(message.timestamp),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+            ) {
+                if (!isUser && message.content.isNotBlank()) {
+                    IconButton(
+                        onClick = onSpeakToggle,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isSpeaking) Icons.Filled.Close else Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                Text(
+                    text = formatTime(message.timestamp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
+            }
         }
     }
 }

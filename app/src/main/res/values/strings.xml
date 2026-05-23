@@ -166,4 +166,5 @@
     <string name="voice_error_audio">Microphone error</string>
     <string name="voice_error_network">Voice needs internet on this device</string>
     <string name="voice_error_generic">Voice error (code %1$d), try again</string>
+    <string name="voice_narration_unavailable">Text-to-speech unavailable</string>
 </resources>
