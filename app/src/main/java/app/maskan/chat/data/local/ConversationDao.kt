@@ -40,5 +40,11 @@ interface ConversationDao {
 
     @Query("UPDATE conversations SET providerId = :providerId, modelId = :modelId WHERE id = :id")
     suspend fun updateProvider(id: Long, providerId: String, modelId: String?)
+
+    @Query("SELECT * FROM conversations WHERE title LIKE '%' || :query || '%' ORDER BY createdAt DESC")
+    suspend fun searchConversationsByTitle(query: String): List<ConversationEntity>
+
+    @Query("SELECT * FROM conversations WHERE id IN (:ids) ORDER BY createdAt DESC")
+    suspend fun getConversationsByIds(ids: List<Long>): List<ConversationEntity>
 }
 

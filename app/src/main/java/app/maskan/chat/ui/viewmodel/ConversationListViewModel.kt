@@ -7,10 +7,13 @@ import app.maskan.chat.data.local.FolderEntity
 import app.maskan.chat.data.remote.providers.ProviderRegistry
 import app.maskan.chat.data.repository.ChatRepository
 import app.maskan.chat.data.repository.KeyRepository
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
 data class ConversationListUiState(
@@ -28,8 +31,48 @@ class ConversationListViewModel(
     private val _uiState = MutableStateFlow(ConversationListUiState())
     val uiState: StateFlow<ConversationListUiState> = _uiState.asStateFlow()
 
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    private val _searchResults = MutableStateFlow<List<ConversationEntity>>(emptyList())
+    val searchResults: StateFlow<List<ConversationEntity>> = _searchResults.asStateFlow()
+
+    private val _isSearchActive = MutableStateFlow(false)
+    val isSearchActive: StateFlow<Boolean> = _isSearchActive.asStateFlow()
+
     init {
         loadData()
+        observeSearch()
+    }
+
+    @OptIn(FlowPreview::class)
+    private fun observeSearch() {
+        viewModelScope.launch {
+            _searchQuery
+                .debounce(300)
+                .distinctUntilChanged()
+                .collect { query ->
+                    if (query.isBlank()) {
+                        _searchResults.value = emptyList()
+                    } else {
+                        val results = chatRepository.searchConversations(query)
+                        _searchResults.value = results
+                    }
+                }
+        }
+    }
+
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    fun clearSearch() {
+        _searchQuery.value = ""
+        _isSearchActive.value = false
+    }
+
+    fun activateSearch() {
+        _isSearchActive.value = true
     }
 
     private fun loadData() {

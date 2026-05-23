@@ -1,17 +1,10 @@
-﻿package app.maskan.chat.data.local
+package app.maskan.chat.data.local
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
-/**
- * Room entity representing a single message within a conversation.
- * Messages are linked to a conversation via [conversationId] foreign key.
- * [role] is either "user" or "assistant".
- * [content] contains the message text.
- * [timestamp] records when the message was created/sent.
- */
 @Entity(
     tableName = "messages",
     foreignKeys = [
@@ -28,8 +21,9 @@ data class MessageEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val conversationId: Long,
-    val role: String, // "user" or "assistant"
+    val role: String,
     val content: String,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val imageBase64: String? = null,
+    val imageMimeType: String? = null
 )
-

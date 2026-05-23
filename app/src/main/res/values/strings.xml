@@ -13,16 +13,22 @@
     <string name="delete_confirmation">Are you sure you want to delete this conversation?</string>
     <string name="delete_button">Delete</string>
     <string name="cancel_button">Cancel</string>
+    <string name="search_placeholder">Search conversations…</string>
+    <string name="search_no_results">No conversations found</string>
 
     <!-- Chat screen -->
     <string name="chat_screen_title">Chat</string>
     <string name="empty_chat">Start a conversation\nType a message below.</string>
     <string name="message_placeholder">Type a message...</string>
     <string name="send_button">Send</string>
+    <string name="stop_generation">Stop</string>
     <string name="dismiss_button">Dismiss</string>
     <string name="custom_prompt_title">Create Your Own Style</string>
     <string name="custom_prompt_placeholder">e.g. \'Be a friendly teacher who explains everything simply\' or \'Reply only in poetry\'</string>
     <string name="confirm_button">Confirm</string>
+    <string name="export_conversation">Export chat</string>
+    <string name="export_plain_text">Plain Text</string>
+    <string name="export_markdown">Markdown</string>
 
     <!-- Settings screen -->
     <string name="settings_title">Settings</string>
@@ -51,6 +57,7 @@
     <string name="language_system_default">System default</string>
     <string name="language_english">English</string>
     <string name="language_arabic">Arabic</string>
+    <string name="language_thai">Thai</string>
 
     <string name="instructions_title">How to get a DeepSeek API Key</string>
     <string name="instructions_text">Go to platform.deepseek.com and sign up or log in.\nAdd  to your account (top up) - this is a pay-as-you-go API.\nNavigate to the &quot;API Keys&quot; section.\nCreate a new API key and copy it.\nPaste the key above - it will be stored securely on your device.\nYour key is only used to talk to DeepSeek, never shared anywhere else.</string>
@@ -118,6 +125,12 @@
     <string name="setup_step_2">2. Paste your API key</string>
     <string name="start_chatting">Start Chatting</string>
 
+    <!-- Image input -->
+    <string name="attach_image">Attach image</string>
+    <string name="remove_image">Remove image</string>
+    <string name="image_too_large">Image is too large. Please choose a smaller image.</string>
+    <string name="provider_no_vision">This provider doesn\'t support image input</string>
+
     <!-- Error messages -->
     <string name="error_api_key_missing">API key not set. Please add your API key in Settings.</string>
     <string name="error_empty_response">Empty response from API.</string>
@@ -142,4 +155,9 @@
     <string name="error_empty_response_detail">The AI returned an empty response. Try sending your message again.</string>
     <string name="error_conversation_not_found">This conversation could not be found. It may have been deleted.</string>
     <string name="error_serialization">Unexpected response format from provider. Try again or switch models.</string>
+
+    <!-- Voice input -->
+    <string name="voice_input_desc">Voice input</string>
+    <string name="voice_permission_denied">Microphone permission is required for voice input</string>
+    <string name="voice_not_available">Voice recognition is not available on this device</string>
 </resources>

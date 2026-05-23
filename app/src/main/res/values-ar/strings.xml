@@ -13,16 +13,22 @@
     <string name="delete_confirmation">هل أنت متأكد من حذف هذه المحادثة؟</string>
     <string name="delete_button">حذف</string>
     <string name="cancel_button">إلغاء</string>
+    <string name="search_placeholder">بحث في المحادثات…</string>
+    <string name="search_no_results">لم يتم العثور على محادثات</string>
 
     <!-- Chat screen -->
     <string name="chat_screen_title">محادثة</string>
     <string name="empty_chat">ابدأ محادثة\nاكتب رسالة في الأسفل.</string>
     <string name="message_placeholder">اكتب رسالتك…</string>
     <string name="send_button">إرسال</string>
+    <string name="stop_generation">إيقاف</string>
     <string name="dismiss_button">إغلاق</string>
     <string name="custom_prompt_title">أنشئ أسلوبك الخاص</string>
     <string name="custom_prompt_placeholder">مثلاً: \'كن معلّماً ودوداً يشرح كل شيء ببساطة\' أو \'أجب بالشعر فقط\'</string>
     <string name="confirm_button">تأكيد</string>
+    <string name="export_conversation">تصدير المحادثة</string>
+    <string name="export_plain_text">نص عادي</string>
+    <string name="export_markdown">ماركداون</string>
 
     <!-- Settings screen -->
     <string name="settings_title">الإعدادات</string>
@@ -51,6 +57,7 @@
     <string name="language_system_default">إعدادات النظام</string>
     <string name="language_english">الإنجليزية</string>
     <string name="language_arabic">العربية</string>
+    <string name="language_thai">التايلاندية</string>
 
     <string name="instructions_title">كيف تحصل على مفتاح DeepSeek API</string>
     <string name="instructions_text">اذهب إلى platform.deepseek.com وسجّل الدخول أو أنشئ حساباً جديداً.\nأضف 5 دولارات إلى رصيدك (شحن) – هذه خدمة مدفوعة حسب الاستخدام.\nانتقل إلى قسم \"API Keys\".\nأنشئ مفتاح API جديداً وانسخه.\nالصق المفتاح أعلاه – سيتم تخزينه بشكل آمن على جهازك.\nمفتاحك يُستخدم فقط للتواصل مع DeepSeek، ولا تتم مشاركته مع أي جهة أخرى.</string>
@@ -118,6 +125,12 @@
     <string name="setup_step_2">٢. الصق مفتاح API الخاص بك</string>
     <string name="start_chatting">ابدأ المحادثة</string>
 
+    <!-- Image input -->
+    <string name="attach_image">إرفاق صورة</string>
+    <string name="remove_image">إزالة الصورة</string>
+    <string name="image_too_large">الصورة كبيرة جداً. الرجاء اختيار صورة أصغر.</string>
+    <string name="provider_no_vision">هذا المزود لا يدعم إرسال الصور</string>
+
     <!-- Error messages -->
     <string name="error_api_key_missing">مفتاح API غير مضبوط. الرجاء إضافة مفتاح API في الإعدادات.</string>
     <string name="error_empty_response">استجابة فارغة من الخادم.</string>
@@ -142,4 +155,9 @@
     <string name="error_empty_response_detail">أعاد الذكاء الاصطناعي استجابة فارغة. حاول إرسال رسالتك مرة أخرى.</string>
     <string name="error_conversation_not_found">تعذّر العثور على هذه المحادثة. ربما تم حذفها.</string>
     <string name="error_serialization">تنسيق استجابة غير متوقع من المزود. حاول مرة أخرى أو بدّل النموذج.</string>
+
+    <!-- Voice input -->
+    <string name="voice_input_desc">الإدخال الصوتي</string>
+    <string name="voice_permission_denied">يجب السماح بالوصول للميكروفون للإدخال الصوتي</string>
+    <string name="voice_not_available">التعرّف على الصوت غير متوفر على هذا الجهاز</string>
 </resources>

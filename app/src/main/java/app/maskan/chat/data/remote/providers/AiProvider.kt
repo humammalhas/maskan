@@ -9,6 +9,7 @@ interface AiProvider {
     val nameAr: String
     val defaultBaseUrl: String
     val supportsCustomBaseUrl: Boolean
+    val supportsVision: Boolean get() = false
     val availableModels: List<String>
     val defaultModel: String
     val keyAcquisitionUrl: String
@@ -18,13 +19,17 @@ interface AiProvider {
         apiKey: String,
         model: String,
         messages: List<Message>,
-        baseUrl: String? = null
+        baseUrl: String? = null,
+        imageData: ByteArray? = null,
+        imageMimeType: String? = null
     ): String
 
     fun sendMessageStreaming(
         apiKey: String,
         model: String,
         messages: List<Message>,
-        baseUrl: String? = null
+        baseUrl: String? = null,
+        imageData: ByteArray? = null,
+        imageMimeType: String? = null
     ): Flow<String>
 }

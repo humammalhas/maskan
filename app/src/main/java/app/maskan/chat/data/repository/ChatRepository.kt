@@ -1,5 +1,6 @@
 package app.maskan.chat.data.repository
 
+import android.util.Base64
 import app.maskan.chat.data.local.ConversationDao
 import app.maskan.chat.data.local.ConversationEntity
 import app.maskan.chat.data.local.FolderDao
@@ -13,6 +14,8 @@ import app.maskan.chat.data.remote.Message
 import app.maskan.chat.data.remote.providers.ProviderRegistry
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+
+enum class ExportFormat { PLAIN_TEXT, MARKDOWN }
 
 class ChatRepository(
     private val conversationDao: ConversationDao,
@@ -59,6 +62,19 @@ class ChatRepository(
         conversationDao.moveToFolder(conversationId, folderId)
     }
 
+    suspend fun searchConversations(query: String): List<ConversationEntity> {
+        val titleMatches = conversationDao.searchConversationsByTitle(query)
+        val messageMatchIds = messageDao.searchMessages(query)
+        val messageMatches = if (messageMatchIds.isNotEmpty()) {
+            conversationDao.getConversationsByIds(messageMatchIds)
+        } else {
+            emptyList()
+        }
+        return (titleMatches + messageMatches)
+            .distinctBy { it.id }
+            .sortedByDescending { it.createdAt }
+    }
+
     // ── Folders ────────────────────────────────────────────────────────
 
     fun getAllFolders(): Flow<List<FolderEntity>> = folderDao.getAll()
@@ -79,16 +95,57 @@ class ChatRepository(
         folderDao.delete(id)
     }
 
+    // ── Export ─────────────────────────────────────────────────────────
+
+    suspend fun exportConversation(conversationId: Long, format: ExportFormat): String {
+        val conversation = conversationDao.getConversationById(conversationId)
+        val title = conversation?.title ?: "Chat"
+        val messages = messageDao.getMessagesForConversationOnce(conversationId)
+            .filter { it.role != "system" }
+
+        return buildString {
+            appendLine("# $title")
+            appendLine()
+            when (format) {
+                ExportFormat.PLAIN_TEXT -> {
+                    for (msg in messages) {
+                        val label = if (msg.role == "user") "You" else "AI"
+                        appendLine("$label: ${msg.content}")
+                    }
+                }
+                ExportFormat.MARKDOWN -> {
+                    for ((index, msg) in messages.withIndex()) {
+                        val label = if (msg.role == "user") "**You:**" else "**AI:**"
+                        appendLine("$label ${msg.content}")
+                        appendLine()
+                        if (index < messages.lastIndex) {
+                            appendLine("---")
+                            appendLine()
+                        }
+                    }
+                }
+            }
+        }.trimEnd()
+    }
+
     // ── Messages ───────────────────────────────────────────────────────
 
     fun getMessagesForConversation(conversationId: Long): Flow<List<MessageEntity>> =
         messageDao.getMessagesForConversation(conversationId)
 
-    suspend fun saveMessage(conversationId: Long, role: String, content: String): Long {
+    suspend fun saveMessage(
+        conversationId: Long,
+        role: String,
+        content: String,
+        imageBase64: String? = null,
+        imageMimeType: String? = null
+    ): Long {
         val message = MessageEntity(
             conversationId = conversationId,
             role = role,
-            content = content
+            content = content,
+            imageBase64 = imageBase64,
+            imageMimeType = imageMimeType
         )
         return messageDao.insertMessage(message)
     }
@@ -178,7 +235,9 @@ class ChatRepository(
     fun sendMessageStreaming(
         conversationId: Long,
         userContent: String,
-        model: String = "deepseek-chat"
+        model: String = "deepseek-chat",
+        imageData: ByteArray? = null,
+        imageMimeType: String? = null
     ): Flow<StreamEvent> = flow {
         val conversation = conversationDao.getConversationById(conversationId)
             ?: throw Exception("Conversation not found")
@@ -197,7 +256,10 @@ class ChatRepository(
             }
         }
 
-        saveMessage(conversationId, "user", userContent)
+        val imageBase64ForStorage = imageData?.let {
+            Base64.encodeToString(it, Base64.NO_WRAP)
+        }
+        saveMessage(conversationId, "user", userContent, imageBase64ForStorage, imageMimeType)
 
         val messages = buildMessageList(conversationId)
 
@@ -219,8 +281,10 @@ class ChatRepository(
 
         try {
             val fullContent = StringBuilder()
-            provider.sendMessageStreaming(apiKey, effectiveModel, messages, storedBaseUrl)
-                .collect { token ->
+            provider.sendMessageStreaming(
+                apiKey, effectiveModel, messages, storedBaseUrl,
+                imageData, imageMimeType
+            ).collect { token ->
                     fullContent.append(token)
                     val snapshot = fullContent.toString()
                     messageDao.updateMessageContent(assistantMessageId, snapshot)
@@ -269,7 +333,7 @@ class ChatRepository(
 
             val storedBaseUrl = keyRepository.getBaseUrl(providerId)
             val model = keyRepository.getSelectedModel(providerId) ?: provider.defaultModel
-            val testMessages = listOf(Message(role = "user", content = "Hi"))
+            val testMessages = listOf(Message(role = "user", text = "Hi"))
 
             val response = provider.sendMessage(apiKey, model, testMessages, storedBaseUrl)
             Result.success(response)
@@ -280,7 +344,7 @@ class ChatRepository(
 
     private suspend fun buildMessageList(conversationId: Long): List<Message> {
         val entities = messageDao.getMessagesForConversationOnce(conversationId)
-        val messages = entities.map { Message(role = it.role, content = it.content) }
+        val messages = entities.map { Message(role = it.role, text = it.content) }
 
         val systemMessages = messages.filter { it.role == "system" }
         val nonSystemMessages = messages.filter { it.role != "system" }

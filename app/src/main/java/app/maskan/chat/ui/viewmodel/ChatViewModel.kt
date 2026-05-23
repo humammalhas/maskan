@@ -1,6 +1,8 @@
 package app.maskan.chat.ui.viewmodel
 
 import android.app.Application
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.maskan.chat.data.local.MessageEntity
@@ -8,9 +10,13 @@ import app.maskan.chat.data.local.Presets
 import app.maskan.chat.data.local.SystemPromptPreset
 import app.maskan.chat.data.model.Dialect
 import app.maskan.chat.data.remote.providers.ProviderRegistry
+import android.content.Intent
 import app.maskan.chat.data.repository.ChatRepository
+import app.maskan.chat.data.repository.ExportFormat
 import app.maskan.chat.data.repository.KeyRepository
 import app.maskan.chat.util.ErrorMapper
+import app.maskan.chat.util.ImageUtils
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,7 +31,9 @@ data class ChatUiState(
     val selectedProviderId: String = "deepseek",
     val selectedModel: String = ProviderRegistry.getDefaultProvider().defaultModel,
     val currentPreset: SystemPromptPreset? = null,
-    val presetSelected: Boolean = false
+    val presetSelected: Boolean = false,
+    val pendingImageBytes: ByteArray? = null,
+    val pendingImageMimeType: String? = null
 )
 
 class ChatViewModel(
@@ -39,9 +47,9 @@ class ChatViewModel(
 
     private var currentConversationId: Long = -1
     private var messageCollectionJob: kotlinx.coroutines.Job? = null
+    private var streamingJob: Job? = null
 
     fun loadConversation(conversationId: Long) {
-        // Always cancel previous collection and reset state to avoid stale data
         messageCollectionJob?.cancel()
         currentConversationId = conversationId
         _uiState.value = ChatUiState(
@@ -104,16 +112,57 @@ class ChatViewModel(
         }
     }
 
-    fun sendMessage(content: String) {
-        if (content.isBlank()) return
+    fun cancelGeneration() {
+        streamingJob?.cancel()
+        streamingJob = null
+        _uiState.value = _uiState.value.copy(isLoading = false, isStreaming = false)
+    }
 
+    fun attachImage(uri: Uri) {
         viewModelScope.launch {
+            try {
+                val (bytes, mimeType) = ImageUtils.compressImage(getApplication(), uri)
+                _uiState.value = _uiState.value.copy(
+                    pendingImageBytes = bytes,
+                    pendingImageMimeType = mimeType
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    error = ErrorMapper.mapToUserMessage(getApplication(), e)
+                )
+            }
+        }
+    }
+
+    fun clearPendingImage() {
+        _uiState.value = _uiState.value.copy(
+            pendingImageBytes = null,
+            pendingImageMimeType = null
+        )
+    }
+
+    fun currentProviderSupportsVision(): Boolean {
+        val provider = ProviderRegistry.getProvider(_uiState.value.selectedProviderId)
+        return provider?.supportsVision == true
+    }
+
+    fun sendMessage(content: String) {
+        if (content.isBlank() && _uiState.value.pendingImageBytes == null) return
+
+        val imageData = _uiState.value.pendingImageBytes
+        val imageMimeType = _uiState.value.pendingImageMimeType
+
+        clearPendingImage()
+
+        streamingJob = viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, isStreaming = false, error = null)
 
             chatRepository.sendMessageStreaming(
                 conversationId = currentConversationId,
                 userContent = content,
-                model = _uiState.value.selectedModel
+                model = _uiState.value.selectedModel,
+                imageData = imageData,
+                imageMimeType = imageMimeType
             ).catch { error ->
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
@@ -126,7 +175,6 @@ class ChatViewModel(
                         _uiState.value = _uiState.value.copy(isLoading = false, isStreaming = true)
                     }
                     is ChatRepository.StreamEvent.Token -> {
-                        // Room Flow auto-updates messages via getMessagesForConversation
                     }
                     is ChatRepository.StreamEvent.Done -> {
                         _uiState.value = _uiState.value.copy(isStreaming = false)
@@ -138,6 +186,22 @@ class ChatViewModel(
 
     fun setSelectedModel(model: String) {
         _uiState.value = _uiState.value.copy(selectedModel = model)
+    }
+
+    fun exportConversation(format: ExportFormat) {
+        viewModelScope.launch {
+            try {
+                val text = chatRepository.exportConversation(currentConversationId, format)
+                val intent = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, text)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                val chooser = Intent.createChooser(intent, null)
+                chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                getApplication<android.app.Application>().startActivity(chooser)
+            } catch (_: Exception) { }
+        }
     }
 
     fun clearError() {

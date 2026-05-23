@@ -1,6 +1,8 @@
 package app.maskan.chat.data.remote.providers
 
+import android.util.Base64
 import app.maskan.chat.data.remote.AnthropicMessage
+import app.maskan.chat.data.remote.AnthropicMessageContent
 import app.maskan.chat.data.remote.AnthropicRequest
 import app.maskan.chat.data.remote.AnthropicService
 import app.maskan.chat.data.remote.AnthropicStreamEvent
@@ -19,6 +21,7 @@ class AnthropicProvider(
     override val nameAr: String = config.nameAr
     override val defaultBaseUrl: String = config.baseUrl
     override val supportsCustomBaseUrl: Boolean = false
+    override val supportsVision: Boolean = config.supportsVision
     override val availableModels: List<String> = config.models
     override val defaultModel: String = config.defaultModel
     override val keyAcquisitionUrl: String = config.keyAcquisitionUrl
@@ -26,15 +29,39 @@ class AnthropicProvider(
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
-    private fun buildRequest(model: String, messages: List<Message>, stream: Boolean): Pair<String?, AnthropicRequest> {
+    private fun buildRequest(
+        model: String,
+        messages: List<Message>,
+        stream: Boolean,
+        imageData: ByteArray?,
+        imageMimeType: String?
+    ): Pair<String?, AnthropicRequest> {
         val systemPrompt = messages
             .filter { it.role == "system" }
-            .joinToString("\n") { it.content }
+            .joinToString("\n") { it.content.textContent() }
             .takeIf { it.isNotBlank() }
 
         val conversationMessages = messages
             .filter { it.role != "system" }
-            .map { AnthropicMessage(role = it.role, content = it.content) }
+            .mapIndexed { index, msg ->
+                val isLastUser = index == messages.filter { it.role != "system" }.indexOfLast { it.role == "user" }
+                if (isLastUser && msg.role == "user" && imageData != null && imageMimeType != null) {
+                    val base64 = Base64.encodeToString(imageData, Base64.NO_WRAP)
+                    AnthropicMessage(
+                        role = msg.role,
+                        content = AnthropicMessageContent.WithImage(
+                            text = msg.content.textContent(),
+                            imageBase64 = base64,
+                            mimeType = imageMimeType
+                        )
+                    )
+                } else {
+                    AnthropicMessage(
+                        role = msg.role,
+                        content = AnthropicMessageContent.Text(msg.content.textContent())
+                    )
+                }
+            }
 
         return systemPrompt to AnthropicRequest(
             model = model,
@@ -49,9 +76,11 @@ class AnthropicProvider(
         apiKey: String,
         model: String,
         messages: List<Message>,
-        baseUrl: String?
+        baseUrl: String?,
+        imageData: ByteArray?,
+        imageMimeType: String?
     ): String {
-        val (_, request) = buildRequest(model, messages, stream = false)
+        val (_, request) = buildRequest(model, messages, stream = false, imageData, imageMimeType)
 
         val response = apiService.createMessage(
             apiKey = apiKey,
@@ -74,9 +103,11 @@ class AnthropicProvider(
         apiKey: String,
         model: String,
         messages: List<Message>,
-        baseUrl: String?
+        baseUrl: String?,
+        imageData: ByteArray?,
+        imageMimeType: String?
     ): Flow<String> {
-        val (_, request) = buildRequest(model, messages, stream = true)
+        val (_, request) = buildRequest(model, messages, stream = true, imageData, imageMimeType)
         val call = apiService.createMessageStream(
             apiKey = apiKey,
             request = request

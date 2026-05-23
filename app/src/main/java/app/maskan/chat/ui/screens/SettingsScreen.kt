@@ -93,7 +93,8 @@ fun SettingsScreen(
     val languageOptions = listOf(
         LanguageOption("", stringResource(R.string.language_system_default)),
         LanguageOption("en", stringResource(R.string.language_english)),
-        LanguageOption("ar", stringResource(R.string.language_arabic))
+        LanguageOption("ar", stringResource(R.string.language_arabic)),
+        LanguageOption("th", stringResource(R.string.language_thai))
     )
 
     Scaffold(

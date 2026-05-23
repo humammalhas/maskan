@@ -30,5 +30,8 @@ interface MessageDao {
 
     @Query("DELETE FROM messages WHERE conversationId = :conversationId")
     suspend fun deleteMessagesForConversation(conversationId: Long)
+
+    @Query("SELECT DISTINCT conversationId FROM messages WHERE content LIKE '%' || :query || '%' AND role != 'system'")
+    suspend fun searchMessages(query: String): List<Long>
 }
 

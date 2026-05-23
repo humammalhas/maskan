@@ -1,9 +1,18 @@
 package app.maskan.chat.ui.screens
 
+import android.Manifest
+import android.graphics.BitmapFactory
+import android.util.Base64
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,6 +33,9 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -40,6 +53,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -49,15 +63,22 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import app.maskan.chat.MaskanApplication
 import app.maskan.chat.R
 import app.maskan.chat.data.local.MessageEntity
 import app.maskan.chat.data.local.localizedName
 import app.maskan.chat.data.repository.PreferenceRepository
 import app.maskan.chat.ui.theme.maskanColors
+import app.maskan.chat.data.repository.ExportFormat
 import app.maskan.chat.ui.viewmodel.ChatViewModel
+import app.maskan.chat.util.SpeechHelper
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -74,6 +95,15 @@ fun ChatScreen(
     var inputText by rememberSaveable { mutableStateOf("") }
     val listState = rememberLazyListState()
     var showCustomPromptDialog by remember { mutableStateOf(false) }
+    var showExportDialog by remember { mutableStateOf(false) }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) {
+            viewModel.attachImage(uri)
+        }
+    }
 
     LaunchedEffect(conversationId) {
         viewModel.loadConversation(conversationId)
@@ -85,6 +115,16 @@ fun ChatScreen(
         if (visibleMessages.isNotEmpty()) {
             listState.animateScrollToItem(visibleMessages.size - 1)
         }
+    }
+
+    if (showExportDialog) {
+        ExportFormatDialog(
+            onSelect = { format ->
+                showExportDialog = false
+                viewModel.exportConversation(format)
+            },
+            onDismiss = { showExportDialog = false }
+        )
     }
 
     if (showCustomPromptDialog) {
@@ -122,6 +162,16 @@ fun ChatScreen(
                             contentDescription = stringResource(R.string.back_button)
                         )
                     }
+                },
+                actions = {
+                    if (visibleMessages.isNotEmpty()) {
+                        IconButton(onClick = { showExportDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = stringResource(R.string.export_conversation)
+                            )
+                        }
+                    }
                 }
             )
         },
@@ -141,22 +191,37 @@ fun ChatScreen(
         },
         bottomBar = {
             if (uiState.presetSelected) {
-                MessageInputBar(
-                    text = inputText,
-                    onTextChange = { inputText = it },
-                    onSend = {
-                        if (inputText.isNotBlank()) {
-                            viewModel.sendMessage(inputText)
-                            inputText = ""
-                        }
-                    },
-                    isLoading = uiState.isLoading || uiState.isStreaming
-                )
+                Column {
+                    uiState.pendingImageBytes?.let { bytes ->
+                        ImagePreview(
+                            imageBytes = bytes,
+                            onRemove = { viewModel.clearPendingImage() }
+                        )
+                    }
+                    MessageInputBar(
+                        text = inputText,
+                        onTextChange = { inputText = it },
+                        onSend = {
+                            if (inputText.isNotBlank() || uiState.pendingImageBytes != null) {
+                                viewModel.sendMessage(inputText)
+                                inputText = ""
+                            }
+                        },
+                        onStop = { viewModel.cancelGeneration() },
+                        isLoading = uiState.isLoading || uiState.isStreaming,
+                        showAttachButton = viewModel.currentProviderSupportsVision(),
+                        onAttach = {
+                            photoPickerLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        },
+                        hasImage = uiState.pendingImageBytes != null
+                    )
+                }
             }
         }
     ) { paddingValues ->
         if (uiState.isLoading && visibleMessages.isEmpty() && !uiState.presetSelected) {
-            // Show spinner while loading to avoid black flash on chat transition
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -211,6 +276,44 @@ fun ChatScreen(
                         isUser = message.role == "user"
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ImagePreview(
+    imageBytes: ByteArray,
+    onRemove: () -> Unit
+) {
+    val bitmap = remember(imageBytes) {
+        BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+    }
+    if (bitmap != null) {
+        Box(
+            modifier = Modifier
+                .padding(start = 12.dp, end = 12.dp, bottom = 4.dp)
+        ) {
+            Image(
+                bitmap = bitmap.asImageBitmap(),
+                contentDescription = stringResource(R.string.attach_image),
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+                contentScale = ContentScale.Crop
+            )
+            IconButton(
+                onClick = onRemove,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .size(24.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = stringResource(R.string.remove_image),
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(16.dp)
+                )
             }
         }
     }
@@ -287,12 +390,34 @@ private fun MessageBubble(
                 ),
                 colors = CardDefaults.cardColors(containerColor = backgroundColor)
             ) {
-                SelectionContainer {
-                    Text(
-                        text = message.content,
-                        modifier = Modifier.padding(12.dp),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                Column(modifier = Modifier.padding(12.dp)) {
+                    message.imageBase64?.let { base64 ->
+                        val bitmap = remember(base64) {
+                            try {
+                                val bytes = Base64.decode(base64, Base64.NO_WRAP)
+                                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                            } catch (_: Exception) { null }
+                        }
+                        bitmap?.let {
+                            Image(
+                                bitmap = it.asImageBitmap(),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .widthIn(max = 200.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .padding(bottom = if (message.content.isNotBlank()) 8.dp else 0.dp),
+                                contentScale = ContentScale.FillWidth
+                            )
+                        }
+                    }
+                    if (message.content.isNotBlank()) {
+                        SelectionContainer {
+                            Text(
+                                text = message.content,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
                 }
             }
             Text(
@@ -310,17 +435,108 @@ private fun MessageInputBar(
     text: String,
     onTextChange: (String) -> Unit,
     onSend: () -> Unit,
-    isLoading: Boolean
+    onStop: () -> Unit,
+    isLoading: Boolean,
+    showAttachButton: Boolean = false,
+    onAttach: () -> Unit = {},
+    hasImage: Boolean = false
 ) {
+    val context = LocalContext.current
+    val app = context.applicationContext as MaskanApplication
+    val speechHelper = remember { SpeechHelper(context) }
+    var isListening by remember { mutableStateOf(false) }
+    var partialText by remember { mutableStateOf("") }
+
+    DisposableEffect(Unit) {
+        onDispose { speechHelper.destroy() }
+    }
+
+    val speechLocale = remember {
+        val code = app.localeRepository.getLocale()
+        when (code) {
+            "ar" -> Locale.forLanguageTag("ar")
+            "th" -> Locale.forLanguageTag("th")
+            "en" -> Locale.forLanguageTag("en")
+            else -> Locale.getDefault()
+        }
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            isListening = true
+            partialText = ""
+            speechHelper.startListening(
+                locale = speechLocale,
+                onPartialResult = { partial -> partialText = partial },
+                onResult = { result ->
+                    val appended = if (text.isEmpty()) result else "$text $result"
+                    onTextChange(appended)
+                    isListening = false
+                    partialText = ""
+                },
+                onError = {
+                    isListening = false
+                    partialText = ""
+                }
+            )
+        } else {
+            Toast.makeText(context, context.getString(R.string.voice_permission_denied), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    val displayText = if (isListening && partialText.isNotEmpty()) {
+        if (text.isEmpty()) partialText else "$text $partialText"
+    } else {
+        text
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        if (showAttachButton && !isLoading) {
+            IconButton(
+                onClick = onAttach,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = stringResource(R.string.attach_image),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+        IconButton(
+            onClick = {
+                if (!speechHelper.isAvailable) {
+                    Toast.makeText(context, context.getString(R.string.voice_not_available), Toast.LENGTH_SHORT).show()
+                    return@IconButton
+                }
+                if (isListening) {
+                    speechHelper.stopListening()
+                    isListening = false
+                    partialText = ""
+                } else {
+                    permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                }
+            },
+            enabled = !isLoading,
+            modifier = Modifier.size(40.dp)
+        ) {
+            Text(
+                text = if (isListening) "⏹" else "🎙",
+                style = MaterialTheme.typography.titleMedium,
+                color = if (isListening) MaterialTheme.colorScheme.error
+                else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         OutlinedTextField(
-            value = text,
-            onValueChange = onTextChange,
+            value = displayText,
+            onValueChange = { if (!isListening) onTextChange(it) },
             modifier = Modifier.weight(1f),
             placeholder = { Text(stringResource(R.string.message_placeholder)) },
             shape = RoundedCornerShape(24.dp),
@@ -332,23 +548,26 @@ private fun MessageInputBar(
             keyboardActions = KeyboardActions(onSend = { if (!isLoading) onSend() }),
             singleLine = false,
             maxLines = 5,
-            enabled = !isLoading
+            enabled = !isLoading && !isListening
         )
         Spacer(modifier = Modifier.width(8.dp))
-        IconButton(
-            onClick = onSend,
-            enabled = text.isNotBlank() && !isLoading
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.height(24.dp).width(24.dp),
-                    strokeWidth = 2.dp
+        if (isLoading) {
+            IconButton(onClick = onStop) {
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = stringResource(R.string.stop_generation),
+                    tint = MaterialTheme.colorScheme.error
                 )
-            } else {
+            }
+        } else {
+            IconButton(
+                onClick = onSend,
+                enabled = text.isNotBlank() || hasImage
+            ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Send,
                     contentDescription = stringResource(R.string.send_button),
-                    tint = if (text.isNotBlank())
+                    tint = if (text.isNotBlank() || hasImage)
                         MaterialTheme.colorScheme.primary
                     else
                         MaterialTheme.colorScheme.onSurfaceVariant
@@ -356,6 +575,33 @@ private fun MessageInputBar(
             }
         }
     }
+}
+
+@Composable
+private fun ExportFormatDialog(
+    onSelect: (ExportFormat) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.export_conversation)) },
+        text = {
+            Column {
+                TextButton(onClick = { onSelect(ExportFormat.PLAIN_TEXT) }) {
+                    Text(stringResource(R.string.export_plain_text))
+                }
+                TextButton(onClick = { onSelect(ExportFormat.MARKDOWN) }) {
+                    Text(stringResource(R.string.export_markdown))
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel_button))
+            }
+        }
+    )
 }
 
 private val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())

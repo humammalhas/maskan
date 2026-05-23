@@ -24,10 +24,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChatBubble
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CreateNewFolder
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
@@ -37,12 +40,15 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -53,6 +59,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
@@ -129,6 +137,9 @@ fun ConversationListScreen(
     onNavigateToSettings: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val searchResults by viewModel.searchResults.collectAsState()
+    val isSearchActive by viewModel.isSearchActive.collectAsState()
     var showNewFolderDialog by rememberSaveable { mutableStateOf(false) }
     var folderToRename by remember { mutableStateOf<FolderEntity?>(null) }
     var folderToDeleteId by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -144,20 +155,58 @@ fun ConversationListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.conversation_list_title)) },
+                title = {
+                    if (isSearchActive) {
+                        val focusRequester = remember { FocusRequester() }
+                        LaunchedEffect(Unit) { focusRequester.requestFocus() }
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { viewModel.updateSearchQuery(it) },
+                            placeholder = { Text(stringResource(R.string.search_placeholder)) },
+                            singleLine = true,
+                            shape = RoundedCornerShape(24.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = Color.Transparent,
+                                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .focusRequester(focusRequester)
+                        )
+                    } else {
+                        Text(stringResource(R.string.conversation_list_title))
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.maskanColors.warmPeach),
                 actions = {
-                    IconButton(onClick = { showNewFolderDialog = true }) {
-                        Icon(
-                            imageVector = Icons.Default.CreateNewFolder,
-                            contentDescription = stringResource(R.string.new_folder)
-                        )
-                    }
-                    IconButton(onClick = onNavigateToSettings) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = stringResource(R.string.settings_title)
-                        )
+                    if (isSearchActive) {
+                        IconButton(onClick = { viewModel.clearSearch() }) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = stringResource(R.string.cancel_button)
+                            )
+                        }
+                    } else {
+                        IconButton(onClick = { viewModel.activateSearch() }) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = stringResource(R.string.search_placeholder)
+                            )
+                        }
+                        IconButton(onClick = { showNewFolderDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Default.CreateNewFolder,
+                                contentDescription = stringResource(R.string.new_folder)
+                            )
+                        }
+                        IconButton(onClick = onNavigateToSettings) {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = stringResource(R.string.settings_title)
+                            )
+                        }
                     }
                 }
             )
@@ -183,7 +232,38 @@ fun ConversationListScreen(
             }
         }
     ) { paddingValues ->
-        if (conversations.isEmpty() && folders.isEmpty()) {
+        if (isSearchActive && searchQuery.isNotBlank()) {
+            if (searchResults.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = stringResource(R.string.search_no_results),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    items(items = searchResults, key = { it.id }) { conversation ->
+                        ConversationCard(
+                            conversation = conversation,
+                            onClick = { onNavigateToChat(conversation.id) },
+                            onDelete = { viewModel.deleteConversation(conversation.id) },
+                            onMoveToFolder = { conversationToMove = conversation }
+                        )
+                    }
+                    item { Spacer(modifier = Modifier.height(80.dp)) }
+                }
+            }
+        } else if (conversations.isEmpty() && folders.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize().padding(paddingValues),
                 contentAlignment = Alignment.Center

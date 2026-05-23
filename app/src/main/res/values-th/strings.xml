@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App name -->
+    <string name="app_name">Maskan</string>
+
+    <!-- Conversation list screen -->
+    <string name="conversation_list_title">Maskan</string>
+    <string name="new_conversation_desc">บทสนทนาใหม่</string>
+    <string name="empty_conversations">เริ่มแชทส่วนตัวครั้งแรกของคุณ</string>
+    <string name="empty_conversations_subtitle">บทสนทนาของคุณถูกเข้ารหัสและเก็บไว้บนอุปกรณ์นี้เท่านั้น</string>
+    <string name="empty_conversations_hint">แตะ + ด้านล่างเพื่อเริ่มต้น ↓</string>
+    <string name="delete_conversation_title">ลบบทสนทนา?</string>
+    <string name="delete_confirmation">คุณแน่ใจหรือไม่ว่าต้องการลบบทสนทนานี้?</string>
+    <string name="delete_button">ลบ</string>
+    <string name="cancel_button">ยกเลิก</string>
+
+    <!-- Chat screen -->
+    <string name="chat_screen_title">แชท</string>
+    <string name="empty_chat">เริ่มบทสนทนา\nพิมพ์ข้อความด้านล่าง</string>
+    <string name="message_placeholder">พิมพ์ข้อความ…</string>
+    <string name="send_button">ส่ง</string>
+    <string name="stop_generation">หยุด</string>
+    <string name="dismiss_button">ปิด</string>
+    <string name="custom_prompt_title">สร้างสไตล์ของคุณเอง</string>
+    <string name="custom_prompt_placeholder">เช่น \'เป็นครูที่เป็นมิตรและอธิบายทุกอย่างให้เข้าใจง่าย\' หรือ \'ตอบเป็นบทกวีเท่านั้น\'</string>
+    <string name="confirm_button">ยืนยัน</string>
+    <string name="export_conversation">ส่งออกแชท</string>
+    <string name="export_plain_text">ข้อความธรรมดา</string>
+    <string name="export_markdown">มาร์กดาวน์</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">การตั้งค่า</string>
+    <string name="back_button">ย้อนกลับ</string>
+
+    <string name="api_key_section">API Key</string>
+    <string name="api_key_label">DeepSeek API Key</string>
+    <string name="api_key_placeholder">sk-…</string>
+    <string name="show_key">แสดง</string>
+    <string name="hide_key">ซ่อน</string>
+    <string name="save_key_button">บันทึก Key</string>
+    <string name="key_saved_confirmation">บันทึก API Key อย่างปลอดภัยแล้ว</string>
+    <string name="test_connection_button">ทดสอบการเชื่อมต่อ</string>
+    <string name="test_connection_success">เชื่อมต่อสำเร็จ!</string>
+    <string name="test_connection_testing">กำลังทดสอบ…</string>
+
+    <!-- Provider selection -->
+    <string name="provider_section">ผู้ให้บริการ AI</string>
+    <string name="provider_label">ผู้ให้บริการ</string>
+
+    <string name="model_section">โมเดล</string>
+    <string name="model_label">โมเดล</string>
+
+    <string name="language_section">ภาษา</string>
+    <string name="language_label">ภาษา</string>
+    <string name="language_system_default">ค่าเริ่มต้นของระบบ</string>
+    <string name="language_english">อังกฤษ</string>
+    <string name="language_arabic">อาหรับ</string>
+    <string name="language_thai">ไทย</string>
+
+    <string name="instructions_title">วิธีรับ DeepSeek API Key</string>
+    <string name="instructions_text">ไปที่ platform.deepseek.com แล้วสมัครสมาชิกหรือเข้าสู่ระบบ\nเติมเงินเข้าบัญชีของคุณ — บริการนี้คิดค่าบริการตามการใช้งาน\nไปที่ส่วน \"API Keys\"\nสร้าง API Key ใหม่แล้วคัดลอก\nวาง Key ด้านบน — จะถูกเก็บอย่างปลอดภัยบนอุปกรณ์ของคุณ\nKey ของคุณใช้สำหรับสื่อสารกับ DeepSeek เท่านั้น ไม่มีการแชร์กับที่อื่น</string>
+
+    <!-- Preset picker -->
+    <string name="preset_picker_title">วันนี้ให้ช่วยอะไรดีครับ?</string>
+    <string name="dialect_picker_title">เลือกสำเนียงสำหรับบทสนทนานี้</string>
+
+    <!-- Folders -->
+    <string name="folders">โฟลเดอร์</string>
+    <string name="new_folder">โฟลเดอร์ใหม่</string>
+    <string name="move_to_folder">ย้ายไปยังโฟลเดอร์</string>
+    <string name="unfiled">ไม่ได้จัดหมวดหมู่</string>
+    <string name="rename_folder">เปลี่ยนชื่อโฟลเดอร์</string>
+    <string name="delete_folder">ลบโฟลเดอร์</string>
+    <string name="delete_folder_title">ลบโฟลเดอร์?</string>
+    <string name="delete_folder_confirm_detail">ลบ \'%1$s\' และบทสนทนา %2$d รายการภายในหรือไม่? การดำเนินการนี้ไม่สามารถย้อนกลับได้</string>
+    <string name="change_color">เปลี่ยนสี</string>
+    <string name="folder_name_hint">ชื่อโฟลเดอร์</string>
+    <string name="create_button">สร้าง</string>
+    <string name="save_button">บันทึก</string>
+    <string name="empty_folder">ยังไม่มีบทสนทนา — กดค้างที่แชทเพื่อย้ายเข้ามา</string>
+    <string name="create_new_folder">สร้างโฟลเดอร์ใหม่…</string>
+
+    <!-- About & Security -->
+    <string name="about_title">เกี่ยวกับแอปและความเป็นส่วนตัว</string>
+    <string name="about_app_identity">Maskan (มัสกัน) — แชท AI ส่วนตัว</string>
+    <string name="about_version">เวอร์ชัน %1$s</string>
+    <string name="about_security_header">ความปลอดภัยและความเป็นส่วนตัว</string>
+    <string name="about_security_aes">API Key ของคุณถูกเข้ารหัสด้วย AES-256-GCM ผ่าน Android Keystore</string>
+    <string name="about_security_local_only">บทสนทนาของคุณถูกเก็บไว้บนอุปกรณ์นี้เท่านั้น</string>
+    <string name="about_security_network_locked">การเชื่อมต่อเครือข่ายจำกัดเฉพาะผู้ให้บริการที่เปิดใช้งาน — ล็อกที่ระดับการตั้งค่าความปลอดภัยเครือข่าย</string>
+    <string name="about_security_no_tracking">ไม่มีการวิเคราะห์ ไม่มีรายงานข้อผิดพลาด ไม่มีตัวติดตาม</string>
+    <string name="about_security_foss">โอเพนซอร์ส สัญญาอนุญาตซอฟต์แวร์เสรี</string>
+    <string name="about_view_source">ดูซอร์สโค้ด</string>
+    <string name="about_report_bug">รายงานข้อผิดพลาด</string>
+    <string name="about_license">สัญญาอนุญาต</string>
+    <string name="about_back">ย้อนกลับ</string>
+    <string name="settings_encrypted_caption">🔒 เข้ารหัสบนอุปกรณ์ของคุณ (AES-256-GCM)</string>
+    <string name="settings_about_link">เกี่ยวกับแอปและความเป็นส่วนตัว</string>
+    <string name="api_key_hint_banner">รับ DeepSeek API Key ฟรีได้ที่ platform.deepseek.com — จะถูกเข้ารหัสและเก็บไว้บนอุปกรณ์ของคุณ</string>
+    <string name="api_key_hint_banner_provider">รับ %1$s API Key ได้ที่ %2$s — จะถูกเข้ารหัสและเก็บไว้บนอุปกรณ์ของคุณ</string>
+    <string name="server_url_label">URL เซิร์ฟเวอร์</string>
+    <string name="save_url_button">บันทึก URL</string>
+    <string name="api_key_optional_hint">ไม่บังคับ — เว้นว่างไว้หากเซิร์ฟเวอร์ของคุณไม่ต้องการการยืนยันตัวตน</string>
+    <string name="server_url_hint">ป้อนที่อยู่ IP ของคอมพิวเตอร์พร้อมหมายเลขพอร์ต</string>
+    <string name="custom_model_id_label">ID โมเดลกำหนดเอง</string>
+    <string name="custom_model_id_hint">พิมพ์ ID โมเดลใดก็ได้จาก openrouter.ai/models</string>
+    <string name="model_name_label">ชื่อโมเดล</string>
+    <string name="local_model_name_hint">พิมพ์ชื่อโมเดลที่ติดตั้งบนเซิร์ฟเวอร์ของคุณ</string>
+    <string name="default_dialect_label">สำเนียงการแปลเริ่มต้น</string>
+    <string name="dialect_label">สำเนียง</string>
+    <string name="instructions_title_provider">วิธีรับ %1$s API Key</string>
+
+    <!-- Welcome screen -->
+    <string name="welcome_tagline">แชท AI ส่วนตัว Key ของคุณ อุปกรณ์ของคุณ</string>
+    <string name="welcome_feature_encrypted">API Key ของคุณถูกเข้ารหัสบนอุปกรณ์</string>
+    <string name="welcome_feature_no_tracking">ไม่มีตัวติดตาม ไม่มีการวิเคราะห์ ไม่มีการเก็บข้อมูล</string>
+    <string name="welcome_feature_arabic_first">ออกแบบเพื่อภาษาอาหรับเป็นหลัก พร้อมรองรับสำเนียง</string>
+    <string name="welcome_get_started">เริ่มต้นใช้งาน</string>
+
+    <!-- First-launch setup -->
+    <string name="setup_steps_title">ตั้งค่าใน 2 ขั้นตอน:</string>
+    <string name="setup_step_1">1. เลือกผู้ให้บริการ AI</string>
+    <string name="setup_step_2">2. วาง API Key ของคุณ</string>
+    <string name="start_chatting">เริ่มแชท</string>
+
+    <!-- Image input -->
+    <string name="attach_image">แนบรูปภาพ</string>
+    <string name="remove_image">ลบรูปภาพ</string>
+    <string name="image_too_large">รูปภาพใหญ่เกินไป กรุณาเลือกรูปที่เล็กกว่า</string>
+    <string name="provider_no_vision">ผู้ให้บริการนี้ไม่รองรับการส่งรูปภาพ</string>
+
+    <!-- Error messages -->
+    <string name="error_api_key_missing">ยังไม่ได้ตั้งค่า API Key กรุณาเพิ่ม API Key ในการตั้งค่า</string>
+    <string name="error_empty_response">การตอบกลับจาก API ว่างเปล่า</string>
+    <string name="error_unknown">เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ</string>
+    <string name="error_network">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต</string>
+
+    <!-- Detailed error messages -->
+    <string name="error_auth_invalid">API Key ถูกปฏิเสธ กรุณาตรวจสอบในการตั้งค่า</string>
+    <string name="error_auth_expired">API Key หมดอายุแล้ว กรุณาสร้าง Key ใหม่จากแดชบอร์ดของผู้ให้บริการ</string>
+    <string name="error_rate_limit">ส่งคำขอมากเกินไป กรุณารอสักครู่แล้วลองใหม่</string>
+    <string name="error_insufficient_quota">เครดิต API ของคุณหมดแล้ว กรุณาเติมเงินที่เว็บไซต์ผู้ให้บริการ</string>
+    <string name="error_model_not_found">โมเดลที่เลือกไม่พร้อมใช้งาน กรุณาลองโมเดลอื่นในการตั้งค่า</string>
+    <string name="error_request_too_large">ข้อความของคุณยาวเกินไปสำหรับโมเดลนี้ กรุณาลองย่อให้สั้นลง</string>
+    <string name="error_server_error">ผู้ให้บริการ AI กำลังมีปัญหา กรุณาลองใหม่ในอีกสักครู่</string>
+    <string name="error_server_overloaded">ผู้ให้บริการ AI มีภาระงานหนัก กรุณาลองใหม่ในอีกสักครู่</string>
+    <string name="error_timeout">คำขอใช้เวลานานเกินไป กรุณาตรวจสอบการเชื่อมต่อแล้วลองใหม่</string>
+    <string name="error_no_internet">ไม่มีการเชื่อมต่ออินเทอร์เน็ต กรุณาตรวจสอบ Wi-Fi หรือข้อมูลมือถือ</string>
+    <string name="error_dns_failed">ไม่สามารถเข้าถึงเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต</string>
+    <string name="error_connection_refused">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ ผู้ให้บริการอาจหยุดทำงาน หรือกรุณาตรวจสอบ URL เซิร์ฟเวอร์ในการตั้งค่า</string>
+    <string name="error_ssl">การเชื่อมต่อที่ปลอดภัยล้มเหลว หากใช้เซิร์ฟเวอร์ภายใน กรุณาตรวจสอบการตั้งค่า URL</string>
+    <string name="error_provider_not_found">ไม่รู้จักผู้ให้บริการ AI กรุณาตั้งค่าใหม่ในการตั้งค่า</string>
+    <string name="error_empty_response_detail">AI ส่งการตอบกลับว่างเปล่า กรุณาลองส่งข้อความอีกครั้ง</string>
+    <string name="error_conversation_not_found">ไม่พบบทสนทนานี้ อาจถูกลบไปแล้ว</string>
+    <string name="error_serialization">รูปแบบการตอบกลับจากผู้ให้บริการไม่ถูกต้อง กรุณาลองใหม่หรือเปลี่ยนโมเดล</string>
+
+    <!-- Voice input -->
+    <string name="voice_input_desc">สั่งงานด้วยเสียง</string>
+    <string name="voice_permission_denied">ต้องอนุญาตการใช้ไมโครโฟนสำหรับการสั่งงานด้วยเสียง</string>
+    <string name="voice_not_available">การรู้จำเสียงไม่สามารถใช้ได้บนอุปกรณ์นี้</string>
+</resources>

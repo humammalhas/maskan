@@ -18,29 +18,44 @@ data class SystemPromptPreset(
     val id: String,
     val nameEn: String,
     val nameAr: String,
+    val nameTh: String = "",
     val descriptionEn: String,
     val descriptionAr: String,
+    val descriptionTh: String = "",
     val systemPromptEn: String,
     val systemPromptAr: String,
+    val systemPromptTh: String = "",
     val category: PresetCategory,
     val icon: String
 )
 
 @Composable
-fun SystemPromptPreset.localizedName(): String =
-    if (isAppArabic()) nameAr else nameEn
+fun SystemPromptPreset.localizedName(): String = when {
+    isAppThai() && nameTh.isNotEmpty() -> nameTh
+    isAppArabic() -> nameAr
+    else -> nameEn
+}
 
 @Composable
-fun SystemPromptPreset.localizedDescription(): String =
-    if (isAppArabic()) descriptionAr else descriptionEn
+fun SystemPromptPreset.localizedDescription(): String = when {
+    isAppThai() && descriptionTh.isNotEmpty() -> descriptionTh
+    isAppArabic() -> descriptionAr
+    else -> descriptionEn
+}
 
 @Composable
-fun isAppArabic(): Boolean {
+private fun getAppLanguage(): String? {
     val context = LocalContext.current
     return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         val localeManager = context.getSystemService(LocaleManager::class.java)
-        localeManager?.applicationLocales?.get(0)?.language == "ar"
+        localeManager?.applicationLocales?.get(0)?.language
     } else {
-        AppCompatDelegate.getApplicationLocales().get(0)?.language == "ar"
+        AppCompatDelegate.getApplicationLocales().get(0)?.language
     }
 }
+
+@Composable
+fun isAppArabic(): Boolean = getAppLanguage() == "ar"
+
+@Composable
+fun isAppThai(): Boolean = getAppLanguage() == "th"

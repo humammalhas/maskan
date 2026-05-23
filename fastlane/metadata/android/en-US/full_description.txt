@@ -7,10 +7,17 @@ Your conversations stay on your device. Your API keys are encrypted with AES-256
 Features:
 • 11 AI providers supported (cloud and local)
 • Bring Your Own Key (BYOK) — no subscriptions, no proxy server
+• Image input — send photos to vision-capable models (GPT-4, Claude, Gemini)
+• Voice input — speech-to-text in Arabic, English, and Thai
+• Export conversations as plain text or markdown
+• Search conversations by title and message content
+• Stop generation — cancel AI responses mid-stream
+• 3 languages — English, Arabic, Thai
 • All API keys encrypted on device
 • Conversation history stored locally only
 • 12 system prompt presets
 • Dialect-aware Arabic translation (MSA, Levantine, Egyptian, Gulf, Maghrebi)
+• English↔Thai translation presets
 • Classical Arabic literary helper
 • Folder organization with custom pastel colors
 • Full Arabic UI with RTL layout

@@ -10,7 +10,7 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 
 @Database(
     entities = [ConversationEntity::class, MessageEntity::class, FolderEntity::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -29,6 +29,13 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE messages ADD COLUMN imageBase64 TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE messages ADD COLUMN imageMimeType TEXT DEFAULT NULL")
+            }
+        }
+
         fun getInstance(context: Context, passphrase: ByteArray): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val factory = SupportOpenHelperFactory(passphrase)
@@ -38,7 +45,7 @@ abstract class AppDatabase : RoomDatabase() {
                     "privacyai_database"
                 )
                     .openHelperFactory(factory)
-                    .addMigrations(MIGRATION_3_4)
+                    .addMigrations(MIGRATION_3_4, MIGRATION_4_5)
                     .build()
                 INSTANCE = instance
                 instance

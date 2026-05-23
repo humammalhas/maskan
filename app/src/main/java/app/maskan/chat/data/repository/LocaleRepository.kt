@@ -12,6 +12,7 @@ import java.util.Locale
  * - "" (empty string) = follow system default
  * - "en" = English
  * - "ar" = Arabic
+ * - "th" = Thai
  */
 class LocaleRepository(context: Context) {
 
@@ -20,7 +21,7 @@ class LocaleRepository(context: Context) {
 
     /**
      * Save the user's language choice.
-     * @param localeCode ISO 639-1 code ("en", "ar") or empty string for system default.
+     * @param localeCode ISO 639-1 code ("en", "ar", "th") or empty string for system default.
      */
     fun saveLocale(localeCode: String) {
         sharedPreferences.edit().putString(KEY_LOCALE, localeCode).apply()
@@ -42,6 +43,7 @@ class LocaleRepository(context: Context) {
         return when (code) {
             "en" -> Locale.forLanguageTag("en")
             "ar" -> Locale.forLanguageTag("ar")
+            "th" -> Locale.forLanguageTag("th")
             else -> null // null means follow system default
         }
     }

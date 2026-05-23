@@ -37,9 +37,16 @@ Your API keys are encrypted with AES-256-GCM on device. Your conversations never
 - **11 AI providers** — cloud and local, one app
 - **Encrypted on device** — API keys stored with AES-256-GCM via Android Keystore, conversations encrypted with SQLCipher
 - **Network-locked** — `network_security_config.xml` restricts traffic to only enabled provider hosts
+- **Image input** — send photos to vision-capable models (OpenAI, Anthropic, Gemini, OpenRouter)
+- **Voice input** — speech-to-text with Arabic, English, and Thai recognition
+- **Conversation export** — share chats as plain text or markdown to any app
+- **Conversation search** — search by title and message content across all conversations
+- **Stop generation** — cancel AI responses mid-stream, partial content preserved
+- **3 languages** — English, Arabic, Thai (full UI translations)
 - **Arabic-first design** — full RTL layout with proper Arabic typography
 - **Dark mode** — follows system theme automatically
 - **Dialect-aware translation** — translate to Levantine, Egyptian, Gulf, Maghrebi, or MSA
+- **English↔Thai translation presets** — dedicated translation support
 - **12 system prompt presets** — General Assistant, Arabic Writing Coach, Code Reviewer, Classical Arabic Reader, and more
 - **Classical Arabic literary helper** — vocabulary, i'rab, balagha analysis
 - **Copy & select** — long-press AI responses to copy text
@@ -157,9 +164,16 @@ published by the Free Software Foundation.
 - تشفير المفاتيح على جهازك باستخدام AES-256-GCM
 - تشفير المحادثات باستخدام SQLCipher
 - التطبيق مُقيَّد شبكياً بمزودي الخدمة المفعّلين فقط
+- إرسال صور لنماذج الرؤية (OpenAI, Anthropic, Gemini, OpenRouter)
+- الإدخال الصوتي — تحويل الكلام إلى نص بالعربية والإنجليزية والتايلاندية
+- تصدير المحادثات كنص عادي أو ماركداون
+- بحث في المحادثات حسب العنوان والمحتوى
+- إيقاف التوليد أثناء الكتابة مع حفظ المحتوى الجزئي
+- 3 لغات: العربية والإنجليزية والتايلاندية
 - واجهة عربية كاملة مع دعم RTL
 - الوضع الداكن يتبع إعداد النظام تلقائياً
 - ترجمة تراعي اللهجات: الشامي، المصري، الخليجي، المغاربي، والفصحى
+- قوالب ترجمة إنجليزي↔تايلاندي
 - نسخ النصوص من ردود الذكاء الاصطناعي
 - 12 قالب محادثة جاهز
 - يعمل بدون خدمات Google Play

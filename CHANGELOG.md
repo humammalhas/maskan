@@ -2,6 +2,17 @@
 
 All notable changes to Maskan are documented here.
 
+## [2.3.0] — 2026-05-23
+
+### Added
+- Stop generation button — cancel AI responses mid-stream, partial content preserved
+- Conversation search — search by title and message content across all conversations
+- Voice input — microphone button with Arabic, English, and Thai speech recognition
+- Conversation export — share chats as plain text or markdown to any app
+- Image input — send photos to vision-capable models (OpenAI, Anthropic, Gemini, OpenRouter)
+- Thai language — full UI translation + English↔Thai translation presets
+- Room database v5 (additive migration for image storage columns)
+
 ## [2.2.0] — 2026-05-23
 
 ### Added
