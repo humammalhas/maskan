@@ -1,10 +1,11 @@
 package app.maskan.chat.ui.screens
 
-import android.Manifest
+import android.app.Activity
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.graphics.BitmapFactory
-import android.speech.SpeechRecognizer
+import android.speech.RecognizerIntent
 import android.util.Base64
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -55,7 +56,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -80,7 +80,6 @@ import app.maskan.chat.data.repository.PreferenceRepository
 import app.maskan.chat.ui.theme.maskanColors
 import app.maskan.chat.data.repository.ExportFormat
 import app.maskan.chat.ui.viewmodel.ChatViewModel
-import app.maskan.chat.util.SpeechHelper
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -445,69 +444,19 @@ private fun MessageInputBar(
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as MaskanApplication
-    val speechHelper = remember { SpeechHelper(context) }
-    var isListening by remember { mutableStateOf(false) }
-    var partialText by remember { mutableStateOf("") }
 
-    DisposableEffect(Unit) {
-        onDispose { speechHelper.destroy() }
-    }
-
-    val speechLocale = remember {
-        val code = app.localeRepository.getLocale()
-        when (code) {
-            "ar" -> Locale.forLanguageTag("ar-SA")
-            "th" -> Locale.forLanguageTag("th-TH")
-            "en" -> Locale.forLanguageTag("en-US")
-            else -> Locale.getDefault()
+    val speechLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val spoken = result.data
+                ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                ?.firstOrNull()
+            if (!spoken.isNullOrEmpty()) {
+                val appended = if (text.isEmpty()) spoken else "$text $spoken"
+                onTextChange(appended)
+            }
         }
-    }
-
-    val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) {
-            isListening = true
-            partialText = ""
-            speechHelper.startListening(
-                locale = speechLocale,
-                onPartialResult = { partial -> partialText = partial },
-                onResult = { result ->
-                    val appended = if (text.isEmpty()) result else "$text $result"
-                    onTextChange(appended)
-                    isListening = false
-                    partialText = ""
-                },
-                onError = { error ->
-                    Log.e("Maskan", "Speech error code: $error")
-                    isListening = false
-                    partialText = ""
-                    val msg = when (error) {
-                        SpeechRecognizer.ERROR_NO_MATCH -> context.getString(R.string.voice_error_no_match)
-                        SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> context.getString(R.string.voice_error_timeout)
-                        SpeechRecognizer.ERROR_AUDIO -> context.getString(R.string.voice_error_audio)
-                        SpeechRecognizer.ERROR_NETWORK,
-                        SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> context.getString(R.string.voice_error_network)
-                        else -> context.getString(R.string.voice_error_generic, error)
-                    }
-                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                }
-            )
-        } else {
-            Toast.makeText(context, context.getString(R.string.voice_permission_denied), Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    val displayText = if (isListening && partialText.isNotEmpty()) {
-        if (text.isEmpty()) partialText else "$text $partialText"
-    } else {
-        text
-    }
-
-    val placeholderText = if (isListening) {
-        stringResource(R.string.voice_listening)
-    } else {
-        stringResource(R.string.message_placeholder)
     }
 
     Row(
@@ -529,10 +478,10 @@ private fun MessageInputBar(
             }
         }
         OutlinedTextField(
-            value = displayText,
-            onValueChange = { if (!isListening) onTextChange(it) },
+            value = text,
+            onValueChange = onTextChange,
             modifier = Modifier.weight(1f),
-            placeholder = { Text(placeholderText) },
+            placeholder = { Text(stringResource(R.string.message_placeholder)) },
             shape = RoundedCornerShape(24.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -542,31 +491,35 @@ private fun MessageInputBar(
             keyboardActions = KeyboardActions(onSend = { if (!isLoading) onSend() }),
             singleLine = false,
             maxLines = 5,
-            enabled = !isLoading && !isListening
+            enabled = !isLoading
         )
         Spacer(modifier = Modifier.width(4.dp))
         IconButton(
             onClick = {
-                if (!speechHelper.isAvailable) {
-                    Toast.makeText(context, context.getString(R.string.voice_not_available), Toast.LENGTH_SHORT).show()
-                    return@IconButton
+                val localeTag = when (app.localeRepository.getLocale()) {
+                    "ar" -> "ar-SA"
+                    "th" -> "th-TH"
+                    "en" -> "en-US"
+                    else -> Locale.getDefault().toLanguageTag()
                 }
-                if (isListening) {
-                    speechHelper.stopListening()
-                    isListening = false
-                    partialText = ""
-                } else {
-                    permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, localeTag)
+                    putExtra(RecognizerIntent.EXTRA_PROMPT, context.getString(R.string.voice_listening))
+                }
+                try {
+                    speechLauncher.launch(intent)
+                } catch (_: ActivityNotFoundException) {
+                    Toast.makeText(context, context.getString(R.string.voice_not_available), Toast.LENGTH_SHORT).show()
                 }
             },
             enabled = !isLoading,
             modifier = Modifier.size(48.dp)
         ) {
             Text(
-                text = if (isListening) "⏹" else "🎙",
+                text = "🎙",
                 style = MaterialTheme.typography.titleLarge,
-                color = if (isListening) MaterialTheme.colorScheme.error
-                else MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         if (isLoading) {
