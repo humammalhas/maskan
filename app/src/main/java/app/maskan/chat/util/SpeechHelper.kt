@@ -8,14 +8,11 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import java.util.Locale
 
-class SpeechHelper(context: Context) {
+class SpeechHelper(private val context: Context) {
 
-    private val recognizer: SpeechRecognizer? =
-        if (SpeechRecognizer.isRecognitionAvailable(context))
-            SpeechRecognizer.createSpeechRecognizer(context)
-        else null
+    private var recognizer: SpeechRecognizer? = null
 
-    val isAvailable: Boolean get() = recognizer != null
+    val isAvailable: Boolean get() = SpeechRecognizer.isRecognitionAvailable(context)
 
     fun startListening(
         locale: Locale,
@@ -23,7 +20,11 @@ class SpeechHelper(context: Context) {
         onResult: (String) -> Unit,
         onError: (Int) -> Unit
     ) {
-        val r = recognizer ?: return
+        if (!isAvailable) return
+
+        recognizer?.destroy()
+        val r = SpeechRecognizer.createSpeechRecognizer(context)
+        recognizer = r
 
         r.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {}
@@ -68,5 +69,6 @@ class SpeechHelper(context: Context) {
 
     fun destroy() {
         recognizer?.destroy()
+        recognizer = null
     }
 }
