@@ -456,9 +456,9 @@ private fun MessageInputBar(
     val speechLocale = remember {
         val code = app.localeRepository.getLocale()
         when (code) {
-            "ar" -> Locale.forLanguageTag("ar")
-            "th" -> Locale.forLanguageTag("th")
-            "en" -> Locale.forLanguageTag("en")
+            "ar" -> Locale.forLanguageTag("ar-SA")
+            "th" -> Locale.forLanguageTag("th-TH")
+            "en" -> Locale.forLanguageTag("en-US")
             else -> Locale.getDefault()
         }
     }
