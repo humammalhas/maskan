@@ -158,4 +158,10 @@
     <string name="voice_input_desc">สั่งงานด้วยเสียง</string>
     <string name="voice_permission_denied">ต้องอนุญาตการใช้ไมโครโฟนสำหรับการสั่งงานด้วยเสียง</string>
     <string name="voice_not_available">การรู้จำเสียงไม่สามารถใช้ได้บนอุปกรณ์นี้</string>
+    <string name="voice_listening">กำลังฟัง…</string>
+    <string name="voice_error_no_match">ไม่เข้าใจ ลองอีกครั้ง</string>
+    <string name="voice_error_timeout">ไม่พบเสียงพูด</string>
+    <string name="voice_error_audio">ไมโครโฟนผิดพลาด</string>
+    <string name="voice_error_network">เสียงต้องใช้อินเทอร์เน็ตบนอุปกรณ์นี้</string>
+    <string name="voice_error_generic">เสียงผิดพลาด ลองอีกครั้ง</string>
 </resources>

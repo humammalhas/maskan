@@ -2,7 +2,9 @@ package app.maskan.chat.ui.screens
 
 import android.Manifest
 import android.graphics.BitmapFactory
+import android.speech.SpeechRecognizer
 import android.util.Base64
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -476,9 +478,19 @@ private fun MessageInputBar(
                     isListening = false
                     partialText = ""
                 },
-                onError = {
+                onError = { error ->
+                    Log.d("Maskan", "Speech error code: $error")
                     isListening = false
                     partialText = ""
+                    val msgRes = when (error) {
+                        SpeechRecognizer.ERROR_NO_MATCH -> R.string.voice_error_no_match
+                        SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> R.string.voice_error_timeout
+                        SpeechRecognizer.ERROR_AUDIO -> R.string.voice_error_audio
+                        SpeechRecognizer.ERROR_NETWORK,
+                        SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> R.string.voice_error_network
+                        else -> R.string.voice_error_generic
+                    }
+                    Toast.makeText(context, context.getString(msgRes), Toast.LENGTH_SHORT).show()
                 }
             )
         } else {
@@ -492,6 +504,12 @@ private fun MessageInputBar(
         text
     }
 
+    val placeholderText = if (isListening) {
+        stringResource(R.string.voice_listening)
+    } else {
+        stringResource(R.string.message_placeholder)
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -501,7 +519,7 @@ private fun MessageInputBar(
         if (showAttachButton && !isLoading) {
             IconButton(
                 onClick = onAttach,
-                modifier = Modifier.size(40.dp)
+                modifier = Modifier.size(48.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
@@ -510,6 +528,23 @@ private fun MessageInputBar(
                 )
             }
         }
+        OutlinedTextField(
+            value = displayText,
+            onValueChange = { if (!isListening) onTextChange(it) },
+            modifier = Modifier.weight(1f),
+            placeholder = { Text(placeholderText) },
+            shape = RoundedCornerShape(24.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+            ),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
+            keyboardActions = KeyboardActions(onSend = { if (!isLoading) onSend() }),
+            singleLine = false,
+            maxLines = 5,
+            enabled = !isLoading && !isListening
+        )
+        Spacer(modifier = Modifier.width(4.dp))
         IconButton(
             onClick = {
                 if (!speechHelper.isAvailable) {
@@ -525,32 +560,15 @@ private fun MessageInputBar(
                 }
             },
             enabled = !isLoading,
-            modifier = Modifier.size(40.dp)
+            modifier = Modifier.size(48.dp)
         ) {
             Text(
                 text = if (isListening) "⏹" else "🎙",
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 color = if (isListening) MaterialTheme.colorScheme.error
                 else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        OutlinedTextField(
-            value = displayText,
-            onValueChange = { if (!isListening) onTextChange(it) },
-            modifier = Modifier.weight(1f),
-            placeholder = { Text(stringResource(R.string.message_placeholder)) },
-            shape = RoundedCornerShape(24.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline
-            ),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
-            keyboardActions = KeyboardActions(onSend = { if (!isLoading) onSend() }),
-            singleLine = false,
-            maxLines = 5,
-            enabled = !isLoading && !isListening
-        )
-        Spacer(modifier = Modifier.width(8.dp))
         if (isLoading) {
             IconButton(onClick = onStop) {
                 Icon(

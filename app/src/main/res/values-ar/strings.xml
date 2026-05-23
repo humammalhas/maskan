@@ -160,4 +160,10 @@
     <string name="voice_input_desc">الإدخال الصوتي</string>
     <string name="voice_permission_denied">يجب السماح بالوصول للميكروفون للإدخال الصوتي</string>
     <string name="voice_not_available">التعرّف على الصوت غير متوفر على هذا الجهاز</string>
+    <string name="voice_listening">جارٍ الاستماع…</string>
+    <string name="voice_error_no_match">لم أفهم، حاول مرة أخرى</string>
+    <string name="voice_error_timeout">لم يُكتشف كلام</string>
+    <string name="voice_error_audio">خطأ في الميكروفون</string>
+    <string name="voice_error_network">الصوت يحتاج إنترنت على هذا الجهاز</string>
+    <string name="voice_error_generic">خطأ صوتي، حاول مرة أخرى</string>
 </resources>

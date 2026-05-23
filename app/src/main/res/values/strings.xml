@@ -160,4 +160,10 @@
     <string name="voice_input_desc">Voice input</string>
     <string name="voice_permission_denied">Microphone permission is required for voice input</string>
     <string name="voice_not_available">Voice recognition is not available on this device</string>
+    <string name="voice_listening">Listening…</string>
+    <string name="voice_error_no_match">Didn\'t catch that, try again</string>
+    <string name="voice_error_timeout">No speech detected</string>
+    <string name="voice_error_audio">Microphone error</string>
+    <string name="voice_error_network">Voice needs internet on this device</string>
+    <string name="voice_error_generic">Voice error, try again</string>
 </resources>
