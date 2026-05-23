@@ -155,7 +155,20 @@ fun ChatScreen(
             }
         }
     ) { paddingValues ->
-        if (!uiState.presetSelected) {
+        if (uiState.isLoading && visibleMessages.isEmpty() && !uiState.presetSelected) {
+            // Show spinner while loading to avoid black flash on chat transition
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        } else if (!uiState.presetSelected) {
             PresetPicker(
                 defaultDialect = preferenceRepository.getDefaultDialect(),
                 onPresetSelected = { preset, dialect ->

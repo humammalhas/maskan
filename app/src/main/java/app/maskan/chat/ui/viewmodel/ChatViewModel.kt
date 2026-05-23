@@ -42,7 +42,8 @@ class ChatViewModel(
         currentConversationId = conversationId
         _uiState.value = ChatUiState(
             selectedProviderId = _uiState.value.selectedProviderId,
-            selectedModel = _uiState.value.selectedModel
+            selectedModel = _uiState.value.selectedModel,
+            isLoading = true
         )
 
         messageCollectionJob = viewModelScope.launch {
