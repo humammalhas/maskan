@@ -1,0 +1,19 @@
+Maskan (مسكن) — Private multi-provider AI chat for Android.
+
+Bring your own API key from OpenAI, Anthropic Claude, Google Gemini, DeepSeek, Groq, Mistral, OpenRouter, Together AI, or any OpenAI-compatible endpoint including local models (Ollama, LM Studio).
+
+Your conversations stay on your device. Your API keys are encrypted with AES-256-GCM via Android Keystore. The app's network access is locked to only the providers you've enabled.
+
+Features:
+• 11 AI providers supported (cloud and local)
+• Bring Your Own Key (BYOK) — no subscriptions, no proxy server
+• All API keys encrypted on device
+• Conversation history stored locally only
+• 12 system prompt presets
+• Dialect-aware Arabic translation (MSA, Levantine, Egyptian, Gulf, Maghrebi)
+• Classical Arabic literary helper
+• Folder organization with custom pastel colors
+• Full Arabic UI with RTL layout
+• No Google Play Services dependency
+• No analytics, no trackers, no telemetry
+• FOSS — GPL-3.0

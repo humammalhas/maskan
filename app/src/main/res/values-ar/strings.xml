@@ -1,0 +1,144 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App name -->
+    <string name="app_name">مسكن</string>
+
+    <!-- Conversation list screen -->
+    <string name="conversation_list_title">مسكن</string>
+    <string name="new_conversation_desc">محادثة جديدة</string>
+    <string name="empty_conversations">ابدأ أول محادثة خاصة</string>
+    <string name="empty_conversations_subtitle">محادثاتك تبقى مُشفَّرة على هذا الجهاز</string>
+    <string name="empty_conversations_hint">اضغط + في الأسفل للبدء ↓</string>
+    <string name="delete_conversation_title">حذف المحادثة؟</string>
+    <string name="delete_confirmation">هل أنت متأكد من حذف هذه المحادثة؟</string>
+    <string name="delete_button">حذف</string>
+    <string name="cancel_button">إلغاء</string>
+
+    <!-- Chat screen -->
+    <string name="chat_screen_title">محادثة</string>
+    <string name="empty_chat">ابدأ محادثة\nاكتب رسالة في الأسفل.</string>
+    <string name="message_placeholder">اكتب رسالتك…</string>
+    <string name="send_button">إرسال</string>
+    <string name="dismiss_button">إغلاق</string>
+    <string name="custom_prompt_title">أنشئ أسلوبك الخاص</string>
+    <string name="custom_prompt_placeholder">مثلاً: \'كن معلّماً ودوداً يشرح كل شيء ببساطة\' أو \'أجب بالشعر فقط\'</string>
+    <string name="confirm_button">تأكيد</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">الإعدادات</string>
+    <string name="back_button">رجوع</string>
+
+    <string name="api_key_section">مفتاح API</string>
+    <string name="api_key_label">مفتاح DeepSeek API</string>
+    <string name="api_key_placeholder">sk-…</string>
+    <string name="show_key">إظهار</string>
+    <string name="hide_key">إخفاء</string>
+    <string name="save_key_button">حفظ المفتاح</string>
+    <string name="key_saved_confirmation">تم حفظ مفتاح API بشكل آمن.</string>
+    <string name="test_connection_button">اختبار الاتصال</string>
+    <string name="test_connection_success">تم الاتصال بنجاح!</string>
+    <string name="test_connection_testing">جارٍ الاختبار…</string>
+
+    <!-- Provider selection -->
+    <string name="provider_section">مزود الذكاء الاصطناعي</string>
+    <string name="provider_label">المزود</string>
+
+    <string name="model_section">النموذج</string>
+    <string name="model_label">النموذج</string>
+
+    <string name="language_section">اللغة</string>
+    <string name="language_label">اللغة</string>
+    <string name="language_system_default">إعدادات النظام</string>
+    <string name="language_english">الإنجليزية</string>
+    <string name="language_arabic">العربية</string>
+
+    <string name="instructions_title">كيف تحصل على مفتاح DeepSeek API</string>
+    <string name="instructions_text">اذهب إلى platform.deepseek.com وسجّل الدخول أو أنشئ حساباً جديداً.\nأضف 5 دولارات إلى رصيدك (شحن) – هذه خدمة مدفوعة حسب الاستخدام.\nانتقل إلى قسم \"API Keys\".\nأنشئ مفتاح API جديداً وانسخه.\nالصق المفتاح أعلاه – سيتم تخزينه بشكل آمن على جهازك.\nمفتاحك يُستخدم فقط للتواصل مع DeepSeek، ولا تتم مشاركته مع أي جهة أخرى.</string>
+
+    <!-- Preset picker -->
+    <string name="preset_picker_title">كيف يمكنني مساعدتك اليوم؟</string>
+    <string name="dialect_picker_title">اختر اللهجة لهذه المحادثة</string>
+
+    <!-- Folders -->
+    <string name="folders">المجلدات</string>
+    <string name="new_folder">مجلد جديد</string>
+    <string name="move_to_folder">نقل إلى مجلد</string>
+    <string name="unfiled">غير مصنف</string>
+    <string name="rename_folder">إعادة تسمية المجلد</string>
+    <string name="delete_folder">حذف المجلد</string>
+    <string name="delete_folder_title">حذف المجلد؟</string>
+    <string name="delete_folder_confirm_detail">حذف \'%1$s\' و%2$d محادثة بداخله؟ لا يمكن التراجع.</string>
+    <string name="change_color">تغيير اللون</string>
+    <string name="folder_name_hint">اسم المجلد</string>
+    <string name="create_button">إنشاء</string>
+    <string name="save_button">حفظ</string>
+    <string name="empty_folder">لا محادثات هنا بعد — اضغط مطوّلاً على محادثة لنقلها</string>
+    <string name="create_new_folder">إنشاء مجلد جديد…</string>
+
+    <!-- About & Security -->
+    <string name="about_title">حول التطبيق والخصوصية</string>
+    <string name="about_app_identity">مسكن (Maskan) — محادثة ذكاء اصطناعي خاصة</string>
+    <string name="about_version">الإصدار %1$s</string>
+    <string name="about_security_header">الأمان والخصوصية</string>
+    <string name="about_security_aes">مفتاح API الخاص بك مُشفَّر بتقنية AES-256-GCM عبر Android Keystore</string>
+    <string name="about_security_local_only">محادثاتك مُخزَّنة فقط على هذا الجهاز</string>
+    <string name="about_security_network_locked">طلبات الشبكة تذهب فقط إلى المزودين المفعّلين — مقفلة على مستوى إعدادات أمان الشبكة</string>
+    <string name="about_security_no_tracking">لا تحليلات، لا تقارير أعطال، لا متتبعات</string>
+    <string name="about_security_foss">مفتوح المصدر، رخصة حرة</string>
+    <string name="about_view_source">عرض الكود المصدري</string>
+    <string name="about_report_bug">الإبلاغ عن خلل</string>
+    <string name="about_license">الرخصة</string>
+    <string name="about_back">رجوع</string>
+    <string name="settings_encrypted_caption">🔒 مُشفَّر على جهازك (AES-256-GCM)</string>
+    <string name="settings_about_link">حول التطبيق والخصوصية</string>
+    <string name="api_key_hint_banner">احصل على مفتاح DeepSeek المجاني من platform.deepseek.com — سيبقى مُشفَّراً على جهازك</string>
+    <string name="api_key_hint_banner_provider">احصل على مفتاح %1$s API من %2$s — سيبقى مُشفَّراً على جهازك</string>
+    <string name="server_url_label">رابط الخادم</string>
+    <string name="save_url_button">حفظ الرابط</string>
+    <string name="api_key_optional_hint">اختياري — اتركه فارغاً إذا لم يكن خادمك يتطلب مصادقة</string>
+    <string name="server_url_hint">أدخل عنوان IP لجهازك مع رقم المنفذ</string>
+    <string name="custom_model_id_label">معرّف نموذج مخصص</string>
+    <string name="custom_model_id_hint">اكتب معرّف أي نموذج من openrouter.ai/models</string>
+    <string name="model_name_label">اسم النموذج</string>
+    <string name="local_model_name_hint">اكتب اسم النموذج المثبّت على خادمك</string>
+    <string name="default_dialect_label">لهجة الترجمة الافتراضية</string>
+    <string name="dialect_label">اللهجة</string>
+    <string name="instructions_title_provider">كيف تحصل على مفتاح %1$s API</string>
+
+    <!-- Welcome screen -->
+    <string name="welcome_tagline">دردشة ذكاء اصطناعي خاصة. مفتاحك، جهازك.</string>
+    <string name="welcome_feature_encrypted">مفتاح API مُشفَّر على جهازك</string>
+    <string name="welcome_feature_no_tracking">لا متتبّعات، لا تحليلات، لا جمع بيانات</string>
+    <string name="welcome_feature_arabic_first">تصميم عربي أولاً مع دعم اللهجات</string>
+    <string name="welcome_get_started">ابدأ</string>
+
+    <!-- First-launch setup -->
+    <string name="setup_steps_title">الإعداد في خطوتين:</string>
+    <string name="setup_step_1">١. اختر مزود الذكاء الاصطناعي</string>
+    <string name="setup_step_2">٢. الصق مفتاح API الخاص بك</string>
+    <string name="start_chatting">ابدأ المحادثة</string>
+
+    <!-- Error messages -->
+    <string name="error_api_key_missing">مفتاح API غير مضبوط. الرجاء إضافة مفتاح API في الإعدادات.</string>
+    <string name="error_empty_response">استجابة فارغة من الخادم.</string>
+    <string name="error_unknown">حدث خطأ غير معروف.</string>
+    <string name="error_network">تعذّر الاتصال بالخادم. تحقق من اتصالك بالإنترنت.</string>
+
+    <!-- Detailed error messages -->
+    <string name="error_auth_invalid">مفتاح API مرفوض. تحقّق منه في الإعدادات.</string>
+    <string name="error_auth_expired">انتهت صلاحية مفتاح API. أنشئ مفتاحاً جديداً من لوحة تحكم المزود.</string>
+    <string name="error_rate_limit">طلبات كثيرة. انتظر قليلاً ثم حاول مرة أخرى.</string>
+    <string name="error_insufficient_quota">نفد رصيد API الخاص بك. اشحن حسابك من موقع المزود.</string>
+    <string name="error_model_not_found">النموذج المحدد غير متوفر. جرّب نموذجاً آخر في الإعدادات.</string>
+    <string name="error_request_too_large">رسالتك طويلة جداً لهذا النموذج. حاول اختصارها.</string>
+    <string name="error_server_error">المزود يواجه مشاكل الآن. حاول مرة أخرى بعد دقائق.</string>
+    <string name="error_server_overloaded">المزود مُحمَّل فوق طاقته. حاول بعد قليل.</string>
+    <string name="error_timeout">انتهت مهلة الطلب. تحقّق من اتصالك وحاول مرة أخرى.</string>
+    <string name="error_no_internet">لا يوجد اتصال بالإنترنت. تحقّق من الواي فاي أو بيانات الهاتف.</string>
+    <string name="error_dns_failed">تعذّر الوصول إلى الخادم. تحقّق من اتصالك بالإنترنت.</string>
+    <string name="error_connection_refused">تعذّر الاتصال بالخادم. قد يكون المزود معطّلاً، أو تحقّق من رابط الخادم في الإعدادات.</string>
+    <string name="error_ssl">فشل الاتصال الآمن. إذا كنت تستخدم خادماً محلياً، تحقّق من إعدادات الرابط.</string>
+    <string name="error_provider_not_found">مزود ذكاء اصطناعي غير معروف. أعد الضبط في الإعدادات.</string>
+    <string name="error_empty_response_detail">أعاد الذكاء الاصطناعي استجابة فارغة. حاول إرسال رسالتك مرة أخرى.</string>
+    <string name="error_conversation_not_found">تعذّر العثور على هذه المحادثة. ربما تم حذفها.</string>
+</resources>

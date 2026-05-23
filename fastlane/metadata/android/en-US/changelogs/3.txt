@@ -1,0 +1,6 @@
+• Welcome screen for first-launch onboarding
+• Human-readable error messages in English and Arabic
+• Test Connection button to validate API keys
+• Improved empty states with animated FAB
+• Preset names clarified for better discoverability
+• All UI strings extracted to proper string resources

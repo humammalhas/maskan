@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="false">api.deepseek.com</domain>
+        <domain includeSubdomains="false">api.openai.com</domain>
+        <domain includeSubdomains="false">api.groq.com</domain>
+        <domain includeSubdomains="false">api.together.xyz</domain>
+        <domain includeSubdomains="false">api.mistral.ai</domain>
+        <domain includeSubdomains="false">openrouter.ai</domain>
+        <domain includeSubdomains="false">api.anthropic.com</domain>
+        <domain includeSubdomains="false">generativelanguage.googleapis.com</domain>
+    </domain-config>
+</network-security-config>

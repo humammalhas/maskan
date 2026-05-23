@@ -1,0 +1,144 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App name -->
+    <string name="app_name">Maskan</string>
+
+    <!-- Conversation list screen -->
+    <string name="conversation_list_title">Maskan</string>
+    <string name="new_conversation_desc">New conversation</string>
+    <string name="empty_conversations">Start your first private chat</string>
+    <string name="empty_conversations_subtitle">Your conversations stay encrypted on this device</string>
+    <string name="empty_conversations_hint">Tap + below to begin ↓</string>
+    <string name="delete_conversation_title">Delete conversation?</string>
+    <string name="delete_confirmation">Are you sure you want to delete this conversation?</string>
+    <string name="delete_button">Delete</string>
+    <string name="cancel_button">Cancel</string>
+
+    <!-- Chat screen -->
+    <string name="chat_screen_title">Chat</string>
+    <string name="empty_chat">Start a conversation\nType a message below.</string>
+    <string name="message_placeholder">Type a message...</string>
+    <string name="send_button">Send</string>
+    <string name="dismiss_button">Dismiss</string>
+    <string name="custom_prompt_title">Create Your Own Style</string>
+    <string name="custom_prompt_placeholder">e.g. \'Be a friendly teacher who explains everything simply\' or \'Reply only in poetry\'</string>
+    <string name="confirm_button">Confirm</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">Settings</string>
+    <string name="back_button">Back</string>
+
+    <string name="api_key_section">API Key</string>
+    <string name="api_key_label">DeepSeek API Key</string>
+    <string name="api_key_placeholder">sk-...</string>
+    <string name="show_key">Show</string>
+    <string name="hide_key">Hide</string>
+    <string name="save_key_button">Save Key</string>
+    <string name="key_saved_confirmation">API key saved securely.</string>
+    <string name="test_connection_button">Test Connection</string>
+    <string name="test_connection_success">Connected successfully!</string>
+    <string name="test_connection_testing">Testing…</string>
+
+    <!-- Provider selection -->
+    <string name="provider_section">AI Provider</string>
+    <string name="provider_label">Provider</string>
+
+    <string name="model_section">Model</string>
+    <string name="model_label">Model</string>
+
+    <string name="language_section">Language</string>
+    <string name="language_label">Language</string>
+    <string name="language_system_default">System default</string>
+    <string name="language_english">English</string>
+    <string name="language_arabic">Arabic</string>
+
+    <string name="instructions_title">How to get a DeepSeek API Key</string>
+    <string name="instructions_text">Go to platform.deepseek.com and sign up or log in.\nAdd  to your account (top up) - this is a pay-as-you-go API.\nNavigate to the &quot;API Keys&quot; section.\nCreate a new API key and copy it.\nPaste the key above - it will be stored securely on your device.\nYour key is only used to talk to DeepSeek, never shared anywhere else.</string>
+
+    <!-- Preset picker -->
+    <string name="preset_picker_title">How can I help you today?</string>
+    <string name="dialect_picker_title">Choose dialect for this conversation</string>
+
+    <!-- Folders -->
+    <string name="folders">Folders</string>
+    <string name="new_folder">New Folder</string>
+    <string name="move_to_folder">Move to folder</string>
+    <string name="unfiled">Unfiled</string>
+    <string name="rename_folder">Rename folder</string>
+    <string name="delete_folder">Delete folder</string>
+    <string name="delete_folder_title">Delete folder?</string>
+    <string name="delete_folder_confirm_detail">Delete \'%1$s\' and %2$d conversations inside? This cannot be undone.</string>
+    <string name="change_color">Change color</string>
+    <string name="folder_name_hint">Folder name</string>
+    <string name="create_button">Create</string>
+    <string name="save_button">Save</string>
+    <string name="empty_folder">No conversations here yet — long-press a chat to move it in</string>
+    <string name="create_new_folder">Create new folder…</string>
+
+    <!-- About & Security -->
+    <string name="about_title">About &amp; Privacy</string>
+    <string name="about_app_identity">Maskan (مسكن) — Private AI chat</string>
+    <string name="about_version">Version %1$s</string>
+    <string name="about_security_header">Security &amp; Privacy</string>
+    <string name="about_security_aes">Your API key is encrypted with AES-256-GCM via Android Keystore</string>
+    <string name="about_security_local_only">Your conversations are stored only on this device</string>
+    <string name="about_security_network_locked">Network requests go only to enabled providers — locked at the network security config level</string>
+    <string name="about_security_no_tracking">No analytics, no crash reporting, no trackers</string>
+    <string name="about_security_foss">Open source, FOSS license</string>
+    <string name="about_view_source">View source code</string>
+    <string name="about_report_bug">Report a bug</string>
+    <string name="about_license">License</string>
+    <string name="about_back">Back</string>
+    <string name="settings_encrypted_caption">🔒 Encrypted on device (AES-256-GCM)</string>
+    <string name="settings_about_link">About &amp; Privacy</string>
+    <string name="api_key_hint_banner">Get your free DeepSeek API key at platform.deepseek.com — it stays encrypted on your device</string>
+    <string name="api_key_hint_banner_provider">Get your %1$s API key at %2$s — it stays encrypted on your device</string>
+    <string name="server_url_label">Server URL</string>
+    <string name="save_url_button">Save URL</string>
+    <string name="api_key_optional_hint">Optional — leave empty if your server doesn\'t require authentication</string>
+    <string name="server_url_hint">Enter your computer\'s IP address with port number</string>
+    <string name="custom_model_id_label">Custom model ID</string>
+    <string name="custom_model_id_hint">Type any model ID from openrouter.ai/models</string>
+    <string name="model_name_label">Model name</string>
+    <string name="local_model_name_hint">Type the name of the model installed on your server</string>
+    <string name="default_dialect_label">Default translation dialect</string>
+    <string name="dialect_label">Dialect</string>
+    <string name="instructions_title_provider">How to get a %1$s API Key</string>
+
+    <!-- Welcome screen -->
+    <string name="welcome_tagline">Private AI chat. Your key, your device.</string>
+    <string name="welcome_feature_encrypted">Your API key is encrypted on your device</string>
+    <string name="welcome_feature_no_tracking">No trackers, no analytics, no data collection</string>
+    <string name="welcome_feature_arabic_first">Arabic-first design with dialect support</string>
+    <string name="welcome_get_started">Get Started</string>
+
+    <!-- First-launch setup -->
+    <string name="setup_steps_title">Set up in 2 steps:</string>
+    <string name="setup_step_1">1. Pick your AI provider</string>
+    <string name="setup_step_2">2. Paste your API key</string>
+    <string name="start_chatting">Start Chatting</string>
+
+    <!-- Error messages -->
+    <string name="error_api_key_missing">API key not set. Please add your API key in Settings.</string>
+    <string name="error_empty_response">Empty response from API.</string>
+    <string name="error_unknown">An unknown error occurred.</string>
+    <string name="error_network">Could not connect to server. Check your internet connection.</string>
+
+    <!-- Detailed error messages -->
+    <string name="error_auth_invalid">Your API key was rejected. Check it in Settings.</string>
+    <string name="error_auth_expired">Your API key has expired. Generate a new one from your provider\'s dashboard.</string>
+    <string name="error_rate_limit">Too many requests. Wait a moment and try again.</string>
+    <string name="error_insufficient_quota">Your API credit has run out. Top up your account at your provider\'s website.</string>
+    <string name="error_model_not_found">The selected model is not available. Try a different model in Settings.</string>
+    <string name="error_request_too_large">Your message is too long for this model. Try shortening it.</string>
+    <string name="error_server_error">The AI provider is having issues right now. Try again in a few minutes.</string>
+    <string name="error_server_overloaded">The AI provider is overloaded. Try again shortly.</string>
+    <string name="error_timeout">The request took too long. Check your connection and try again.</string>
+    <string name="error_no_internet">No internet connection. Check your Wi-Fi or mobile data.</string>
+    <string name="error_dns_failed">Could not reach the server. Check your internet connection.</string>
+    <string name="error_connection_refused">Could not connect to the server. The provider may be down, or check your server URL in Settings.</string>
+    <string name="error_ssl">Secure connection failed. If using a local server, check your URL settings.</string>
+    <string name="error_provider_not_found">Unknown AI provider. Please reconfigure in Settings.</string>
+    <string name="error_empty_response_detail">The AI returned an empty response. Try sending your message again.</string>
+    <string name="error_conversation_not_found">This conversation could not be found. It may have been deleted.</string>
+</resources>

@@ -1,0 +1,68 @@
+﻿# Maskan
+#
+# Android project file patterns to ignore.
+# For more information, see https://developer.android.com/studio/intellij-idea#ignoring-files
+
+# Built application files
+*.apk
+*.ap_
+*.aab
+
+# Files for the ART/Dalvik VM
+*.dex
+
+# Java class files
+*.class
+
+# Generated files
+bin/
+gen/
+out/
+
+# Gradle files
+.gradle/
+build/
+
+# Local configuration file
+local.properties
+
+# Android Studio
+.idea/
+*.iml
+*.iws
+*.ipr
+.idea_modules/
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# OS X
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Gradle wrapper (keep it checked in)
+!gradle/wrapper/gradle-wrapper.jar
+
+# Keystore and signing
+*.jks
+*.keystore
+keystore.properties
+
+# Claude Code config
+.claude/
+
+# Kotlin
+.kotlin/
+
+# Misc
+.cxx/
+*.log
+*.tmp
+*.bak
+*.hprof
+captures/

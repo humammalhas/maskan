@@ -1,0 +1,67 @@
+package app.maskan.chat.data.remote.providers
+
+import app.maskan.chat.data.remote.ChatCompletionRequest
+import app.maskan.chat.data.remote.Message
+import app.maskan.chat.data.remote.OpenAiCompatibleService
+import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import retrofit2.Retrofit
+import retrofit2.converter.kotlinx.serialization.asConverterFactory
+
+class LocalProvider(
+    private val config: ProviderConfig,
+    private val okHttpClient: OkHttpClient,
+    private val json: Json
+) : AiProvider {
+
+    override val id: String = config.id
+    override val displayName: String = config.displayName
+    override val nameAr: String = config.nameAr
+    override val defaultBaseUrl: String = config.baseUrl
+    override val supportsCustomBaseUrl: Boolean = true
+    override val availableModels: List<String> = config.models
+    override val defaultModel: String = config.defaultModel
+    override val keyAcquisitionUrl: String = config.keyAcquisitionUrl
+    override val pricingInfo: String = config.pricingInfo
+
+    private val serviceCache = mutableMapOf<String, OpenAiCompatibleService>()
+
+    private fun getService(baseUrl: String): OpenAiCompatibleService {
+        val normalizedUrl = if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
+        return serviceCache.getOrPut(normalizedUrl) {
+            Retrofit.Builder()
+                .baseUrl(normalizedUrl)
+                .client(okHttpClient)
+                .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+                .build()
+                .create(OpenAiCompatibleService::class.java)
+        }
+    }
+
+    override suspend fun sendMessage(
+        apiKey: String,
+        model: String,
+        messages: List<Message>,
+        baseUrl: String?
+    ): String {
+        val effectiveUrl = baseUrl ?: defaultBaseUrl
+        if (effectiveUrl.isBlank()) {
+            throw Exception("No server URL configured. Please enter your $displayName server URL in Settings.")
+        }
+
+        val service = getService(effectiveUrl)
+        val request = ChatCompletionRequest(
+            model = model,
+            messages = messages
+        )
+
+        val response = service.createChatCompletion(
+            authorization = if (apiKey.isNotBlank()) "Bearer $apiKey" else "",
+            request = request
+        )
+
+        return response.choices.firstOrNull()?.message?.content
+            ?: throw Exception("Empty response from $displayName")
+    }
+}

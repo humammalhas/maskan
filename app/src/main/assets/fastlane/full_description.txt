@@ -1,0 +1,18 @@
+Maskan (مسكن) — a private AI chat for DeepSeek.
+
+Bring your own API key. Your conversations stay on your device. Network requests are locked to api.deepseek.com only — the app is cryptographically incapable of sending your data anywhere else.
+
+Features:
+• Bring Your Own Key (BYOK) — use your own DeepSeek API credit
+• API key encrypted with AES-256-GCM via Android Keystore
+• Local-only conversation history (Room database)
+• Multi-conversation support with folder organization
+• System-prompt presets for writing, translation, code review
+• Dialect-aware Arabic translation (MSA, Levantine, Egyptian, Gulf, Maghrebi)
+• Classical Arabic literary helper (i'rab, balagha)
+• Full Arabic localization with RTL layout
+• No Google Play Services dependency
+• No analytics, no telemetry, no crash reporting
+• FOSS — license: GPL-3.0-only
+
+Built for the MENA F-Droid community.
