@@ -113,7 +113,7 @@ cd maskan
 
 - Kotlin 2.1.20
 - Jetpack Compose + Material 3 (BOM 2025.04.01)
-- Room 2.7.1 + SQLCipher 4.5.4 (encrypted local storage)
+- Room 2.7.1 + SQLCipher 4.6.1 (encrypted local storage)
 - Retrofit 2.11.0 + OkHttp 4.12.0 + kotlinx.serialization 1.7.3
 - EncryptedSharedPreferences (AES-256-GCM)
 - Manual DI (no Hilt, no Dagger)

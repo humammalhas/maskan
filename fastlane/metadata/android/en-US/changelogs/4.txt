@@ -1,0 +1,10 @@
+• SQLCipher database encryption — conversations encrypted at rest
+• Dark mode — follows system theme automatically
+• Copy and select text from AI responses
+• Multi-line chat input (up to 5 lines)
+• Context windowing — prevents token overflow on long chats
+• Accessibility labels on all icons
+• Updated model IDs for all 11 providers
+• Per-architecture APKs for smaller downloads
+• Kotlin 2.1.20, Compose BOM 2025.04.01, Room 2.7.1
+• 25+ bug fixes and security hardening

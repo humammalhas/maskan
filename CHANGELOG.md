@@ -5,7 +5,7 @@ All notable changes to Maskan are documented here.
 ## [2.2.0] — 2026-05-23
 
 ### Added
-- SQLCipher database encryption — all conversations encrypted at rest
+- SQLCipher 4.6.1 database encryption — all conversations encrypted at rest
 - Dark mode — follows system theme automatically
 - Copy/select text from AI responses (SelectionContainer)
 - Multi-line chat input (up to 5 lines)
