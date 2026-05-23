@@ -479,18 +479,18 @@ private fun MessageInputBar(
                     partialText = ""
                 },
                 onError = { error ->
-                    Log.d("Maskan", "Speech error code: $error")
+                    Log.e("Maskan", "Speech error code: $error")
                     isListening = false
                     partialText = ""
-                    val msgRes = when (error) {
-                        SpeechRecognizer.ERROR_NO_MATCH -> R.string.voice_error_no_match
-                        SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> R.string.voice_error_timeout
-                        SpeechRecognizer.ERROR_AUDIO -> R.string.voice_error_audio
+                    val msg = when (error) {
+                        SpeechRecognizer.ERROR_NO_MATCH -> context.getString(R.string.voice_error_no_match)
+                        SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> context.getString(R.string.voice_error_timeout)
+                        SpeechRecognizer.ERROR_AUDIO -> context.getString(R.string.voice_error_audio)
                         SpeechRecognizer.ERROR_NETWORK,
-                        SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> R.string.voice_error_network
-                        else -> R.string.voice_error_generic
+                        SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> context.getString(R.string.voice_error_network)
+                        else -> context.getString(R.string.voice_error_generic, error)
                     }
-                    Toast.makeText(context, context.getString(msgRes), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                 }
             )
         } else {

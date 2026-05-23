@@ -165,5 +165,5 @@
     <string name="voice_error_timeout">لم يُكتشف كلام</string>
     <string name="voice_error_audio">خطأ في الميكروفون</string>
     <string name="voice_error_network">الصوت يحتاج إنترنت على هذا الجهاز</string>
-    <string name="voice_error_generic">خطأ صوتي، حاول مرة أخرى</string>
+    <string name="voice_error_generic">خطأ صوتي (رمز %1$d)، حاول مرة أخرى</string>
 </resources>

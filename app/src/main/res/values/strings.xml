@@ -165,5 +165,5 @@
     <string name="voice_error_timeout">No speech detected</string>
     <string name="voice_error_audio">Microphone error</string>
     <string name="voice_error_network">Voice needs internet on this device</string>
-    <string name="voice_error_generic">Voice error, try again</string>
+    <string name="voice_error_generic">Voice error (code %1$d), try again</string>
 </resources>
