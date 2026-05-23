@@ -39,6 +39,7 @@ Your API keys are encrypted with AES-256-GCM on device. Your conversations never
 - **Network-locked** — `network_security_config.xml` restricts traffic to only enabled provider hosts
 - **Image input** — send photos to vision-capable models (OpenAI, Anthropic, Gemini, OpenRouter)
 - **Voice input** — speech-to-text with Arabic, English, and Thai recognition
+- **Voice narration** — tap to hear AI responses read aloud, uses Android's built-in text-to-speech
 - **Conversation export** — share chats as plain text or markdown to any app
 - **Conversation search** — search by title and message content across all conversations
 - **Stop generation** — cancel AI responses mid-stream, partial content preserved

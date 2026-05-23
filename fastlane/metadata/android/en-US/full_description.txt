@@ -9,6 +9,7 @@ Features:
 • Bring Your Own Key (BYOK) — no subscriptions, no proxy server
 • Image input — send photos to vision-capable models (GPT-4, Claude, Gemini)
 • Voice input — speech-to-text in Arabic, English, and Thai
+• Voice narration — hear AI responses read aloud
 • Export conversations as plain text or markdown
 • Search conversations by title and message content
 • Stop generation — cancel AI responses mid-stream

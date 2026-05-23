@@ -8,6 +8,7 @@ All notable changes to Maskan are documented here.
 - Stop generation button — cancel AI responses mid-stream, partial content preserved
 - Conversation search — search by title and message content across all conversations
 - Voice input — microphone button with Arabic, English, and Thai speech recognition
+- Voice narration — tap play icon on AI responses to hear them read aloud (built-in TTS)
 - Conversation export — share chats as plain text or markdown to any app
 - Image input — send photos to vision-capable models (OpenAI, Anthropic, Gemini, OpenRouter)
 - Thai language — full UI translation + English↔Thai translation presets

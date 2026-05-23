@@ -1,6 +1,7 @@
 • Stop generation — cancel AI responses mid-stream
 • Conversation search across all chats
 • Voice input (Arabic, English, Thai)
+• Voice narration — hear AI responses read aloud
 • Export conversations as text or markdown
 • Image input for vision models (GPT-4, Claude, Gemini)
 • Thai language support + English↔Thai translation
