@@ -25,7 +25,7 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = 5
-        versionName = "2.3.0"
+        versionName = "2.3.1"
     }
 
     signingConfigs {
@@ -81,6 +81,14 @@ android {
     dependenciesInfo {
         includeInApk = false
         includeInBundle = false
+    }
+}
+
+// Disable baseline profile generation for reproducible builds (F-Droid)
+// See: https://f-droid.org/docs/Reproducible_Builds/#bug-baselineprof-not-deterministic
+tasks.whenTaskAdded {
+    if (name.contains("ArtProfile")) {
+        enabled = false
     }
 }
 
