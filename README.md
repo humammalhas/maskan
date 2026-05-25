@@ -59,7 +59,18 @@ Your API keys are encrypted with AES-256-GCM on device. Your conversations never
 
 ## Screenshots
 
-_Coming soon._
+<p align="center">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" width="24%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" width="24%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" width="24%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" width="24%" />
+</p>
+<p align="center">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" width="24%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6.png" width="24%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/7.png" width="24%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/8.png" width="24%" />
+</p>
 
 ---
 
