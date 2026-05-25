@@ -76,9 +76,9 @@ Your API keys are encrypted with AES-256-GCM on device. Your conversations never
 
 ## Installation
 
-### F-Droid / IzzyOnDroid (pending)
+### F-Droid (pending)
 
-Submission in progress. Check back soon.
+Submission in progress — [MR !39036](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/39036) pipeline fully green, awaiting maintainer merge.
 
 ### Direct APK
 
