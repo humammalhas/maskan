@@ -2,6 +2,26 @@
 
 All notable changes to Maskan are documented here.
 
+## [2.4.0] — 2026-06-05
+
+### Added
+- Markdown rendering — AI replies render headings, bold, lists, and code blocks, including Arabic/RTL
+- Venice AI — 12th provider, privacy-focused and OpenAI-compatible (zero-retention, uncensored models)
+- File attach — attach a `.txt` or `.html` file to a message (HTML stripped to text, 50 KB cap)
+- Anti-screenshot toggle — optional `FLAG_SECURE` setting to block screenshots and screen recording (off by default)
+- Dedicated privacy screens — a privacy intro and a detailed privacy screen, linked from Settings
+- Active provider and model are now shown in **bold** with a checkmark in the Settings dropdowns
+
+### Fixed
+- Open conversations now refresh in place — the assistant reply (first and follow-up) appears and finalizes live instead of only after leaving and re-entering the chat
+- Text-to-speech now works — declared the Android 11+ text-to-speech service in the manifest `<queries>` block, which was making every TTS engine invisible to the app; readiness and language handling reworked
+- The latest message is now shown immediately when opening a chat, instead of appearing only after you start typing
+
+## [2.3.1] — 2026-05-25
+
+### Fixed
+- Reproducible builds — disabled baseline profiles (non-deterministic `.prof`/`.profm`), added `META-INF/services` newline normalization. Universal APK added to the GitHub release for F-Droid verification.
+
 ## [2.3.0] — 2026-05-23
 
 ### Added

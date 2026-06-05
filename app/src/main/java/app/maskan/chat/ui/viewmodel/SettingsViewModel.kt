@@ -33,7 +33,9 @@ data class SettingsUiState(
     val isSaved: Boolean = false,
     val testState: TestConnectionState = TestConnectionState.Idle,
     val selectedLocale: String = "",
-    val selectedDialect: Dialect = Dialect.LEVANTINE
+    val selectedDialect: Dialect = Dialect.LEVANTINE,
+    val configuredProviderIds: Set<String> = emptySet(),
+    val blockScreenshots: Boolean = false
 )
 
 class SettingsViewModel(
@@ -61,7 +63,9 @@ class SettingsViewModel(
             baseUrl = keyRepository.getBaseUrl(provider.id) ?: provider.defaultBaseUrl,
             selectedModel = model,
             selectedLocale = localeRepository.getLocale(),
-            selectedDialect = preferenceRepository.getDefaultDialect()
+            selectedDialect = preferenceRepository.getDefaultDialect(),
+            configuredProviderIds = keyRepository.getAllStoredProviderIds().toSet(),
+            blockScreenshots = preferenceRepository.isBlockScreenshots()
         )
     }
 
@@ -93,7 +97,10 @@ class SettingsViewModel(
     fun saveApiKey() {
         val state = _uiState.value
         keyRepository.saveApiKey(state.selectedProvider.id, state.apiKey)
-        _uiState.value = state.copy(isSaved = true)
+        _uiState.value = state.copy(
+            isSaved = true,
+            configuredProviderIds = keyRepository.getAllStoredProviderIds().toSet()
+        )
     }
 
     fun saveBaseUrl() {
@@ -140,6 +147,13 @@ class SettingsViewModel(
     fun selectDialect(dialect: Dialect) {
         preferenceRepository.setDefaultDialect(dialect)
         _uiState.value = _uiState.value.copy(selectedDialect = dialect)
+    }
+
+    fun toggleBlockScreenshots(): Boolean {
+        val newValue = !_uiState.value.blockScreenshots
+        preferenceRepository.setBlockScreenshots(newValue)
+        _uiState.value = _uiState.value.copy(blockScreenshots = newValue)
+        return newValue
     }
 
     fun getProviderConfig() = ProviderConfigs.ALL.firstOrNull { it.id == _uiState.value.selectedProvider.id }

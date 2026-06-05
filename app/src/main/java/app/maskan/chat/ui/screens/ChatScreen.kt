@@ -7,6 +7,7 @@ import android.graphics.BitmapFactory
 import android.speech.RecognizerIntent
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.util.Log
 import android.util.Base64
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -55,6 +57,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -81,6 +84,7 @@ import app.maskan.chat.MaskanApplication
 import app.maskan.chat.R
 import app.maskan.chat.data.local.MessageEntity
 import app.maskan.chat.data.local.localizedName
+import app.maskan.chat.data.remote.providers.ProviderRegistry
 import app.maskan.chat.data.repository.PreferenceRepository
 import app.maskan.chat.ui.theme.maskanColors
 import app.maskan.chat.data.repository.ExportFormat
@@ -106,35 +110,33 @@ fun ChatScreen(
     val context = LocalContext.current
     val app = context.applicationContext as MaskanApplication
     val tts = remember { mutableStateOf<TextToSpeech?>(null) }
+    var ttsReady by remember { mutableStateOf(false) }
     var speakingMessageId by remember { mutableStateOf<Long?>(null) }
 
     DisposableEffect(Unit) {
-        tts.value = TextToSpeech(context) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                val locale = when (app.localeRepository.getLocale()) {
-                    "ar" -> Locale("ar", "SA")
-                    "th" -> Locale("th", "TH")
-                    "en" -> Locale("en", "US")
-                    else -> Locale.getDefault()
-                }
-                tts.value?.setLanguage(locale)
-                tts.value?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                    override fun onStart(utteranceId: String?) {}
-                    override fun onDone(utteranceId: String?) {
-                        speakingMessageId = null
-                    }
-                    @Deprecated("Deprecated in Java")
-                    override fun onError(utteranceId: String?) {
-                        speakingMessageId = null
-                    }
-                })
-            } else {
-                Toast.makeText(context, context.getString(R.string.voice_narration_unavailable), Toast.LENGTH_SHORT).show()
-            }
+        // Readiness depends ONLY on the init status — never on dereferencing the engine inside
+        // the callback (that callback can fire before the engine variable is assigned, which is
+        // what kept ttsReady false before). The listener is attached synchronously after
+        // construction; language selection happens lazily at speak time, when tts.value is
+        // guaranteed to be set.
+        val engine = TextToSpeech(context) { status ->
+            Log.e("MASKAN_TTS", "onInit status=$status (0=SUCCESS, -1=ERROR)")
+            ttsReady = status == TextToSpeech.SUCCESS
         }
+        engine.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) {}
+            override fun onDone(utteranceId: String?) {
+                speakingMessageId = null
+            }
+            @Deprecated("Deprecated in Java")
+            override fun onError(utteranceId: String?) {
+                speakingMessageId = null
+            }
+        })
+        tts.value = engine
         onDispose {
-            tts.value?.stop()
-            tts.value?.shutdown()
+            engine.stop()
+            engine.shutdown()
         }
     }
 
@@ -146,15 +148,35 @@ fun ChatScreen(
         }
     }
 
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            viewModel.attachFile(uri)
+        }
+    }
+
+    var showAttachTypeDialog by remember { mutableStateOf(false) }
+
     LaunchedEffect(conversationId) {
         viewModel.loadConversation(conversationId)
     }
 
     val visibleMessages = uiState.messages.filter { it.role != "system" }
 
-    LaunchedEffect(visibleMessages.size) {
+    // Keep the latest message in view. Keyed on the last message's id and length (not just the
+    // list size) so it also fires when an existing chat finishes loading and as streaming content
+    // grows. Use an instant scroll on load/finalize — an animated scroll could stop short of a
+    // tall final message, leaving it below the fold until the next relayout (e.g. on typing).
+    val lastVisible = visibleMessages.lastOrNull()
+    LaunchedEffect(visibleMessages.size, lastVisible?.id, lastVisible?.content?.length, uiState.isLoading) {
         if (visibleMessages.isNotEmpty()) {
-            listState.animateScrollToItem(visibleMessages.size - 1)
+            val target = visibleMessages.size - 1
+            if (uiState.isStreaming) {
+                listState.animateScrollToItem(target)
+            } else {
+                listState.scrollToItem(target)
+            }
         }
     }
 
@@ -175,6 +197,39 @@ fun ChatScreen(
                 viewModel.setCustomPrompt(prompt)
             },
             onDismiss = { showCustomPromptDialog = false }
+        )
+    }
+
+    if (showAttachTypeDialog) {
+        AlertDialog(
+            onDismissRequest = { showAttachTypeDialog = false },
+            title = { Text(stringResource(R.string.attach_type_title)) },
+            text = {
+                Column {
+                    if (viewModel.currentProviderSupportsVision()) {
+                        TextButton(onClick = {
+                            showAttachTypeDialog = false
+                            photoPickerLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        }) {
+                            Text(stringResource(R.string.attach_choose_image))
+                        }
+                    }
+                    TextButton(onClick = {
+                        showAttachTypeDialog = false
+                        filePickerLauncher.launch(arrayOf("text/plain", "text/html"))
+                    }) {
+                        Text(stringResource(R.string.attach_choose_file))
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showAttachTypeDialog = false }) {
+                    Text(stringResource(R.string.cancel_button))
+                }
+            }
         )
     }
 
@@ -232,31 +287,42 @@ fun ChatScreen(
         },
         bottomBar = {
             if (uiState.presetSelected) {
-                Column(modifier = Modifier.navigationBarsPadding()) {
+                Column(modifier = Modifier.navigationBarsPadding().imePadding()) {
                     uiState.pendingImageBytes?.let { bytes ->
                         ImagePreview(
                             imageBytes = bytes,
                             onRemove = { viewModel.clearPendingImage() }
+                        )
+                        if (!preferenceRepository.hasSeenImagePrivacyNote()) {
+                            val providerName = ProviderRegistry.getProvider(uiState.selectedProviderId)?.let { provider ->
+                                if (app.localeRepository.getLocale() == "ar") provider.nameAr else provider.displayName
+                            } ?: uiState.selectedProviderId
+                            PrivacyInfoNote(
+                                text = stringResource(R.string.privacy_note_image, providerName),
+                                onDismissForever = { preferenceRepository.setImagePrivacyNoteSeen() }
+                            )
+                        }
+                    }
+                    uiState.pendingFileName?.let { fileName ->
+                        FileAttachmentChip(
+                            fileName = fileName,
+                            onRemove = { viewModel.clearPendingFile() }
                         )
                     }
                     MessageInputBar(
                         text = inputText,
                         onTextChange = { inputText = it },
                         onSend = {
-                            if (inputText.isNotBlank() || uiState.pendingImageBytes != null) {
+                            if (inputText.isNotBlank() || uiState.pendingImageBytes != null || uiState.pendingFileText != null) {
                                 viewModel.sendMessage(inputText)
                                 inputText = ""
                             }
                         },
                         onStop = { viewModel.cancelGeneration() },
                         isLoading = uiState.isLoading || uiState.isStreaming,
-                        showAttachButton = viewModel.currentProviderSupportsVision(),
-                        onAttach = {
-                            photoPickerLauncher.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                            )
-                        },
-                        hasImage = uiState.pendingImageBytes != null
+                        onAttach = { showAttachTypeDialog = true },
+                        hasAttachment = uiState.pendingImageBytes != null || uiState.pendingFileText != null,
+                        preferenceRepository = preferenceRepository
                     )
                 }
             }
@@ -312,18 +378,45 @@ fun ChatScreen(
                     items = visibleMessages,
                     key = { it.id }
                 ) { message ->
+                    val isLastMessage = message == visibleMessages.lastOrNull()
+                    val isActivelyStreaming = uiState.isStreaming && isLastMessage && message.role == "assistant"
                     MessageBubble(
                         message = message,
                         isUser = message.role == "user",
+                        isStreaming = isActivelyStreaming,
                         isSpeaking = speakingMessageId == message.id,
                         onSpeakToggle = {
-                            if (speakingMessageId == message.id) {
-                                tts.value?.stop()
+                            val engine = tts.value
+                            if (!ttsReady || engine == null) {
+                                Toast.makeText(context, context.getString(R.string.voice_narration_unavailable), Toast.LENGTH_SHORT).show()
+                            } else if (speakingMessageId == message.id) {
+                                engine.stop()
                                 speakingMessageId = null
                             } else {
-                                tts.value?.stop()
-                                speakingMessageId = message.id
-                                tts.value?.speak(message.content, TextToSpeech.QUEUE_FLUSH, null, message.id.toString())
+                                val appLocale = app.localeRepository.getLocale()
+                                val locale = when (appLocale) {
+                                    "ar" -> Locale("ar", "SA")
+                                    "th" -> Locale("th", "TH")
+                                    "en" -> Locale("en", "US")
+                                    else -> Locale.getDefault()
+                                }
+                                var langResult = engine.setLanguage(locale)
+                                Log.e("MASKAN_TTS", "speak setLanguage($locale) result=$langResult")
+                                if (langResult == TextToSpeech.LANG_MISSING_DATA || langResult == TextToSpeech.LANG_NOT_SUPPORTED) {
+                                    // Fall back to en-US only for English/system content — reading
+                                    // Arabic with an English voice is gibberish.
+                                    if (appLocale == "en" || appLocale.isEmpty()) {
+                                        langResult = engine.setLanguage(Locale.US)
+                                        Log.e("MASKAN_TTS", "fallback setLanguage(en-US) result=$langResult")
+                                    }
+                                }
+                                if (langResult == TextToSpeech.LANG_MISSING_DATA || langResult == TextToSpeech.LANG_NOT_SUPPORTED) {
+                                    Toast.makeText(context, context.getString(R.string.tts_language_unavailable), Toast.LENGTH_SHORT).show()
+                                } else {
+                                    engine.stop()
+                                    speakingMessageId = message.id
+                                    engine.speak(message.content, TextToSpeech.QUEUE_FLUSH, null, message.id.toString())
+                                }
                             }
                         }
                     )
@@ -364,6 +457,42 @@ private fun ImagePreview(
                     imageVector = Icons.Filled.Close,
                     contentDescription = stringResource(R.string.remove_image),
                     tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FileAttachmentChip(
+    fileName: String,
+    onRemove: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 4.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.maskanColors.skyBlue.copy(alpha = 0.3f),
+        tonalElevation = 0.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 12.dp, top = 4.dp, bottom = 4.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = fileName,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                modifier = Modifier.widthIn(max = 200.dp)
+            )
+            IconButton(
+                onClick = onRemove,
+                modifier = Modifier.size(24.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = stringResource(R.string.remove_file),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(16.dp)
                 )
             }
@@ -416,6 +545,7 @@ private fun CustomPromptDialog(
 private fun MessageBubble(
     message: MessageEntity,
     isUser: Boolean,
+    isStreaming: Boolean = false,
     isSpeaking: Boolean = false,
     onSpeakToggle: () -> Unit = {}
 ) {
@@ -466,10 +596,14 @@ private fun MessageBubble(
                     }
                     if (message.content.isNotBlank()) {
                         SelectionContainer {
-                            Text(
-                                text = message.content,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+                            if (!isUser && !isStreaming) {
+                                MarkdownText(text = message.content)
+                            } else {
+                                Text(
+                                    text = message.content,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
                         }
                     }
                 }
@@ -509,12 +643,13 @@ private fun MessageInputBar(
     onSend: () -> Unit,
     onStop: () -> Unit,
     isLoading: Boolean,
-    showAttachButton: Boolean = false,
     onAttach: () -> Unit = {},
-    hasImage: Boolean = false
+    hasAttachment: Boolean = false,
+    preferenceRepository: PreferenceRepository? = null
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as MaskanApplication
+    var showVoiceNote by remember { mutableStateOf(false) }
 
     val speechLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -530,20 +665,31 @@ private fun MessageInputBar(
         }
     }
 
+    Column {
+        if (showVoiceNote) {
+            PrivacyInfoNote(
+                text = stringResource(R.string.privacy_note_voice),
+                onDismissForever = {
+                    preferenceRepository?.setVoicePrivacyNoteSeen()
+                    showVoiceNote = false
+                }
+            )
+        }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (showAttachButton && !isLoading) {
+        if (!isLoading) {
             IconButton(
                 onClick = onAttach,
                 modifier = Modifier.size(48.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = stringResource(R.string.attach_image),
+                    contentDescription = stringResource(R.string.attach_file),
                     tint = MaterialTheme.colorScheme.primary
                 )
             }
@@ -567,6 +713,9 @@ private fun MessageInputBar(
         Spacer(modifier = Modifier.width(4.dp))
         IconButton(
             onClick = {
+                if (preferenceRepository != null && !preferenceRepository.hasSeenVoicePrivacyNote()) {
+                    showVoiceNote = true
+                }
                 val localeTag = when (app.localeRepository.getLocale()) {
                     "ar" -> "ar-SA"
                     "th" -> "th-TH"
@@ -604,15 +753,52 @@ private fun MessageInputBar(
         } else {
             IconButton(
                 onClick = onSend,
-                enabled = text.isNotBlank() || hasImage
+                enabled = text.isNotBlank() || hasAttachment
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Send,
                     contentDescription = stringResource(R.string.send_button),
-                    tint = if (text.isNotBlank() || hasImage)
+                    tint = if (text.isNotBlank() || hasAttachment)
                         MaterialTheme.colorScheme.primary
                     else
                         MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+    }
+}
+
+@Composable
+private fun PrivacyInfoNote(
+    text: String,
+    onDismissForever: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.maskanColors.softLavender,
+        tonalElevation = 1.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f)
+            )
+            TextButton(
+                onClick = onDismissForever,
+                modifier = Modifier.padding(start = 4.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.privacy_note_dismiss),
+                    style = MaterialTheme.typography.labelSmall
                 )
             }
         }

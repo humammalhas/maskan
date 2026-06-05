@@ -3,6 +3,7 @@ package app.maskan.chat
 import android.app.LocaleManager
 import android.os.Build
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -22,6 +23,8 @@ import app.maskan.chat.ui.screens.AboutScreen
 import app.maskan.chat.ui.screens.ChatScreen
 import app.maskan.chat.ui.screens.ConversationListScreen
 import app.maskan.chat.ui.screens.SettingsScreen
+import app.maskan.chat.ui.screens.PrivacyIntroScreen
+import app.maskan.chat.ui.screens.PrivacyScreen
 import app.maskan.chat.ui.screens.WelcomeScreen
 import app.maskan.chat.ui.theme.MaskanTheme
 import app.maskan.chat.ui.viewmodel.ConversationListViewModel
@@ -35,6 +38,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        if (app.preferenceRepository.isBlockScreenshots()) {
+            window.setFlags(
+                WindowManager.LayoutParams.FLAG_SECURE,
+                WindowManager.LayoutParams.FLAG_SECURE
+            )
+        }
+
         val factory = MaskanViewModelFactory(app)
         val conversationListViewModel = ViewModelProvider(this, factory)[ConversationListViewModel::class.java]
         val settingsViewModel = ViewModelProvider(this, factory)[SettingsViewModel::class.java]
@@ -47,6 +57,7 @@ class MainActivity : ComponentActivity() {
         }
 
         val isFirstLaunch = !app.preferenceRepository.hasCompletedSetup()
+        val needsPrivacyIntro = !app.preferenceRepository.hasSeenPrivacyIntro()
 
         setContent {
             MaskanTheme(isArabic = isArabic) {
@@ -55,7 +66,8 @@ class MainActivity : ComponentActivity() {
                     settingsViewModel = settingsViewModel,
                     preferenceRepository = app.preferenceRepository,
                     onRestart = { recreate() },
-                    isFirstLaunch = isFirstLaunch
+                    isFirstLaunch = isFirstLaunch,
+                    needsPrivacyIntro = needsPrivacyIntro
                 )
             }
         }
@@ -68,10 +80,15 @@ private fun AppNavigation(
     settingsViewModel: SettingsViewModel,
     preferenceRepository: PreferenceRepository,
     onRestart: () -> Unit,
-    isFirstLaunch: Boolean
+    isFirstLaunch: Boolean,
+    needsPrivacyIntro: Boolean = false
 ) {
     val navController = rememberNavController()
-    val startDestination = if (isFirstLaunch) Routes.WELCOME else Routes.CONVERSATION_LIST
+    val startDestination = when {
+        isFirstLaunch -> Routes.WELCOME
+        needsPrivacyIntro -> Routes.PRIVACY_INTRO
+        else -> Routes.CONVERSATION_LIST
+    }
 
     NavHost(
         navController = navController,
@@ -81,9 +98,23 @@ private fun AppNavigation(
             WelcomeScreen(
                 onGetStarted = {
                     preferenceRepository.setCompletedSetup()
-                    navController.navigate(Routes.SETTINGS + "?firstLaunch=true") {
+                    navController.navigate(Routes.PRIVACY_INTRO) {
                         popUpTo(Routes.WELCOME) { inclusive = true }
                     }
+                }
+            )
+        }
+
+        composable(Routes.PRIVACY_INTRO) {
+            PrivacyIntroScreen(
+                onGotIt = {
+                    preferenceRepository.setPrivacyIntroSeen()
+                    navController.navigate(Routes.SETTINGS + "?firstLaunch=true") {
+                        popUpTo(Routes.PRIVACY_INTRO) { inclusive = true }
+                    }
+                },
+                onLearnMore = {
+                    navController.navigate(Routes.PRIVACY)
                 }
             )
         }
@@ -137,6 +168,7 @@ private fun AppNavigation(
                     }
                 },
                 onNavigateToAbout = { navController.navigate(Routes.ABOUT) },
+                onNavigateToPrivacy = { navController.navigate(Routes.PRIVACY) },
                 onLocaleChanged = { onRestart() },
                 isFirstLaunch = isFirstLaunchSettings
             )
@@ -144,6 +176,12 @@ private fun AppNavigation(
 
         composable(Routes.ABOUT) {
             AboutScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Routes.PRIVACY) {
+            PrivacyScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }

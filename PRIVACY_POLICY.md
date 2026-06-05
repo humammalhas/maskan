@@ -2,7 +2,7 @@
 
 **Maskan — Private AI Chat**
 **Effective date:** May 25, 2026
-**Last updated:** May 25, 2026
+**Last updated:** June 5, 2026
 
 ---
 
@@ -18,7 +18,7 @@ Maskan has no backend server, no user accounts, no analytics, no telemetry, no c
 
 All of the following data is stored locally on your device and is never transmitted to the developer or any third party:
 
-- **Conversations and messages** — Stored in a local SQLCipher-encrypted database (AES-256-CBC). Messages, including any attached images, remain on your device unless you choose to export them.
+- **Conversations and messages** — Stored in a local SQLCipher-encrypted database (AES-256-CBC). Messages, including any attached images or text files, remain on your device unless you choose to export them or send them to an AI provider.
 - **API keys** — Encrypted with AES-256-GCM using the Android Keystore system and stored in Android's EncryptedSharedPreferences. Keys are never logged, transmitted to the developer, or stored in plain text.
 - **App settings and preferences** — Language choice, selected provider, display preferences, and folder organization are stored locally.
 
@@ -28,12 +28,12 @@ All of the following data is stored locally on your device and is never transmit
 
 When you send a chat message, Maskan transmits the following to the AI provider you have configured:
 
-- Your message text (and attached images, if applicable)
+- Your message text (and attached images or text-file contents, if applicable)
 - Recent conversation history (up to 50 messages for context)
 - Your system prompt, if one is selected
 - Your API key, as an authentication header
 
-**You choose which provider to use.** Maskan supports 11 providers: DeepSeek, OpenAI, Anthropic Claude, Google Gemini, Groq, Together AI, Mistral, OpenRouter, Ollama, LM Studio, and custom URL endpoints. No data is sent to any provider until you configure an API key and actively send a message.
+**You choose which provider to use.** Maskan supports 12 providers: DeepSeek, OpenAI, Anthropic Claude, Google Gemini, Groq, Together AI, Mistral, Venice AI, OpenRouter, Ollama, LM Studio, and custom URL endpoints. No data is sent to any provider until you configure an API key and actively send a message.
 
 **Maskan does not control how providers handle your data.** Each provider has its own privacy policy and terms of service. You are responsible for reviewing and accepting those terms when you obtain your API key. Maskan acts solely as a client — it sends your messages to the provider you selected and displays the response.
 
@@ -47,6 +47,14 @@ Maskan requests two Android permissions:
 
 - **INTERNET** — Required to communicate with the AI provider APIs you configure.
 - **RECORD_AUDIO** — Used for optional voice-to-text input. Maskan launches the Android system's built-in speech recognizer; it does not record, store, or transmit audio itself. You can use the app without granting this permission.
+
+Voice narration (text-to-speech) uses whichever text-to-speech engine you have set as your device's default; Maskan sends it only the on-screen reply text to be spoken aloud, locally on your device.
+
+---
+
+## On-device security options
+
+Maskan includes an optional **block screenshots** setting (off by default). When enabled, it sets the Android `FLAG_SECURE` flag on the app window, which prevents screenshots and screen recording of the app and hides it from the recent-apps preview. This is a local security control and involves no data collection.
 
 ---
 

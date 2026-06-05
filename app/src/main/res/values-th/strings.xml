@@ -129,6 +129,19 @@
     <string name="image_too_large">รูปภาพใหญ่เกินไป กรุณาเลือกรูปที่เล็กกว่า</string>
     <string name="provider_no_vision">ผู้ให้บริการนี้ไม่รองรับการส่งรูปภาพ</string>
 
+    <!-- File input -->
+    <string name="attach_file">แนบไฟล์ข้อความ</string>
+    <string name="remove_file">ลบไฟล์</string>
+    <string name="file_too_large">ไฟล์ใหญ่เกินไป (สูงสุด 50 KB ของข้อความ) กรุณาเลือกไฟล์ที่เล็กกว่า</string>
+    <string name="file_read_error">ไม่สามารถอ่านไฟล์นี้ได้</string>
+    <string name="attach_choose_image">รูปภาพ</string>
+    <string name="attach_choose_file">ไฟล์ข้อความ (.txt, .html)</string>
+    <string name="attach_type_title">แนบ</string>
+
+    <!-- Markdown -->
+    <string name="code_copied">คัดลอกแล้ว!</string>
+    <string name="copy_code">คัดลอก</string>
+
     <!-- Error messages -->
     <string name="error_api_key_missing">ยังไม่ได้ตั้งค่า API Key กรุณาเพิ่ม API Key ในการตั้งค่า</string>
     <string name="error_empty_response">การตอบกลับจาก API ว่างเปล่า</string>
@@ -165,4 +178,48 @@
     <string name="voice_error_network">เสียงต้องใช้อินเทอร์เน็ตบนอุปกรณ์นี้</string>
     <string name="voice_error_generic">เสียงผิดพลาด (รหัส %1$d) ลองอีกครั้ง</string>
     <string name="voice_narration_unavailable">ไม่สามารถใช้การอ่านออกเสียงได้</string>
+    <string name="tts_language_unavailable">ไม่มีเสียงสำหรับภาษานี้</string>
+    <string name="provider_configured">กำหนดค่าแล้ว</string>
+    <string name="model_active">โมเดลที่ใช้งาน</string>
+    <string name="security_section">ความปลอดภัย</string>
+    <string name="block_screenshots_label">บล็อกการจับภาพหน้าจอ</string>
+    <string name="block_screenshots_hint">ซ่อนเนื้อหาแอปจากการจับภาพหน้าจอ การบันทึกหน้าจอ และแอปล่าสุด</string>
+    <string name="provider_badge_cloud">คลาวด์ — ส่งไปยังผู้ให้บริการ</string>
+    <string name="provider_badge_local">ภายในเครื่อง — อยู่ในอุปกรณ์</string>
+    <string name="privacy_intro_title">มัสกันจัดการข้อมูลของคุณอย่างไร</string>
+    <string name="privacy_intro_bullet_encrypted">คีย์และแชทของคุณถูกเข้ารหัสบนอุปกรณ์นี้ มัสกันไม่มีเซิร์ฟเวอร์และไม่เคยเห็นการสนทนาของคุณ</string>
+    <string name="privacy_intro_bullet_cloud">เมื่อคุณแชทกับ AI บนคลาวด์ (OpenAI, Google, DeepSeek ฯลฯ) ข้อความของคุณจะถูกส่งไปยังผู้ให้บริการนั้นและนโยบายความเป็นส่วนตัวของเขาจะมีผลบังคับใช้</string>
+    <string name="privacy_intro_bullet_venice">ต้องการใช้คลาวด์? Venice เป็นตัวเลือกที่เคารพความเป็นส่วนตัวมากที่สุด — ไม่จัดเก็บหรือบันทึกแชทของคุณ</string>
+    <string name="privacy_intro_bullet_local">เพื่อความเป็นส่วนตัวสูงสุด ใช้ผู้ให้บริการภายในเครื่อง (Ollama หรือ LM Studio): AI ทำงานบนเครื่องของคุณและข้อความไม่ออกจากเครือข่ายของคุณ</string>
+    <string name="privacy_intro_got_it">เข้าใจแล้ว</string>
+    <string name="privacy_intro_learn_more">เรียนรู้เพิ่มเติม</string>
+
+    <!-- Privacy screen -->
+    <string name="privacy_screen_title">รายละเอียดความเป็นส่วนตัว</string>
+    <string name="privacy_core_principle">แอปที่เป็นส่วนตัวไม่เหมือนกับ AI ที่เป็นส่วนตัว มัสกันเข้ารหัสทุกอย่างไว้บนอุปกรณ์ของคุณ แต่เมื่อคุณส่งข้อความไปยัง AI บนคลาวด์ ข้อความต้องไปถึงเซิร์ฟเวอร์ของเขาเพื่อตอบกลับ</string>
+    <string name="privacy_protects_header">สิ่งที่มัสกันปกป้อง</string>
+    <string name="privacy_protects_no_middleman">ไม่มีเซิร์ฟเวอร์ของมัสกัน ไม่มีตัวกลาง แชทของคุณไม่ถูกเห็นหรือจัดเก็บโดยเราหรือบุคคลที่สาม</string>
+    <string name="privacy_protects_encrypted">API Key และบทสนทนาถูกเข้ารหัสบนอุปกรณ์ของคุณ</string>
+    <string name="privacy_protects_your_choice">คุณเลือกว่าข้อความจะไปที่ไหน — รวมถึงภายในเครื่อง ซึ่งไม่มีอะไรออกจากโทรศัพท์ของคุณ</string>
+    <string name="privacy_protects_no_google">ใช้งานได้โดยไม่ต้องมี Google Play Services หรือบัญชี Google</string>
+    <string name="privacy_protects_open_source">โอเพนซอร์ส (GPL-3.0) — ใครก็ตรวจสอบได้ในโค้ด</string>
+    <string name="privacy_cannot_header">สิ่งที่มัสกันทำไม่ได้</string>
+    <string name="privacy_cannot_hide_from_provider">ไม่สามารถซ่อนข้อความของคุณจากผู้ให้บริการคลาวด์ที่คุณเลือก หากคุณใช้ OpenAI, Google, DeepSeek ฯลฯ พวกเขาจะได้รับข้อความของคุณและจัดการตามนโยบายของเขา ไม่มีแอปใดเปลี่ยนแปลงสิ่งนี้ได้</string>
+    <string name="privacy_ladder_header">ข้อความของคุณไปที่ไหน — จากส่วนตัวมากที่สุดไปน้อยที่สุด</string>
+    <string name="privacy_tier1_title">บนโทรศัพท์ของคุณ (ภายในเครื่อง) — Ollama, LM Studio</string>
+    <string name="privacy_tier1_desc">AI ทำงานบนอุปกรณ์ของคุณเอง ข้อความไม่ออกจากโทรศัพท์หรือเครือข่ายของคุณ</string>
+    <string name="privacy_tier1_trust">เป็นส่วนตัวอย่างเต็มที่ ไม่ต้องเชื่อใจใคร</string>
+    <string name="privacy_tier2_title">คลาวด์ส่วนตัว — Venice</string>
+    <string name="privacy_tier2_desc">ข้อความของคุณถูกส่งไปยัง Venice แต่ Venice ระบุว่าไม่จัดเก็บหรือบันทึก</string>
+    <string name="privacy_tier2_trust">เป็นส่วนตัวมาก ตามคำมั่นสัญญาของเขา</string>
+    <string name="privacy_tier3_title">คลาวด์ทั่วไป — OpenAI, Anthropic (Claude), Google (Gemini), DeepSeek, Groq, Mistral, Together, OpenRouter</string>
+    <string name="privacy_tier3_desc">ข้อความของคุณถูกส่งไปยังบริษัทนั้นและจัดการตามนโยบายความเป็นส่วนตัวของเขา</string>
+    <string name="privacy_tier3_trust">สะดวกที่สุด เป็นส่วนตัวน้อยที่สุด</string>
+    <string name="privacy_ladder_tip">เคล็ดลับ: การใช้ผู้ให้บริการเหล่านี้ผ่าน API Key ของคุณเองในมัสกันมักเป็นส่วนตัวมากกว่าการใช้แอปของบริษัทเอง (เช่น ChatGPT หรือ Gemini) ซึ่งแชทมักถูกใช้เพื่อฝึกโมเดลโดยค่าเริ่มต้น</string>
+    <string name="settings_privacy_link">รายละเอียดความเป็นส่วนตัว</string>
+
+    <!-- Privacy context notes -->
+    <string name="privacy_note_image">เนื้อหาของรูปภาพนี้จะถูกส่งไปยัง %1$s</string>
+    <string name="privacy_note_voice">เสียงจะถูกประมวลผลโดยบริการรู้จำเสียงของโทรศัพท์ ซึ่งอาจส่งเสียงไปยังผู้ให้บริการ (มักเป็น Google)</string>
+    <string name="privacy_note_dismiss">ไม่ต้องแสดงอีก</string>
 </resources>

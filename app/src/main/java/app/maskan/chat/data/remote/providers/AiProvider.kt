@@ -10,6 +10,7 @@ interface AiProvider {
     val defaultBaseUrl: String
     val supportsCustomBaseUrl: Boolean
     val supportsVision: Boolean get() = false
+    val isLocal: Boolean get() = false
     val availableModels: List<String>
     val defaultModel: String
     val keyAcquisitionUrl: String

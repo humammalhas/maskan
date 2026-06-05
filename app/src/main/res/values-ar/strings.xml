@@ -131,6 +131,19 @@
     <string name="image_too_large">الصورة كبيرة جداً. الرجاء اختيار صورة أصغر.</string>
     <string name="provider_no_vision">هذا المزود لا يدعم إرسال الصور</string>
 
+    <!-- File input -->
+    <string name="attach_file">إرفاق ملف نصي</string>
+    <string name="remove_file">إزالة الملف</string>
+    <string name="file_too_large">الملف كبير جداً (الحد الأقصى 50 كيلوبايت من النص). اختر ملفاً أصغر.</string>
+    <string name="file_read_error">تعذّر قراءة هذا الملف.</string>
+    <string name="attach_choose_image">صورة</string>
+    <string name="attach_choose_file">ملف نصي (.txt, .html)</string>
+    <string name="attach_type_title">إرفاق</string>
+
+    <!-- Markdown -->
+    <string name="code_copied">تم النسخ!</string>
+    <string name="copy_code">نسخ</string>
+
     <!-- Error messages -->
     <string name="error_api_key_missing">مفتاح API غير مضبوط. الرجاء إضافة مفتاح API في الإعدادات.</string>
     <string name="error_empty_response">استجابة فارغة من الخادم.</string>
@@ -167,4 +180,48 @@
     <string name="voice_error_network">الصوت يحتاج إنترنت على هذا الجهاز</string>
     <string name="voice_error_generic">خطأ صوتي (رمز %1$d)، حاول مرة أخرى</string>
     <string name="voice_narration_unavailable">تحويل النص إلى كلام غير متاح</string>
+    <string name="tts_language_unavailable">لا يوجد صوت متاح لهذه اللغة</string>
+    <string name="provider_configured">مُهيّأ</string>
+    <string name="model_active">النموذج النشط</string>
+    <string name="security_section">الأمان</string>
+    <string name="block_screenshots_label">منع لقطات الشاشة</string>
+    <string name="block_screenshots_hint">يخفي محتوى التطبيق من لقطات الشاشة وتسجيل الشاشة والتطبيقات الأخيرة</string>
+    <string name="provider_badge_cloud">سحابي — يُرسل إلى المزوّد</string>
+    <string name="provider_badge_local">محلي — يبقى على الجهاز</string>
+    <string name="privacy_intro_title">كيف يتعامل مسكن مع بياناتك</string>
+    <string name="privacy_intro_bullet_encrypted">مفاتيحك ومحادثاتك مشفّرة على هذا الجهاز. مسكن ليس لديه خادم ولا يطّلع على محادثاتك أبداً.</string>
+    <string name="privacy_intro_bullet_cloud">عندما تتحدث مع ذكاء اصطناعي سحابي (OpenAI، Google، DeepSeek، إلخ)، تُرسل رسائلك إلى ذلك المزوّد وتنطبق سياسة الخصوصية الخاصة به.</string>
+    <string name="privacy_intro_bullet_venice">تفضّل خياراً سحابياً؟ Venice هو الأكثر احتراماً للخصوصية — فهو لا يخزّن محادثاتك ولا يسجّلها.</string>
+    <string name="privacy_intro_bullet_local">لأقصى خصوصية، استخدم مزوّداً محلياً (Ollama أو LM Studio): يعمل الذكاء الاصطناعي على جهازك ولا تغادر رسائلك شبكتك.</string>
+    <string name="privacy_intro_got_it">فهمت</string>
+    <string name="privacy_intro_learn_more">اعرف المزيد</string>
+
+    <!-- Privacy screen -->
+    <string name="privacy_screen_title">تفاصيل الخصوصية</string>
+    <string name="privacy_core_principle">التطبيق الخاص ليس نفسه الذكاء الاصطناعي الخاص. مسكن يحفظ كل شيء مُشفَّراً على جهازك، لكن عندما ترسل رسالة إلى ذكاء اصطناعي سحابي، يجب أن تصل إلى خوادمه ليتم الرد عليها.</string>
+    <string name="privacy_protects_header">ما يحميه مسكن</string>
+    <string name="privacy_protects_no_middleman">لا خادم لمسكن، لا وسيط. محادثاتك لا يطّلع عليها أو يخزّنها أي طرف ثالث.</string>
+    <string name="privacy_protects_encrypted">مفاتيح API والمحادثات مُشفَّرة على جهازك.</string>
+    <string name="privacy_protects_your_choice">أنت تختار أين تذهب رسائلك — بما في ذلك محلياً بالكامل، حيث لا شيء يغادر هاتفك.</string>
+    <string name="privacy_protects_no_google">يعمل بدون خدمات Google Play أو حساب Google.</string>
+    <string name="privacy_protects_open_source">مفتوح المصدر (GPL-3.0) — يمكن لأي شخص التحقق من هذه الادعاءات في الكود.</string>
+    <string name="privacy_cannot_header">ما لا يستطيع مسكن فعله</string>
+    <string name="privacy_cannot_hide_from_provider">لا يمكنه إخفاء رسائلك عن مزوّد سحابي اخترته. إذا استخدمت OpenAI أو Google أو DeepSeek وغيرها، فهم يستلمون رسائلك ويتعاملون معها وفق سياساتهم الخاصة. لا يوجد تطبيق يمكنه تغيير هذا.</string>
+    <string name="privacy_ladder_header">أين تذهب رسائلك — من الأكثر إلى الأقل خصوصية</string>
+    <string name="privacy_tier1_title">على هاتفك (محلي) — Ollama، LM Studio</string>
+    <string name="privacy_tier1_desc">الذكاء الاصطناعي يعمل على جهازك. رسائلك لا تغادر هاتفك أو شبكتك أبداً.</string>
+    <string name="privacy_tier1_trust">خاص بالكامل، لا حاجة للثقة بأحد.</string>
+    <string name="privacy_tier2_title">سحابي خاص — Venice</string>
+    <string name="privacy_tier2_desc">رسالتك تُرسل إلى Venice، لكن Venice يصرّح بأنه لا يخزّنها أو يسجّلها.</string>
+    <string name="privacy_tier2_trust">خاص جداً، بناءً على وعدهم.</string>
+    <string name="privacy_tier3_title">سحابي عادي — OpenAI، Anthropic (Claude)، Google (Gemini)، DeepSeek، Groq، Mistral، Together، OpenRouter</string>
+    <string name="privacy_tier3_desc">رسالتك تُرسل إلى تلك الشركة وتُعالج وفق سياسة الخصوصية الخاصة بها.</string>
+    <string name="privacy_tier3_trust">الأكثر ملاءمة، الأقل خصوصية.</string>
+    <string name="privacy_ladder_tip">نصيحة: استخدام هذه المزوّدات عبر مفتاح API الخاص بك في مسكن عادةً أكثر خصوصية من استخدام تطبيق الشركة نفسها (مثل ChatGPT أو Gemini)، حيث تُستخدم المحادثات غالباً لتدريب نماذجهم بشكل افتراضي.</string>
+    <string name="settings_privacy_link">تفاصيل الخصوصية</string>
+
+    <!-- Privacy context notes -->
+    <string name="privacy_note_image">سيتم إرسال محتوى هذه الصورة إلى %1$s.</string>
+    <string name="privacy_note_voice">يتم التعرّف على الصوت عبر خدمة النطق المدمجة في هاتفك، والتي قد ترسل الصوت إلى مزوّدها (غالباً Google).</string>
+    <string name="privacy_note_dismiss">لا تعرض مرة أخرى</string>
 </resources>

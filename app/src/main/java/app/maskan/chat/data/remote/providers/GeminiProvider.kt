@@ -24,6 +24,7 @@ class GeminiProvider(
     override val defaultBaseUrl: String = config.baseUrl
     override val supportsCustomBaseUrl: Boolean = false
     override val supportsVision: Boolean = config.supportsVision
+    override val isLocal: Boolean = config.isLocal
     override val availableModels: List<String> = config.models
     override val defaultModel: String = config.defaultModel
     override val keyAcquisitionUrl: String = config.keyAcquisitionUrl

@@ -7,6 +7,7 @@ data class ProviderConfig(
     val baseUrl: String,
     val supportsCustomBaseUrl: Boolean = false,
     val supportsVision: Boolean = false,
+    val isLocal: Boolean = false,
     val models: List<String>,
     val defaultModel: String,
     val keyAcquisitionUrl: String,
@@ -95,6 +96,20 @@ object ProviderConfigs {
         instructionsAr = "اذهب إلى console.mistral.ai وسجّل الدخول أو أنشئ حساباً.\nانتقل إلى \"API Keys\".\nأنشئ مفتاح API جديداً وانسخه.\nميسترال شركة أوروبية ومتوافقة مع GDPR."
     )
 
+    val VENICE = ProviderConfig(
+        id = "venice",
+        displayName = "Venice AI",
+        nameAr = "فينيس",
+        baseUrl = "https://api.venice.ai/api/",
+        models = listOf("venice-uncensored-1-2", "llama-3.3-70b", "qwen3-235b-a22b-instruct-2507", "deepseek-v3.2", "google-gemma-4-31b-it"),
+        defaultModel = "venice-uncensored-1-2",
+        keyAcquisitionUrl = "https://venice.ai/settings/api",
+        pricingInfo = "Credit-based, free tier available",
+        pricingInfoAr = "نظام رصيد، باقة مجانية متوفرة",
+        instructionsEn = "Go to venice.ai and sign up or log in.\nNavigate to Settings → API.\nCreate a new API key and copy it.\nVenice is a privacy-focused provider with zero-retention policies and uncensored models.",
+        instructionsAr = "اذهب إلى venice.ai وسجّل الدخول أو أنشئ حساباً.\nانتقل إلى الإعدادات → API.\nأنشئ مفتاح API جديداً وانسخه.\nفينيس مزوّد يركّز على الخصوصية مع سياسة عدم الاحتفاظ بالبيانات ونماذج غير مقيّدة."
+    )
+
     val OPENROUTER = ProviderConfig(
         id = "openrouter",
         displayName = "OpenRouter",
@@ -147,6 +162,7 @@ object ProviderConfigs {
         baseUrl = "http://localhost:11434/",
         supportsCustomBaseUrl = true,
         supportsVision = true,
+        isLocal = true,
         models = listOf("llama3.2", "llama3.1", "mistral", "gemma2", "qwen2.5", "phi3"),
         defaultModel = "llama3.2",
         keyAcquisitionUrl = "https://ollama.com/download",
@@ -163,6 +179,7 @@ object ProviderConfigs {
         baseUrl = "http://localhost:1234/",
         supportsCustomBaseUrl = true,
         supportsVision = true,
+        isLocal = true,
         models = listOf("local-model"),
         defaultModel = "local-model",
         keyAcquisitionUrl = "https://lmstudio.ai",
@@ -179,6 +196,7 @@ object ProviderConfigs {
         baseUrl = "",
         supportsCustomBaseUrl = true,
         supportsVision = true,
+        isLocal = true,
         models = listOf("custom-model"),
         defaultModel = "custom-model",
         keyAcquisitionUrl = "",
@@ -188,7 +206,7 @@ object ProviderConfigs {
         instructionsAr = "أدخل رابط أي خادم API متوافق مع OpenAI.\nيجب أن يدعم الخادم POST /v1/chat/completions.\nأضف مفتاح API إذا كان خادمك يتطلب مصادقة.\nاكتب اسم النموذج الذي تريد استخدامه."
     )
 
-    val ALL_OPENAI_COMPATIBLE = listOf(DEEPSEEK, OPENAI, GROQ, TOGETHER, MISTRAL, OPENROUTER)
+    val ALL_OPENAI_COMPATIBLE = listOf(DEEPSEEK, OPENAI, GROQ, TOGETHER, MISTRAL, VENICE, OPENROUTER)
 
     val ALL_LOCAL = listOf(OLLAMA, LM_STUDIO, CUSTOM)
 

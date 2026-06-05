@@ -1,5 +1,7 @@
 package app.maskan.chat.ui.screens
 
+import android.app.Activity
+import android.view.WindowManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -41,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -63,6 +67,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel,
     onNavigateBack: () -> Unit,
     onNavigateToAbout: () -> Unit = {},
+    onNavigateToPrivacy: () -> Unit = {},
     onLocaleChanged: () -> Unit = {},
     onModelChanged: (String) -> Unit = {},
     isFirstLaunch: Boolean = false
@@ -179,8 +184,27 @@ fun SettingsScreen(
                     onDismissRequest = { providerExpanded = false }
                 ) {
                     allProviders.forEach { provider ->
+                        val hasSavedKey = provider.id in state.configuredProviderIds
                         DropdownMenuItem(
-                            text = { Text(if (isArabic) provider.nameAr else provider.displayName) },
+                            text = {
+                                Text(
+                                    text = if (isArabic) provider.nameAr else provider.displayName,
+                                    fontWeight = if (hasSavedKey)
+                                        androidx.compose.ui.text.font.FontWeight.Bold
+                                    else
+                                        androidx.compose.ui.text.font.FontWeight.Normal
+                                )
+                            },
+                            trailingIcon = if (hasSavedKey) {
+                                {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = stringResource(R.string.provider_configured),
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            } else null,
                             onClick = {
                                 viewModel.selectProvider(provider)
                                 providerExpanded = false
@@ -200,6 +224,26 @@ fun SettingsScreen(
                     selectedProvider.pricingInfo,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+            val badgeColor = if (selectedProvider.isLocal)
+                MaterialTheme.colorScheme.tertiary
+            else
+                MaterialTheme.colorScheme.outline
+            Text(
+                text = if (selectedProvider.isLocal)
+                    stringResource(R.string.provider_badge_local)
+                else
+                    stringResource(R.string.provider_badge_cloud),
+                style = MaterialTheme.typography.labelSmall,
+                color = badgeColor,
+                modifier = Modifier
+                    .background(
+                        color = badgeColor.copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(4.dp)
+                    )
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -401,8 +445,27 @@ fun SettingsScreen(
                     onDismissRequest = { modelExpanded = false }
                 ) {
                     selectedProvider.availableModels.forEach { model ->
+                        val isActiveModel = model.trim() == selectedModel.trim()
                         DropdownMenuItem(
-                            text = { Text(model) },
+                            text = {
+                                Text(
+                                    text = model,
+                                    fontWeight = if (isActiveModel)
+                                        androidx.compose.ui.text.font.FontWeight.Bold
+                                    else
+                                        androidx.compose.ui.text.font.FontWeight.Normal
+                                )
+                            },
+                            trailingIcon = if (isActiveModel) {
+                                {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = stringResource(R.string.model_active),
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            } else null,
                             onClick = {
                                 viewModel.selectModel(model)
                                 modelExpanded = false
@@ -569,6 +632,50 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // Security
+            Text(
+                text = stringResource(R.string.security_section),
+                style = MaterialTheme.typography.titleMedium
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            val activity = LocalContext.current as? Activity
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.block_screenshots_label),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Text(
+                        text = stringResource(R.string.block_screenshots_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Switch(
+                    checked = state.blockScreenshots,
+                    onCheckedChange = {
+                        val enabled = viewModel.toggleBlockScreenshots()
+                        activity?.window?.let { window ->
+                            if (enabled) {
+                                window.setFlags(
+                                    WindowManager.LayoutParams.FLAG_SECURE,
+                                    WindowManager.LayoutParams.FLAG_SECURE
+                                )
+                            } else {
+                                window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                            }
+                        }
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
             // Instructions — dynamic per provider
             Text(
                 text = stringResource(
@@ -600,6 +707,28 @@ fun SettingsScreen(
                 ) {
                     Text(
                         text = stringResource(R.string.settings_about_link),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
+            // Privacy Details link
+            TextButton(
+                onClick = onNavigateToPrivacy,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.settings_privacy_link),
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.weight(1f)
                     )

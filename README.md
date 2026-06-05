@@ -5,9 +5,9 @@
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://www.android.com/)
 [![Built with Compose](https://img.shields.io/badge/Built%20with-Jetpack%20Compose-purple.svg)](https://developer.android.com/jetpack/compose)
-[![F-Droid](https://img.shields.io/badge/F--Droid-pending-lightgrey.svg)](https://f-droid.org)
+[![F-Droid](https://img.shields.io/f-droid/v/app.maskan.chat.svg)](https://f-droid.org/packages/app.maskan.chat/)
 
-Maskan (مسكن — Arabic for "dwelling, peaceful home") is a privacy-first Android chat client for AI APIs. It supports **11 providers** — from OpenAI and Claude to local models running on your own hardware — and it's designed with Arabic speakers as first-class citizens.
+Maskan (مسكن — Arabic for "dwelling, peaceful home") is a privacy-first Android chat client for AI APIs. It supports **12 providers** — from OpenAI and Claude to local models running on your own hardware — and it's designed with Arabic speakers as first-class citizens.
 
 Your API keys are encrypted with AES-256-GCM on device. Your conversations never leave your phone. The app's network access is locked to only the providers you've enabled. No analytics, no trackers, no telemetry, no Google Play Services.
 
@@ -24,6 +24,7 @@ Your API keys are encrypted with AES-256-GCM on device. Your conversations never
 | Groq | OpenAI-compatible | Very fast inference |
 | Together AI | OpenAI-compatible | Open-source models |
 | Mistral | OpenAI-compatible | GDPR-friendly |
+| Venice AI | OpenAI-compatible | Privacy-focused, zero-retention |
 | OpenRouter | OpenAI-compatible | Gateway to 100+ models |
 | Ollama (local) | OpenAI-compatible | Run models on your own PC |
 | LM Studio (local) | OpenAI-compatible | Local models with GUI |
@@ -34,15 +35,18 @@ Your API keys are encrypted with AES-256-GCM on device. Your conversations never
 ## Features
 
 - **Bring Your Own Key (BYOK)** — use your own API keys directly, no middlemen, no subscription
-- **11 AI providers** — cloud and local, one app
+- **12 AI providers** — cloud and local, one app
 - **Encrypted on device** — API keys stored with AES-256-GCM via Android Keystore, conversations encrypted with SQLCipher
 - **Network-locked** — `network_security_config.xml` restricts traffic to only enabled provider hosts
+- **Markdown rendering** — AI replies render headings, bold, lists, and code blocks, including Arabic/RTL
 - **Image input** — send photos to vision-capable models (OpenAI, Anthropic, Gemini, OpenRouter)
+- **File attach** — attach a `.txt` or `.html` file to a message
 - **Voice input** — speech-to-text with Arabic, English, and Thai recognition
 - **Voice narration** — tap to hear AI responses read aloud, uses Android's built-in text-to-speech
 - **Conversation export** — share chats as plain text or markdown to any app
 - **Conversation search** — search by title and message content across all conversations
 - **Stop generation** — cancel AI responses mid-stream, partial content preserved
+- **Anti-screenshot toggle** — optionally block screenshots and screen recording (off by default)
 - **3 languages** — English, Arabic, Thai (full UI translations)
 - **Arabic-first design** — full RTL layout with proper Arabic typography
 - **Dark mode** — follows system theme automatically
@@ -76,9 +80,9 @@ Your API keys are encrypted with AES-256-GCM on device. Your conversations never
 
 ## Installation
 
-### F-Droid (pending)
+### F-Droid
 
-Submission in progress — [MR !39036](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/39036) pipeline fully green, awaiting maintainer merge.
+Available on F-Droid — [app.maskan.chat](https://f-droid.org/packages/app.maskan.chat/). Merged via [MR !39036](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/39036); updates are picked up automatically from tagged GitHub releases.
 
 ### Direct APK
 
@@ -167,18 +171,22 @@ published by the Free Software Foundation.
 
 > دردشة ذكاء اصطناعي خاصة ومتعددة المزودين لأندرويد. مفتاحك الخاص. مُشفَّر على جهازك. عربي أولاً.
 
-مسكن هو تطبيق أندرويد مفتوح المصدر للدردشة مع نماذج الذكاء الاصطناعي، يدعم **11 مزوّداً** — من OpenAI وClaude إلى النماذج المحلية على جهازك.
+مسكن هو تطبيق أندرويد مفتوح المصدر للدردشة مع نماذج الذكاء الاصطناعي، يدعم **12 مزوّداً** — من OpenAI وClaude إلى النماذج المحلية على جهازك.
 
 **المميزات:**
 
 - استخدم مفتاح API الخاص بك مباشرةً — لا وسطاء ولا اشتراكات
-- 11 مزوّد ذكاء اصطناعي (سحابي ومحلي)
+- 12 مزوّد ذكاء اصطناعي (سحابي ومحلي)
 - تشفير المفاتيح على جهازك باستخدام AES-256-GCM
 - تشفير المحادثات باستخدام SQLCipher
 - التطبيق مُقيَّد شبكياً بمزودي الخدمة المفعّلين فقط
+- عرض الماركداون — تنسيق ردود الذكاء الاصطناعي (عناوين، خط عريض، قوائم، أكواد) مع دعم العربية وRTL
 - إرسال صور لنماذج الرؤية (OpenAI, Anthropic, Gemini, OpenRouter)
+- إرفاق ملف نصي (‎.txt / .html‎) مع الرسالة
 - الإدخال الصوتي — تحويل الكلام إلى نص بالعربية والإنجليزية والتايلاندية
+- نطق الردود — استمع إلى ردود الذكاء الاصطناعي عبر محرّك تحويل النص إلى كلام في النظام
 - تصدير المحادثات كنص عادي أو ماركداون
+- خيار منع لقطات الشاشة (FLAG_SECURE) — معطّل افتراضياً
 - بحث في المحادثات حسب العنوان والمحتوى
 - إيقاف التوليد أثناء الكتابة مع حفظ المحتوى الجزئي
 - 3 لغات: العربية والإنجليزية والتايلاندية

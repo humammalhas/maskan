@@ -131,6 +131,19 @@
     <string name="image_too_large">Image is too large. Please choose a smaller image.</string>
     <string name="provider_no_vision">This provider doesn\'t support image input</string>
 
+    <!-- File input -->
+    <string name="attach_file">Attach text file</string>
+    <string name="remove_file">Remove file</string>
+    <string name="file_too_large">File is too large (max 50 KB of text). Choose a smaller file.</string>
+    <string name="file_read_error">Could not read this file.</string>
+    <string name="attach_choose_image">Image</string>
+    <string name="attach_choose_file">Text file (.txt, .html)</string>
+    <string name="attach_type_title">Attach</string>
+
+    <!-- Markdown -->
+    <string name="code_copied">Copied!</string>
+    <string name="copy_code">Copy</string>
+
     <!-- Error messages -->
     <string name="error_api_key_missing">API key not set. Please add your API key in Settings.</string>
     <string name="error_empty_response">Empty response from API.</string>
@@ -167,4 +180,48 @@
     <string name="voice_error_network">Voice needs internet on this device</string>
     <string name="voice_error_generic">Voice error (code %1$d), try again</string>
     <string name="voice_narration_unavailable">Text-to-speech unavailable</string>
+    <string name="tts_language_unavailable">No voice available for this language</string>
+    <string name="provider_configured">Configured</string>
+    <string name="model_active">Active model</string>
+    <string name="security_section">Security</string>
+    <string name="block_screenshots_label">Block screenshots</string>
+    <string name="block_screenshots_hint">Hides app content from screenshots, screen recording, and recent apps</string>
+    <string name="provider_badge_cloud">Cloud — sent to provider</string>
+    <string name="provider_badge_local">Local — stays on device</string>
+    <string name="privacy_intro_title">How Maskan handles your data</string>
+    <string name="privacy_intro_bullet_encrypted">Your keys and chats are encrypted on this device. Maskan has no server and never sees your conversations.</string>
+    <string name="privacy_intro_bullet_cloud">When you chat with a cloud AI (OpenAI, Google, DeepSeek, etc.), your messages are sent to that provider and their privacy policy applies.</string>
+    <string name="privacy_intro_bullet_venice">Prefer a cloud option? Venice is the most privacy-respecting — it doesn\'t store or log your chats.</string>
+    <string name="privacy_intro_bullet_local">For maximum privacy, use a local provider (Ollama or LM Studio): the AI runs on your machine and your messages never leave your network.</string>
+    <string name="privacy_intro_got_it">Got it</string>
+    <string name="privacy_intro_learn_more">Learn more</string>
+
+    <!-- Privacy screen -->
+    <string name="privacy_screen_title">Privacy Details</string>
+    <string name="privacy_core_principle">A private app is not the same as a private AI. Maskan keeps everything encrypted on your device, but when you send a message to a cloud AI, it has to reach their servers to be answered.</string>
+    <string name="privacy_protects_header">What Maskan protects</string>
+    <string name="privacy_protects_no_middleman">No Maskan server, no middleman. Your chats are never seen or stored by us or any third party.</string>
+    <string name="privacy_protects_encrypted">API keys and conversations are encrypted on your device.</string>
+    <string name="privacy_protects_your_choice">You choose where your messages go — including fully local, where nothing leaves your phone.</string>
+    <string name="privacy_protects_no_google">Works without Google Play Services or a Google account.</string>
+    <string name="privacy_protects_open_source">Open source (GPL-3.0) — anyone can verify these claims in the code.</string>
+    <string name="privacy_cannot_header">What Maskan cannot do</string>
+    <string name="privacy_cannot_hide_from_provider">It cannot make your messages invisible to a cloud provider you choose. If you use OpenAI, Google, DeepSeek, etc., they receive your messages and handle them under their own policies. No app can change this.</string>
+    <string name="privacy_ladder_header">Where your messages go — most to least private</string>
+    <string name="privacy_tier1_title">On your phone (Local) — Ollama, LM Studio</string>
+    <string name="privacy_tier1_desc">The AI runs on your own device. Your messages never leave your phone or network.</string>
+    <string name="privacy_tier1_trust">Fully private, no trust needed.</string>
+    <string name="privacy_tier2_title">Private cloud — Venice</string>
+    <string name="privacy_tier2_desc">Your message is sent to Venice, but Venice says it doesn\'t store or log it.</string>
+    <string name="privacy_tier2_trust">Very private, based on their promise.</string>
+    <string name="privacy_tier3_title">Standard cloud — OpenAI, Anthropic (Claude), Google (Gemini), DeepSeek, Groq, Mistral, Together, OpenRouter</string>
+    <string name="privacy_tier3_desc">Your message is sent to that company and handled under their privacy policy.</string>
+    <string name="privacy_tier3_trust">Most convenient, least private.</string>
+    <string name="privacy_ladder_tip">Tip: using these providers through your own API key in Maskan is usually more private than using the company\'s own app (like ChatGPT or Gemini), where chats are often used to train their models by default.</string>
+    <string name="settings_privacy_link">Privacy Details</string>
+
+    <!-- Privacy context notes -->
+    <string name="privacy_note_image">This image\'s contents will be sent to %1$s.</string>
+    <string name="privacy_note_voice">Voice is handled by your phone\'s system speech service, which may send audio to its provider (often Google).</string>
+    <string name="privacy_note_dismiss">Don\'t show again</string>
 </resources>

@@ -259,7 +259,18 @@ class ChatRepository(
         val imageBase64ForStorage = imageData?.let {
             Base64.encodeToString(it, Base64.NO_WRAP)
         }
-        saveMessage(conversationId, "user", userContent, imageBase64ForStorage, imageMimeType)
+        val userEntity = MessageEntity(
+            conversationId = conversationId,
+            role = "user",
+            content = userContent,
+            imageBase64 = imageBase64ForStorage,
+            imageMimeType = imageMimeType
+        )
+        val userMessageId = messageDao.insertMessage(userEntity)
+        // Drive the open chat from in-memory state: emit the saved user message so the
+        // ViewModel can show it immediately, independent of the (unreliable under SQLCipher)
+        // Room invalidation Flow.
+        emit(StreamEvent.UserSaved(userEntity.copy(id = userMessageId)))
 
         val messages = buildMessageList(conversationId)
 
@@ -276,8 +287,15 @@ class ChatRepository(
         val effectiveModel = conversation.modelId ?: model
         val storedBaseUrl = keyRepository.getBaseUrl(providerId)
 
-        val assistantMessageId = saveMessage(conversationId, "assistant", "")
-        emit(StreamEvent.Started(assistantMessageId))
+        val assistantEntity = MessageEntity(
+            conversationId = conversationId,
+            role = "assistant",
+            content = ""
+        )
+        val assistantMessageId = messageDao.insertMessage(assistantEntity)
+        // Emit the empty assistant placeholder (with its real id) so the ViewModel inserts a
+        // bubble keyed by that id — every following Token updates that exact message.
+        emit(StreamEvent.Started(assistantEntity.copy(id = assistantMessageId)))
 
         try {
             val fullContent = StringBuilder()
@@ -288,7 +306,7 @@ class ChatRepository(
                     fullContent.append(token)
                     val snapshot = fullContent.toString()
                     messageDao.updateMessageContent(assistantMessageId, snapshot)
-                    emit(StreamEvent.Token(snapshot))
+                    emit(StreamEvent.Token(assistantMessageId, snapshot))
                 }
 
             val finalContent = fullContent.toString()
@@ -315,8 +333,9 @@ class ChatRepository(
     }
 
     sealed class StreamEvent {
-        data class Started(val messageId: Long) : StreamEvent()
-        data class Token(val fullContent: String) : StreamEvent()
+        data class UserSaved(val message: MessageEntity) : StreamEvent()
+        data class Started(val message: MessageEntity) : StreamEvent()
+        data class Token(val messageId: Long, val fullContent: String) : StreamEvent()
         data object Done : StreamEvent()
     }
 

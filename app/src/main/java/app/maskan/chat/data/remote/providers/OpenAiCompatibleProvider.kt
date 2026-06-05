@@ -17,6 +17,7 @@ class OpenAiCompatibleProvider(
     override val defaultBaseUrl: String,
     override val supportsCustomBaseUrl: Boolean,
     override val supportsVision: Boolean = false,
+    override val isLocal: Boolean = false,
     override val availableModels: List<String>,
     override val defaultModel: String,
     override val keyAcquisitionUrl: String,

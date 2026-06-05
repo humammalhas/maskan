@@ -28,11 +28,43 @@ class PreferenceRepository(context: Context) {
         plainPreferences.edit().putBoolean(KEY_COMPLETED_SETUP, true).apply()
     }
 
+    fun hasSeenPrivacyIntro(): Boolean =
+        plainPreferences.getBoolean(KEY_PRIVACY_INTRO_SEEN, false)
+
+    fun setPrivacyIntroSeen() {
+        plainPreferences.edit().putBoolean(KEY_PRIVACY_INTRO_SEEN, true).apply()
+    }
+
+    fun isBlockScreenshots(): Boolean =
+        plainPreferences.getBoolean(KEY_BLOCK_SCREENSHOTS, false)
+
+    fun setBlockScreenshots(enabled: Boolean) {
+        plainPreferences.edit().putBoolean(KEY_BLOCK_SCREENSHOTS, enabled).apply()
+    }
+
+    fun hasSeenImagePrivacyNote(): Boolean =
+        plainPreferences.getBoolean(KEY_IMAGE_PRIVACY_NOTE_SEEN, false)
+
+    fun setImagePrivacyNoteSeen() {
+        plainPreferences.edit().putBoolean(KEY_IMAGE_PRIVACY_NOTE_SEEN, true).apply()
+    }
+
+    fun hasSeenVoicePrivacyNote(): Boolean =
+        plainPreferences.getBoolean(KEY_VOICE_PRIVACY_NOTE_SEEN, false)
+
+    fun setVoicePrivacyNoteSeen() {
+        plainPreferences.edit().putBoolean(KEY_VOICE_PRIVACY_NOTE_SEEN, true).apply()
+    }
+
     companion object {
         // Must differ from KeyRepository.PREFS_NAME to avoid sharing the same encrypted file.
         private const val PREFS_NAME = "maskan_secure_preferences"
         private const val PLAIN_PREFS_NAME = "maskan_prefs"
         private const val KEY_DEFAULT_DIALECT = "default_dialect"
         private const val KEY_COMPLETED_SETUP = "completed_setup"
+        private const val KEY_BLOCK_SCREENSHOTS = "block_screenshots"
+        private const val KEY_PRIVACY_INTRO_SEEN = "privacy_intro_seen"
+        private const val KEY_IMAGE_PRIVACY_NOTE_SEEN = "image_privacy_note_seen"
+        private const val KEY_VOICE_PRIVACY_NOTE_SEEN = "voice_privacy_note_seen"
     }
 }

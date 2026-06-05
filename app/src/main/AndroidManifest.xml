@@ -9,6 +9,12 @@
         <intent>
             <action android:name="android.speech.RecognitionService" />
         </intent>
+        <!-- Android 11+ package visibility: required to see/bind installed text-to-speech
+             engine services (RHVoice, eSpeak, SherpaTTS, …). Without this, TextToSpeech init
+             fails for every engine even when one is set as the system default. -->
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
     </queries>
 
     <application

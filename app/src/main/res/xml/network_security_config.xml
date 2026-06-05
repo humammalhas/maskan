@@ -19,6 +19,7 @@
         <domain includeSubdomains="true">api.together.xyz</domain>
         <domain includeSubdomains="true">api.mistral.ai</domain>
         <domain includeSubdomains="true">openrouter.ai</domain>
+        <domain includeSubdomains="true">api.venice.ai</domain>
         <domain includeSubdomains="true">api.anthropic.com</domain>
         <domain includeSubdomains="true">generativelanguage.googleapis.com</domain>
     </domain-config>
