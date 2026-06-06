@@ -24,7 +24,7 @@ android {
         applicationId = "app.maskan.chat"
         minSdk = 26
         targetSdk = 35
-        versionCode = 7
+        versionCode = 8
         versionName = "2.4.1"
     }
 
