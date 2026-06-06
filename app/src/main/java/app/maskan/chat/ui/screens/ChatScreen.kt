@@ -180,19 +180,14 @@ fun ChatScreen(
 
     val visibleMessages = uiState.messages.filter { it.role != "system" }
 
-    // Keep the latest message in view. Keyed on the last message's id and length (not just the
-    // list size) so it also fires when an existing chat finishes loading and as streaming content
-    // grows. Use an instant scroll on load/finalize — an animated scroll could stop short of a
-    // tall final message, leaving it below the fold until the next relayout (e.g. on typing).
+    // The list is reverseLayout = true, so the newest message is index 0 and the list is anchored
+    // to the bottom by default (this is what keeps the latest reply visible even as the keyboard
+    // opens — see Google's Jetchat sample). We only need to pin to item 0 when a new message turn
+    // arrives or while a reply streams in; reverseLayout holds the bottom the rest of the time.
     val lastVisible = visibleMessages.lastOrNull()
     LaunchedEffect(visibleMessages.size, lastVisible?.id, lastVisible?.content?.length, uiState.isLoading) {
         if (visibleMessages.isNotEmpty()) {
-            val target = visibleMessages.size - 1
-            if (uiState.isStreaming) {
-                listState.animateScrollToItem(target)
-            } else {
-                listState.scrollToItem(target)
-            }
+            listState.scrollToItem(0)
         }
     }
 
@@ -385,13 +380,17 @@ fun ChatScreen(
             Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             LazyColumn(
                 state = listState,
+                // reverseLayout = true anchors the list to the bottom: index 0 (the newest message)
+                // renders at the bottom and stays pinned there as new messages arrive and as the
+                // keyboard opens. The data is fed newest-first via asReversed() to match.
+                reverseLayout = true,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(
-                    items = visibleMessages,
+                    items = visibleMessages.asReversed(),
                     key = { it.id }
                 ) { message ->
                     val isLastMessage = message == visibleMessages.lastOrNull()
@@ -447,8 +446,15 @@ fun ChatScreen(
                     .padding(vertical = 8.dp, horizontal = 1.dp)
             )
 
-            // "Take me to the bottom" button — only visible when scrolled up off the latest message
-            val showScrollToBottom by remember { derivedStateOf { listState.canScrollForward } }
+            // "Take me to the bottom" button — only visible when scrolled up off the latest message.
+            // With reverseLayout the bottom is index 0, so "at the bottom" means firstVisibleItemIndex
+            // == 0 with a small offset (Jetchat's exact condition). Tapping it jumps to item 0, which
+            // is always the newest message — no offset math needed.
+            val showScrollToBottom by remember {
+                derivedStateOf {
+                    listState.firstVisibleItemIndex != 0 || listState.firstVisibleItemScrollOffset > 200
+                }
+            }
             AnimatedVisibility(
                 visible = showScrollToBottom,
                 enter = fadeIn(),
@@ -460,7 +466,7 @@ fun ChatScreen(
                 Surface(
                     onClick = {
                         scope.launch {
-                            listState.animateScrollToItem((visibleMessages.size - 1).coerceAtLeast(0))
+                            listState.animateScrollToItem(0)
                         }
                     },
                     shape = CircleShape,
@@ -495,7 +501,11 @@ private fun ChatScrollbar(
 
     val visibleCount = listState.layoutInfo.visibleItemsInfo.size.coerceAtLeast(1)
     val maxFirst = (itemCount - visibleCount).coerceAtLeast(1)
-    val scrollFraction = (listState.firstVisibleItemIndex.toFloat() / maxFirst).coerceIn(0f, 1f)
+    // The list is reverseLayout = true, so firstVisibleItemIndex == 0 is the BOTTOM (newest). Invert
+    // the fraction so the thumb sits at the bottom of the track when you're on the latest message
+    // and climbs as you scroll back through history.
+    val rawFraction = (listState.firstVisibleItemIndex.toFloat() / maxFirst).coerceIn(0f, 1f)
+    val scrollFraction = 1f - rawFraction
     val thumbFraction = (visibleCount.toFloat() / itemCount).coerceIn(0.1f, 0.9f)
 
     BoxWithConstraints(modifier) {
