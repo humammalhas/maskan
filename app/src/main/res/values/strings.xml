@@ -224,4 +224,5 @@
     <string name="privacy_note_image">This image\'s contents will be sent to %1$s.</string>
     <string name="privacy_note_voice">Voice is handled by your phone\'s system speech service, which may send audio to its provider (often Google).</string>
     <string name="privacy_note_dismiss">Don\'t show again</string>
+    <string name="scroll_to_bottom">Scroll to latest message</string>
 </resources>

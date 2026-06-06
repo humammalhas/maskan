@@ -222,4 +222,5 @@
     <string name="privacy_note_image">เนื้อหาของรูปภาพนี้จะถูกส่งไปยัง %1$s</string>
     <string name="privacy_note_voice">เสียงจะถูกประมวลผลโดยบริการรู้จำเสียงของโทรศัพท์ ซึ่งอาจส่งเสียงไปยังผู้ให้บริการ (มักเป็น Google)</string>
     <string name="privacy_note_dismiss">ไม่ต้องแสดงอีก</string>
+    <string name="scroll_to_bottom">เลื่อนไปที่ข้อความล่าสุด</string>
 </resources>

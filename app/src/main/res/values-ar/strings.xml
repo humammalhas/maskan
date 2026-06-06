@@ -224,4 +224,5 @@
     <string name="privacy_note_image">سيتم إرسال محتوى هذه الصورة إلى %1$s.</string>
     <string name="privacy_note_voice">يتم التعرّف على الصوت عبر خدمة النطق المدمجة في هاتفك، والتي قد ترسل الصوت إلى مزوّدها (غالباً Google).</string>
     <string name="privacy_note_dismiss">لا تعرض مرة أخرى</string>
+    <string name="scroll_to_bottom">الانتقال إلى آخر رسالة</string>
 </resources>

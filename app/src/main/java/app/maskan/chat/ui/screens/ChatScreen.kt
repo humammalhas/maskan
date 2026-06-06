@@ -80,6 +80,23 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.animation.fadeOut
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 import app.maskan.chat.MaskanApplication
 import app.maskan.chat.R
 import app.maskan.chat.data.local.MessageEntity
@@ -104,6 +121,7 @@ fun ChatScreen(
     val uiState by viewModel.uiState.collectAsState()
     var inputText by rememberSaveable { mutableStateOf("") }
     val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
     var showCustomPromptDialog by remember { mutableStateOf(false) }
     var showExportDialog by remember { mutableStateOf(false) }
 
@@ -366,11 +384,11 @@ fun ChatScreen(
                 )
             }
         } else {
+            Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             LazyColumn(
                 state = listState,
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues)
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -422,7 +440,90 @@ fun ChatScreen(
                     )
                 }
             }
+
+            // Draggable scrollbar (approximate, index-based) on the trailing edge
+            ChatScrollbar(
+                listState = listState,
+                itemCount = visibleMessages.size,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .fillMaxHeight()
+                    .padding(vertical = 8.dp, horizontal = 1.dp)
+            )
+
+            // "Take me to the bottom" button — only visible when scrolled up off the latest message
+            val showScrollToBottom by remember { derivedStateOf { listState.canScrollForward } }
+            AnimatedVisibility(
+                visible = showScrollToBottom,
+                enter = fadeIn(),
+                exit = fadeOut(),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp)
+            ) {
+                Surface(
+                    onClick = {
+                        scope.launch {
+                            listState.animateScrollToItem((visibleMessages.size - 1).coerceAtLeast(0))
+                        }
+                    },
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shadowElevation = 4.dp,
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowDown,
+                        contentDescription = stringResource(R.string.scroll_to_bottom),
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
+            }
+            }
         }
+    }
+}
+
+@Composable
+private fun ChatScrollbar(
+    listState: LazyListState,
+    itemCount: Int,
+    modifier: Modifier = Modifier
+) {
+    // Approximate, index-based scrollbar: chat bubbles vary in height, so the thumb position
+    // and size estimate where you are rather than being pixel-exact. Good enough as a position
+    // indicator + fast-scroll handle, and needs no dependency.
+    if (itemCount <= 1) return
+    if (!listState.canScrollForward && !listState.canScrollBackward) return
+
+    val visibleCount = listState.layoutInfo.visibleItemsInfo.size.coerceAtLeast(1)
+    val maxFirst = (itemCount - visibleCount).coerceAtLeast(1)
+    val scrollFraction = (listState.firstVisibleItemIndex.toFloat() / maxFirst).coerceIn(0f, 1f)
+    val thumbFraction = (visibleCount.toFloat() / itemCount).coerceIn(0.1f, 0.9f)
+
+    BoxWithConstraints(modifier) {
+        val density = LocalDensity.current
+        val trackPx = with(density) { maxHeight.toPx() }
+        val thumbHeightDp = maxHeight * thumbFraction
+        val maxOffsetPx = trackPx * (1f - thumbFraction)
+        val offsetPx = maxOffsetPx * scrollFraction
+        Box(
+            modifier = Modifier
+                .offset { IntOffset(0, offsetPx.roundToInt()) }
+                .width(5.dp)
+                .height(thumbHeightDp)
+                .clip(RoundedCornerShape(3.dp))
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.45f))
+                .draggable(
+                    orientation = Orientation.Vertical,
+                    state = rememberDraggableState { dy ->
+                        // Translate thumb drag into list scroll: dragging the thumb across the
+                        // track should move the content by the proportional amount.
+                        if (thumbFraction > 0f) listState.dispatchRawDelta(dy / thumbFraction)
+                    }
+                )
+        )
     }
 }
 
