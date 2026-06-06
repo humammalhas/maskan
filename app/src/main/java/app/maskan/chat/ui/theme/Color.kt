@@ -35,3 +35,7 @@ val AssistantBubble = Color(0xFFF0FFF0)
 val UserBubbleDark = Color(0xFF352828)
 val AssistantBubbleDark = Color(0xFF263030)
 
+// Status colors — success indicator (theme-aware; readable on light/dark surfaces)
+val SuccessGreen = Color(0xFF2E7D32)
+val SuccessGreenDark = Color(0xFF81C784)
+

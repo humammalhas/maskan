@@ -35,7 +35,6 @@
     <string name="back_button">رجوع</string>
 
     <string name="api_key_section">مفتاح API</string>
-    <string name="api_key_label">مفتاح DeepSeek API</string>
     <string name="api_key_placeholder">sk-…</string>
     <string name="show_key">إظهار</string>
     <string name="hide_key">إخفاء</string>
@@ -104,6 +103,7 @@
     <string name="save_url_button">حفظ الرابط</string>
     <string name="api_key_optional_hint">اختياري — اتركه فارغاً إذا لم يكن خادمك يتطلب مصادقة</string>
     <string name="server_url_hint">أدخل عنوان IP لجهازك مع رقم المنفذ</string>
+    <string name="custom_url_insecure_warning">هذا الرابط يستخدم HTTP غير المشفّر. استخدمه فقط لخادم على شبكتك الموثوقة — فعبر الإنترنت قد يتم اعتراض مفتاحك ورسائلك.</string>
     <string name="custom_model_id_label">معرّف نموذج مخصص</string>
     <string name="custom_model_id_hint">اكتب معرّف أي نموذج من openrouter.ai/models</string>
     <string name="model_name_label">اسم النموذج</string>
@@ -227,4 +227,22 @@
     <string name="privacy_note_voice">يتم التعرّف على الصوت عبر خدمة النطق المدمجة في هاتفك، والتي قد ترسل الصوت إلى مزوّدها (غالباً Google).</string>
     <string name="privacy_note_dismiss">لا تعرض مرة أخرى</string>
     <string name="scroll_to_bottom">الانتقال إلى آخر رسالة</string>
+
+    <!-- Accessibility labels & color names (2.4.1 audit) -->
+    <string name="folder_collapse">طي المجلد</string>
+    <string name="folder_expand">توسيع المجلد</string>
+    <string name="a11y_security_privacy">الأمان والخصوصية</string>
+    <string name="a11y_api_key_instructions">تعليمات مفتاح API</string>
+    <string name="a11y_api_key_secured">مفتاح API مؤمَّن</string>
+    <string name="api_key_label">مفتاح API لـ %1$s</string>
+    <string name="model_example_fmt">مثال: %1$s</string>
+    <string name="color_swatch_desc">اللون: %1$s</string>
+    <string name="color_generic">لون</string>
+    <string name="color_peach">خوخي</string>
+    <string name="color_mint">أخضر نعناعي</string>
+    <string name="color_lavender">خزامي</string>
+    <string name="color_pink">وردي</string>
+    <string name="color_coral">مرجاني</string>
+    <string name="color_sand">رملي</string>
+    <string name="color_sky">أزرق سماوي</string>
 </resources>

@@ -91,6 +91,7 @@ data class MaskanColors(
     val skyBlue: Color,
     val userBubble: Color,
     val assistantBubble: Color,
+    val success: Color,
 )
 
 val LightMaskanColors = MaskanColors(
@@ -103,6 +104,7 @@ val LightMaskanColors = MaskanColors(
     skyBlue = SkyBlue,
     userBubble = UserBubble,
     assistantBubble = AssistantBubble,
+    success = SuccessGreen,
 )
 
 val DarkMaskanColors = MaskanColors(
@@ -115,6 +117,7 @@ val DarkMaskanColors = MaskanColors(
     skyBlue = SkyBlueDark,
     userBubble = UserBubbleDark,
     assistantBubble = AssistantBubbleDark,
+    success = SuccessGreenDark,
 )
 
 val LocalMaskanColors = staticCompositionLocalOf { LightMaskanColors }

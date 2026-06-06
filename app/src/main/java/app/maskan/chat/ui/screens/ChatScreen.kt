@@ -7,7 +7,6 @@ import android.graphics.BitmapFactory
 import android.speech.RecognizerIntent
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
-import android.util.Log
 import android.util.Base64
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -138,7 +137,6 @@ fun ChatScreen(
         // construction; language selection happens lazily at speak time, when tts.value is
         // guaranteed to be set.
         val engine = TextToSpeech(context) { status ->
-            Log.e("MASKAN_TTS", "onInit status=$status (0=SUCCESS, -1=ERROR)")
             ttsReady = status == TextToSpeech.SUCCESS
         }
         engine.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
@@ -419,13 +417,11 @@ fun ChatScreen(
                                     else -> Locale.getDefault()
                                 }
                                 var langResult = engine.setLanguage(locale)
-                                Log.e("MASKAN_TTS", "speak setLanguage($locale) result=$langResult")
                                 if (langResult == TextToSpeech.LANG_MISSING_DATA || langResult == TextToSpeech.LANG_NOT_SUPPORTED) {
                                     // Fall back to en-US only for English/system content — reading
                                     // Arabic with an English voice is gibberish.
                                     if (appLocale == "en" || appLocale.isEmpty()) {
                                         langResult = engine.setLanguage(Locale.US)
-                                        Log.e("MASKAN_TTS", "fallback setLanguage(en-US) result=$langResult")
                                     }
                                 }
                                 if (langResult == TextToSpeech.LANG_MISSING_DATA || langResult == TextToSpeech.LANG_NOT_SUPPORTED) {
@@ -550,9 +546,7 @@ private fun ImagePreview(
             )
             IconButton(
                 onClick = onRemove,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .size(24.dp)
+                modifier = Modifier.align(Alignment.TopEnd)
             ) {
                 Icon(
                     imageVector = Icons.Filled.Close,
@@ -587,8 +581,7 @@ private fun FileAttachmentChip(
                 modifier = Modifier.widthIn(max = 200.dp)
             )
             IconButton(
-                onClick = onRemove,
-                modifier = Modifier.size(24.dp)
+                onClick = onRemove
             ) {
                 Icon(
                     imageVector = Icons.Filled.Close,
@@ -715,8 +708,7 @@ private fun MessageBubble(
             ) {
                 if (!isUser && message.content.isNotBlank()) {
                     IconButton(
-                        onClick = onSpeakToggle,
-                        modifier = Modifier.size(32.dp)
+                        onClick = onSpeakToggle
                     ) {
                         Icon(
                             imageVector = if (isSpeaking) Icons.Filled.Close else Icons.Default.PlayArrow,

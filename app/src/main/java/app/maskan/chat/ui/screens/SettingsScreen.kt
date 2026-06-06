@@ -43,7 +43,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -265,7 +264,7 @@ fun SettingsScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Info,
-                        contentDescription = "API key instructions",
+                        contentDescription = stringResource(R.string.a11y_api_key_instructions),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(18.dp)
                     )
@@ -286,7 +285,7 @@ fun SettingsScreen(
             OutlinedTextField(
                 value = apiKey,
                 onValueChange = { viewModel.updateApiKey(it) },
-                label = { Text("${selectedProvider.displayName} API Key") },
+                label = { Text(stringResource(R.string.api_key_label, if (isArabic) selectedProvider.nameAr else selectedProvider.displayName)) },
                 placeholder = { Text(stringResource(R.string.api_key_placeholder)) },
                 visualTransformation = if (isKeyVisible)
                     VisualTransformation.None
@@ -297,7 +296,7 @@ fun SettingsScreen(
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Filled.Lock,
-                        contentDescription = "API key secured",
+                        contentDescription = stringResource(R.string.a11y_api_key_secured),
                         tint = MaterialTheme.maskanColors.mintGreen,
                         modifier = Modifier.size(20.dp)
                     )
@@ -360,14 +359,14 @@ fun SettingsScreen(
                         Icon(
                             imageVector = Icons.Default.Check,
                             contentDescription = null,
-                            tint = Color(0xFF4CAF50),
+                            tint = MaterialTheme.maskanColors.success,
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = state.message,
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF4CAF50)
+                            color = MaterialTheme.maskanColors.success
                         )
                     }
                 }
@@ -404,6 +403,14 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                if (isInsecureRemoteUrl(baseUrl)) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.custom_url_insecure_warning),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
                     onClick = { viewModel.saveBaseUrl() },
@@ -490,7 +497,7 @@ fun SettingsScreen(
                         }
                     },
                     label = { Text(stringResource(R.string.custom_model_id_label)) },
-                    placeholder = { Text("e.g. anthropic/claude-3.5-sonnet") },
+                    placeholder = { Text(stringResource(R.string.model_example_fmt, "anthropic/claude-3.5-sonnet")) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -518,11 +525,14 @@ fun SettingsScreen(
                     label = { Text(stringResource(R.string.model_name_label)) },
                     placeholder = {
                         Text(
-                            when (selectedProvider.id) {
-                                "ollama" -> "e.g. llama3.2:3b"
-                                "lmstudio" -> "e.g. lmstudio-community/Meta-Llama-3.1-8B"
-                                else -> "e.g. my-custom-model"
-                            }
+                            stringResource(
+                                R.string.model_example_fmt,
+                                when (selectedProvider.id) {
+                                    "ollama" -> "llama3.2:3b"
+                                    "lmstudio" -> "lmstudio-community/Meta-Llama-3.1-8B"
+                                    else -> "my-custom-model"
+                                }
+                            )
                         )
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -741,4 +751,26 @@ fun SettingsScreen(
             }
         }
     }
+}
+
+/**
+ * True when [url] would transmit over plaintext HTTP to a non-local host — i.e. the
+ * scheme is http (not https) and the host is not localhost/loopback or a private LAN
+ * address. Used to warn that a custom provider's API key and messages would be sent in
+ * the clear over the internet. Legitimate local/LAN providers do not trigger the warning.
+ */
+private fun isInsecureRemoteUrl(url: String): Boolean {
+    val lower = url.trim().lowercase()
+    if (!lower.startsWith("http://")) return false
+    val host = lower.substringAfter("http://").substringBefore('/').substringBefore(':')
+    if (host.isEmpty()) return false
+    if (host == "localhost" || host.endsWith(".local")) return false
+    if (host == "0.0.0.0" || host.startsWith("127.")) return false            // loopback
+    if (host.startsWith("10.") || host.startsWith("192.168.")) return false   // RFC1918
+    if (host.startsWith("169.254.")) return false                             // link-local
+    if (host.startsWith("172.")) {                                            // 172.16–172.31
+        val second = host.removePrefix("172.").substringBefore('.').toIntOrNull()
+        if (second != null && second in 16..31) return false
+    }
+    return true
 }

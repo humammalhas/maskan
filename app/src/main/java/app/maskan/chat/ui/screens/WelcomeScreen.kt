@@ -69,17 +69,17 @@ fun WelcomeScreen(
         Spacer(modifier = Modifier.height(40.dp))
 
         FeatureRow(
-            icon = { Icon(Icons.Filled.Lock, contentDescription = "Privacy", tint = MaterialTheme.maskanColors.softCoral, modifier = Modifier.size(24.dp)) },
+            icon = { Icon(Icons.Filled.Lock, contentDescription = null, tint = MaterialTheme.maskanColors.softCoral, modifier = Modifier.size(24.dp)) },
             text = stringResource(R.string.welcome_feature_encrypted)
         )
         Spacer(modifier = Modifier.height(16.dp))
         FeatureRow(
-            icon = { Icon(Icons.Filled.Security, contentDescription = "Security", tint = MaterialTheme.maskanColors.softCoral, modifier = Modifier.size(24.dp)) },
+            icon = { Icon(Icons.Filled.Security, contentDescription = null, tint = MaterialTheme.maskanColors.softCoral, modifier = Modifier.size(24.dp)) },
             text = stringResource(R.string.welcome_feature_no_tracking)
         )
         Spacer(modifier = Modifier.height(16.dp))
         FeatureRow(
-            icon = { Icon(Icons.Filled.Language, contentDescription = "Language", tint = MaterialTheme.maskanColors.softCoral, modifier = Modifier.size(24.dp)) },
+            icon = { Icon(Icons.Filled.Language, contentDescription = null, tint = MaterialTheme.maskanColors.softCoral, modifier = Modifier.size(24.dp)) },
             text = stringResource(R.string.welcome_feature_arabic_first)
         )
 

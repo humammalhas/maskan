@@ -35,7 +35,6 @@
     <string name="back_button">ย้อนกลับ</string>
 
     <string name="api_key_section">API Key</string>
-    <string name="api_key_label">DeepSeek API Key</string>
     <string name="api_key_placeholder">sk-…</string>
     <string name="show_key">แสดง</string>
     <string name="hide_key">ซ่อน</string>
@@ -104,6 +103,7 @@
     <string name="save_url_button">บันทึก URL</string>
     <string name="api_key_optional_hint">ไม่บังคับ — เว้นว่างไว้หากเซิร์ฟเวอร์ของคุณไม่ต้องการการยืนยันตัวตน</string>
     <string name="server_url_hint">ป้อนที่อยู่ IP ของคอมพิวเตอร์พร้อมหมายเลขพอร์ต</string>
+    <string name="custom_url_insecure_warning">URL นี้ใช้ HTTP ที่ไม่เข้ารหัส ใช้เฉพาะกับเซิร์ฟเวอร์บนเครือข่ายที่คุณไว้ใจเท่านั้น — หากผ่านอินเทอร์เน็ต คีย์และข้อความของคุณอาจถูกดักจับได้</string>
     <string name="custom_model_id_label">ID โมเดลกำหนดเอง</string>
     <string name="custom_model_id_hint">พิมพ์ ID โมเดลใดก็ได้จาก openrouter.ai/models</string>
     <string name="model_name_label">ชื่อโมเดล</string>
@@ -227,4 +227,22 @@
     <string name="privacy_note_voice">เสียงจะถูกประมวลผลโดยบริการรู้จำเสียงของโทรศัพท์ ซึ่งอาจส่งเสียงไปยังผู้ให้บริการ (มักเป็น Google)</string>
     <string name="privacy_note_dismiss">ไม่ต้องแสดงอีก</string>
     <string name="scroll_to_bottom">เลื่อนไปที่ข้อความล่าสุด</string>
+
+    <!-- Accessibility labels & color names (2.4.1 audit) -->
+    <string name="folder_collapse">ยุบโฟลเดอร์</string>
+    <string name="folder_expand">ขยายโฟลเดอร์</string>
+    <string name="a11y_security_privacy">ความปลอดภัยและความเป็นส่วนตัว</string>
+    <string name="a11y_api_key_instructions">คำแนะนำคีย์ API</string>
+    <string name="a11y_api_key_secured">คีย์ API ปลอดภัย</string>
+    <string name="api_key_label">คีย์ API ของ %1$s</string>
+    <string name="model_example_fmt">เช่น %1$s</string>
+    <string name="color_swatch_desc">สี: %1$s</string>
+    <string name="color_generic">สี</string>
+    <string name="color_peach">พีช</string>
+    <string name="color_mint">เขียวมินต์</string>
+    <string name="color_lavender">ลาเวนเดอร์</string>
+    <string name="color_pink">ชมพู</string>
+    <string name="color_coral">คอรัล</string>
+    <string name="color_sand">ทราย</string>
+    <string name="color_sky">ฟ้า</string>
 </resources>

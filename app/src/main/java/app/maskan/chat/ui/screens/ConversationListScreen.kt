@@ -40,6 +40,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -84,14 +85,14 @@ internal val FOLDER_PASTELS = listOf(
     WarmPeach, MintGreen, SoftLavender, PalePink, SoftCoral, WarmSand, SkyBlue
 )
 
-private val PASTEL_COLOR_NAMES = mapOf(
-    WarmPeach to "Peach",
-    MintGreen to "Mint green",
-    SoftLavender to "Lavender",
-    PalePink to "Pink",
-    SoftCoral to "Coral",
-    WarmSand to "Sand",
-    SkyBlue to "Sky blue"
+private val PASTEL_COLOR_NAME_RES = mapOf(
+    WarmPeach to R.string.color_peach,
+    MintGreen to R.string.color_mint,
+    SoftLavender to R.string.color_lavender,
+    PalePink to R.string.color_pink,
+    SoftCoral to R.string.color_coral,
+    WarmSand to R.string.color_sand,
+    SkyBlue to R.string.color_sky
 )
 
 internal fun colorFromHex(hex: String?): Color {
@@ -112,9 +113,11 @@ internal fun colorToHex(color: Color): String {
 internal fun PastelColorRow(selected: Color, onSelect: (Color) -> Unit) {
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         FOLDER_PASTELS.forEach { color ->
-            val colorName = PASTEL_COLOR_NAMES[color] ?: "Color"
+            val colorName = stringResource(PASTEL_COLOR_NAME_RES[color] ?: R.string.color_generic)
+            val swatchDesc = stringResource(R.string.color_swatch_desc, colorName)
             Box(
                 modifier = Modifier
+                    .minimumInteractiveComponentSize()
                     .size(36.dp)
                     .clip(CircleShape)
                     .background(color)
@@ -123,7 +126,7 @@ internal fun PastelColorRow(selected: Color, onSelect: (Color) -> Unit) {
                         else Modifier
                     )
                     .clickable { onSelect(color) }
-                    .semantics { contentDescription = "Color: $colorName" }
+                    .semantics { contentDescription = swatchDesc }
             )
         }
     }

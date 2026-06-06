@@ -22,8 +22,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import app.maskan.chat.R
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -44,7 +46,7 @@ internal fun FolderHeader(
         Icon(
             imageVector = if (expanded) Icons.Default.KeyboardArrowDown
             else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = if (expanded) "Collapse folder" else "Expand folder",
+            contentDescription = stringResource(if (expanded) R.string.folder_collapse else R.string.folder_expand),
             modifier = Modifier.size(20.dp)
         )
         Spacer(modifier = Modifier.width(8.dp))

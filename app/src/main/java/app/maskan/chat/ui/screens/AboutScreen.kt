@@ -93,7 +93,7 @@ fun AboutScreen(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Filled.Lock,
-                    contentDescription = "Security and privacy",
+                    contentDescription = stringResource(R.string.a11y_security_privacy),
                     tint = MaterialTheme.maskanColors.mintGreen,
                     modifier = Modifier.size(20.dp)
                 )

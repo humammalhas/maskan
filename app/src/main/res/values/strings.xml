@@ -35,7 +35,6 @@
     <string name="back_button">Back</string>
 
     <string name="api_key_section">API Key</string>
-    <string name="api_key_label">DeepSeek API Key</string>
     <string name="api_key_placeholder">sk-...</string>
     <string name="show_key">Show</string>
     <string name="hide_key">Hide</string>
@@ -104,6 +103,7 @@
     <string name="save_url_button">Save URL</string>
     <string name="api_key_optional_hint">Optional — leave empty if your server doesn\'t require authentication</string>
     <string name="server_url_hint">Enter your computer\'s IP address with port number</string>
+    <string name="custom_url_insecure_warning">This URL uses unencrypted HTTP. Only use it for a server on your own trusted network — over the internet your key and messages could be intercepted.</string>
     <string name="custom_model_id_label">Custom model ID</string>
     <string name="custom_model_id_hint">Type any model ID from openrouter.ai/models</string>
     <string name="model_name_label">Model name</string>
@@ -227,4 +227,22 @@
     <string name="privacy_note_voice">Voice is handled by your phone\'s system speech service, which may send audio to its provider (often Google).</string>
     <string name="privacy_note_dismiss">Don\'t show again</string>
     <string name="scroll_to_bottom">Scroll to latest message</string>
+
+    <!-- Accessibility labels & color names (2.4.1 audit) -->
+    <string name="folder_collapse">Collapse folder</string>
+    <string name="folder_expand">Expand folder</string>
+    <string name="a11y_security_privacy">Security and privacy</string>
+    <string name="a11y_api_key_instructions">API key instructions</string>
+    <string name="a11y_api_key_secured">API key secured</string>
+    <string name="api_key_label">%1$s API Key</string>
+    <string name="model_example_fmt">e.g. %1$s</string>
+    <string name="color_swatch_desc">Color: %1$s</string>
+    <string name="color_generic">Color</string>
+    <string name="color_peach">Peach</string>
+    <string name="color_mint">Mint green</string>
+    <string name="color_lavender">Lavender</string>
+    <string name="color_pink">Pink</string>
+    <string name="color_coral">Coral</string>
+    <string name="color_sand">Sand</string>
+    <string name="color_sky">Sky blue</string>
 </resources>

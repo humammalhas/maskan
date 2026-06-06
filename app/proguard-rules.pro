@@ -22,3 +22,14 @@
 -keep,allowobfuscation interface app.maskan.chat.data.remote.AnthropicService
 -keep,allowobfuscation interface app.maskan.chat.data.remote.GeminiService
 
+# Strip all android.util.Log calls from release builds (defense-in-depth: no
+# stray debug logging ever ships, regardless of BuildConfig.DEBUG guards).
+-assumenosideeffects class android.util.Log {
+    public static *** d(...);
+    public static *** v(...);
+    public static *** i(...);
+    public static *** w(...);
+    public static *** e(...);
+    public static *** wtf(...);
+}
+
