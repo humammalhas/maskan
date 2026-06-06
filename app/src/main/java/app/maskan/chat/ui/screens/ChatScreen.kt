@@ -720,7 +720,9 @@ private fun MessageBubble(
                     ) {
                         Icon(
                             imageVector = if (isSpeaking) Icons.Filled.Close else Icons.Default.PlayArrow,
-                            contentDescription = null,
+                            contentDescription = stringResource(
+                                if (isSpeaking) R.string.stop_narration else R.string.play_narration
+                            ),
                             modifier = Modifier.size(16.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )

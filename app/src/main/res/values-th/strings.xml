@@ -13,6 +13,8 @@
     <string name="delete_confirmation">คุณแน่ใจหรือไม่ว่าต้องการลบบทสนทนานี้?</string>
     <string name="delete_button">ลบ</string>
     <string name="cancel_button">ยกเลิก</string>
+    <string name="search_placeholder">ค้นหาการสนทนา…</string>
+    <string name="search_no_results">ไม่พบการสนทนา</string>
 
     <!-- Chat screen -->
     <string name="chat_screen_title">แชท</string>
@@ -179,6 +181,8 @@
     <string name="voice_error_generic">เสียงผิดพลาด (รหัส %1$d) ลองอีกครั้ง</string>
     <string name="voice_narration_unavailable">ไม่สามารถใช้การอ่านออกเสียงได้</string>
     <string name="tts_language_unavailable">ไม่มีเสียงสำหรับภาษานี้</string>
+    <string name="play_narration">อ่านออกเสียง</string>
+    <string name="stop_narration">หยุดอ่านออกเสียง</string>
     <string name="provider_configured">กำหนดค่าแล้ว</string>
     <string name="model_active">โมเดลที่ใช้งาน</string>
     <string name="security_section">ความปลอดภัย</string>

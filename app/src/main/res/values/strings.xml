@@ -181,6 +181,8 @@
     <string name="voice_error_generic">Voice error (code %1$d), try again</string>
     <string name="voice_narration_unavailable">Text-to-speech unavailable</string>
     <string name="tts_language_unavailable">No voice available for this language</string>
+    <string name="play_narration">Read aloud</string>
+    <string name="stop_narration">Stop reading aloud</string>
     <string name="provider_configured">Configured</string>
     <string name="model_active">Active model</string>
     <string name="security_section">Security</string>

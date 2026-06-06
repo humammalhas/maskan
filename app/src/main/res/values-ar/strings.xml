@@ -181,6 +181,8 @@
     <string name="voice_error_generic">خطأ صوتي (رمز %1$d)، حاول مرة أخرى</string>
     <string name="voice_narration_unavailable">تحويل النص إلى كلام غير متاح</string>
     <string name="tts_language_unavailable">لا يوجد صوت متاح لهذه اللغة</string>
+    <string name="play_narration">قراءة بصوت عالٍ</string>
+    <string name="stop_narration">إيقاف القراءة</string>
     <string name="provider_configured">مُهيّأ</string>
     <string name="model_active">النموذج النشط</string>
     <string name="security_section">الأمان</string>
