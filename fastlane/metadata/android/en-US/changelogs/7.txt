@@ -1,0 +1,6 @@
+• Scroll-to-bottom button + draggable scrollbar in chat
+• Removed the microphone permission (voice uses your phone's system recogniser)
+• No debug logging in release builds; warning for insecure custom-server URLs
+• Screen-reader labels + larger tap targets for accessibility
+• Fixed English text leaking into Arabic/Thai screens; completed Thai strings
+• Theme-aware success colour; minor input-hint typography fix

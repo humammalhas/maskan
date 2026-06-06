@@ -2,6 +2,28 @@
 
 All notable changes to Maskan are documented here.
 
+## [2.4.1] — 2026-06-06
+
+### Added
+- Scroll-to-bottom button and a draggable scrollbar in chat
+
+### Security & privacy
+- Removed the unused `RECORD_AUDIO` permission (voice uses the system speech recogniser, which never required it); deleted the dead `SpeechHelper.kt`
+- Stripped diagnostic logging from release builds (removed leftover TTS `Log.e` calls; added a ProGuard `Log` strip rule)
+- Inline warning when a custom provider base URL uses cleartext `http://` to a non-local host
+
+### Accessibility
+- Localized screen-reader labels for the narration button, folder expand/collapse, and color swatches
+- Raised image-remove, file-chip, narration, and color-swatch controls to a 48dp touch target
+- Added `Role.Button` semantics to preset, dialect, and folder-option cards
+
+### Localization & UI
+- Moved hardcoded English UI text (API-key label, model hints, color names) into en/ar/th resources
+- Added two missing Thai strings on the conversation list
+- Success indicator now uses a theme-aware color (readable in dark mode)
+- Fixed `...` → `…` in the message input hint
+- Export failures now show a localized message instead of failing silently
+
 ## [2.4.0] — 2026-06-05
 
 ### Added
