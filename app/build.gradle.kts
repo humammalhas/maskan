@@ -47,6 +47,12 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Package native debug symbols into the Play AAB (clears Play Console's
+            // "no debug symbols" warning, makes native crash/ANR traces readable).
+            // Affects only the bundle metadata — the F-Droid/GitHub APK is unchanged.
+            ndk {
+                debugSymbolLevel = "FULL"
+            }
         }
     }
 
