@@ -245,4 +245,5 @@
     <string name="color_coral">مرجاني</string>
     <string name="color_sand">رملي</string>
     <string name="color_sky">أزرق سماوي</string>
+    <string name="export_failed">تعذّر تصدير هذه المحادثة</string>
 </resources>

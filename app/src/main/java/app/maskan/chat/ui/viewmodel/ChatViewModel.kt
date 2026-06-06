@@ -10,6 +10,7 @@ import app.maskan.chat.data.local.Presets
 import app.maskan.chat.data.local.SystemPromptPreset
 import app.maskan.chat.data.model.Dialect
 import app.maskan.chat.data.remote.providers.ProviderRegistry
+import app.maskan.chat.R
 import android.content.Intent
 import app.maskan.chat.data.repository.ChatRepository
 import app.maskan.chat.data.repository.ExportFormat
@@ -321,7 +322,11 @@ class ChatViewModel(
                 val chooser = Intent.createChooser(intent, null)
                 chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 getApplication<android.app.Application>().startActivity(chooser)
-            } catch (_: Exception) { }
+            } catch (_: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    error = getApplication<android.app.Application>().getString(R.string.export_failed)
+                )
+            }
         }
     }
 

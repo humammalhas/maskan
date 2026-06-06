@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -114,7 +115,7 @@ private fun PresetCard(
         modifier = Modifier
             .fillMaxWidth()
             .height(100.dp)
-            .clickable(onClick = onClick),
+            .clickable(role = Role.Button, onClick = onClick),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = cardColor),
         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
@@ -178,7 +179,7 @@ private fun DialectBottomSheet(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 8.dp)
-                        .clickable { onDialectSelected(dialect) },
+                        .clickable(role = Role.Button) { onDialectSelected(dialect) },
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = if (selected)

@@ -19,7 +19,7 @@
     <!-- Chat screen -->
     <string name="chat_screen_title">Chat</string>
     <string name="empty_chat">Start a conversation\nType a message below.</string>
-    <string name="message_placeholder">Type a message...</string>
+    <string name="message_placeholder">Type a message…</string>
     <string name="send_button">Send</string>
     <string name="stop_generation">Stop</string>
     <string name="dismiss_button">Dismiss</string>
@@ -245,4 +245,5 @@
     <string name="color_coral">Coral</string>
     <string name="color_sand">Sand</string>
     <string name="color_sky">Sky blue</string>
+    <string name="export_failed">Couldn\'t export this conversation</string>
 </resources>

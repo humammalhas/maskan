@@ -62,6 +62,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
@@ -125,7 +126,7 @@ internal fun PastelColorRow(selected: Color, onSelect: (Color) -> Unit) {
                         if (color == selected) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
                         else Modifier
                     )
-                    .clickable { onSelect(color) }
+                    .clickable(role = Role.Button) { onSelect(color) }
                     .semantics { contentDescription = swatchDesc }
             )
         }

@@ -245,4 +245,5 @@
     <string name="color_coral">คอรัล</string>
     <string name="color_sand">ทราย</string>
     <string name="color_sky">ฟ้า</string>
+    <string name="export_failed">ไม่สามารถส่งออกการสนทนานี้ได้</string>
 </resources>
