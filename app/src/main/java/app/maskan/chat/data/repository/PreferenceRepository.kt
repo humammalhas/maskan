@@ -42,6 +42,16 @@ class PreferenceRepository(context: Context) {
         plainPreferences.edit().putBoolean(KEY_BLOCK_SCREENSHOTS, enabled).apply()
     }
 
+    // True while the user is in the first-launch onboarding's Settings step. Lets that step survive
+    // an activity recreate (e.g. changing the language applies a new locale and restarts the
+    // Activity), so the "Start Chatting" button isn't lost. Existing users never have this set.
+    fun isOnboardingInProgress(): Boolean =
+        plainPreferences.getBoolean(KEY_ONBOARDING_IN_PROGRESS, false)
+
+    fun setOnboardingInProgress(inProgress: Boolean) {
+        plainPreferences.edit().putBoolean(KEY_ONBOARDING_IN_PROGRESS, inProgress).apply()
+    }
+
     fun hasSeenImagePrivacyNote(): Boolean =
         plainPreferences.getBoolean(KEY_IMAGE_PRIVACY_NOTE_SEEN, false)
 
@@ -64,6 +74,7 @@ class PreferenceRepository(context: Context) {
         private const val KEY_COMPLETED_SETUP = "completed_setup"
         private const val KEY_BLOCK_SCREENSHOTS = "block_screenshots"
         private const val KEY_PRIVACY_INTRO_SEEN = "privacy_intro_seen"
+        private const val KEY_ONBOARDING_IN_PROGRESS = "onboarding_in_progress"
         private const val KEY_IMAGE_PRIVACY_NOTE_SEEN = "image_privacy_note_seen"
         private const val KEY_VOICE_PRIVACY_NOTE_SEEN = "voice_privacy_note_seen"
     }

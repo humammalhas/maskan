@@ -2,6 +2,20 @@
 
 All notable changes to Maskan are documented here.
 
+## [2.4.2] — 2026-06-06
+
+### Added
+- New hand-painted coral spiral app icon (replaces the placeholder ring)
+
+### Fixed
+- Chat now reliably pins to the latest message — fixed replies that could stay hidden below the fold and a stuck scroll-to-bottom button (`reverseLayout`)
+- Preset descriptions now render in Arabic. The emoji/flag icon's tall line-box was consuming the card and laying the description out at zero height; the icon is now height-capped so icon, title, and a one-line description always fit on the one-page card
+
+### Changed
+- Redesigned the new-chat preset menu: all presets on a single screen (no scroll), each card showing the icon, a normal-weight title, and a one-line description
+- Refreshed the theme-aware preset card palette and translation-preset flag emojis
+- Smoother first-run / onboarding flow
+
 ## [2.4.1] — 2026-06-06
 
 ### Added

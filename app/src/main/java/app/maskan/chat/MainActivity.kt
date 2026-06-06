@@ -58,6 +58,7 @@ class MainActivity : ComponentActivity() {
 
         val isFirstLaunch = !app.preferenceRepository.hasCompletedSetup()
         val needsPrivacyIntro = !app.preferenceRepository.hasSeenPrivacyIntro()
+        val onboardingInProgress = app.preferenceRepository.isOnboardingInProgress()
 
         setContent {
             MaskanTheme(isArabic = isArabic) {
@@ -67,7 +68,8 @@ class MainActivity : ComponentActivity() {
                     preferenceRepository = app.preferenceRepository,
                     onRestart = { recreate() },
                     isFirstLaunch = isFirstLaunch,
-                    needsPrivacyIntro = needsPrivacyIntro
+                    needsPrivacyIntro = needsPrivacyIntro,
+                    onboardingInProgress = onboardingInProgress
                 )
             }
         }
@@ -81,12 +83,16 @@ private fun AppNavigation(
     preferenceRepository: PreferenceRepository,
     onRestart: () -> Unit,
     isFirstLaunch: Boolean,
-    needsPrivacyIntro: Boolean = false
+    needsPrivacyIntro: Boolean = false,
+    onboardingInProgress: Boolean = false
 ) {
     val navController = rememberNavController()
     val startDestination = when {
         isFirstLaunch -> Routes.WELCOME
         needsPrivacyIntro -> Routes.PRIVACY_INTRO
+        // Resume the first-launch Settings step if onboarding was interrupted by a locale-change
+        // restart, so the "Start Chatting" button isn't lost when switching language mid-onboarding.
+        onboardingInProgress -> Routes.SETTINGS + "?firstLaunch=true"
         else -> Routes.CONVERSATION_LIST
     }
 
@@ -109,6 +115,7 @@ private fun AppNavigation(
             PrivacyIntroScreen(
                 onGotIt = {
                     preferenceRepository.setPrivacyIntroSeen()
+                    preferenceRepository.setOnboardingInProgress(true)
                     navController.navigate(Routes.SETTINGS + "?firstLaunch=true") {
                         popUpTo(Routes.PRIVACY_INTRO) { inclusive = true }
                     }
@@ -158,6 +165,7 @@ private fun AppNavigation(
                 viewModel = settingsViewModel,
                 onNavigateBack = {
                     if (isFirstLaunchSettings) {
+                        preferenceRepository.setOnboardingInProgress(false)
                         navController.navigate(Routes.CONVERSATION_LIST) {
                             popUpTo(0) { inclusive = true }
                         }

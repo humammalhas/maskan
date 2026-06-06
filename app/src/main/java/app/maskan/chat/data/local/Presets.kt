@@ -46,7 +46,7 @@ object Presets {
             systemPromptEn = systemPromptEn,
             systemPromptAr = systemPromptAr,
             category = PresetCategory.TRANSLATION,
-            icon = "🌍"
+            icon = "🇬🇧🇵🇸"
         )
     }
 
@@ -69,7 +69,7 @@ object Presets {
         systemPromptEn = "You are an expert Arabic-to-English translator. The input may be in MSA or any spoken dialect. Detect the register and preserve it in the English translation — formal Arabic → formal English, slang → English slang.",
         systemPromptAr = "أنت مترجم محترف من العربية إلى الإنجليزية. قد يكون النص بالفصحى أو بأي لهجة محكية. حدّد المستوى اللغوي وحافظ عليه في الترجمة الإنجليزية — عربية رسمية → إنجليزية رسمية، عامية → إنجليزية عامية.",
         category = PresetCategory.TRANSLATION,
-        icon = "🔄"
+        icon = "🇵🇸🇬🇧"
     )
 
     private val enToTh = SystemPromptPreset(
@@ -84,7 +84,7 @@ object Presets {
         systemPromptAr = "أنت مترجم من الإنجليزية إلى التايلاندية. لكل نص إنجليزي، قدّم ترجمة تايلاندية طبيعية. استخدم أدوات التأدب (ครับ/ค่ะ) عند الاقتضاء في السياقات الرسمية. إن كان النص غامضاً، اسأل سؤالاً توضيحياً واحداً قبل الترجمة. لا تترجم التعابير الاصطلاحية حرفياً — ابحث عن التعبير التايلاندي المكافئ. حافظ على نبرة النص الأصلي.",
         systemPromptTh = "คุณเป็นนักแปลภาษาอังกฤษเป็นภาษาไทย สำหรับทุกข้อความภาษาอังกฤษที่ได้รับ ให้แปลเป็นภาษาไทยอย่างเป็นธรรมชาติ ใช้คำลงท้ายสุภาพ (ครับ/ค่ะ) ตามความเหมาะสมสำหรับบริบทที่เป็นทางการ หากข้อความของผู้ใช้มีความคลุมเครือ ให้ถามคำถามเพื่อความชัดเจนหนึ่งข้อก่อนแปล อย่าแปลสำนวนแบบตรงตัว — ให้หาสำนวนไทยที่เทียบเท่า รักษาน้ำเสียงจากต้นฉบับ",
         category = PresetCategory.TRANSLATION,
-        icon = "🇹🇭"
+        icon = "🇬🇧🇹🇭"
     )
 
     private val thToEn = SystemPromptPreset(
@@ -99,7 +99,7 @@ object Presets {
         systemPromptAr = "أنت مترجم محترف من التايلاندية إلى الإنجليزية. قد يكون النص بالتايلاندية الرسمية أو العامية أو السلانغ. حدّد المستوى اللغوي وحافظ عليه في الترجمة الإنجليزية. بالنسبة للتعابير الاصطلاحية التايلاندية (สำนวน)، قدّم المكافئ الإنجليزي بدلاً من الترجمة الحرفية، وأشِر إلى التعبير التايلاندي الأصلي إن كان ذا أهمية ثقافية.",
         systemPromptTh = "คุณเป็นนักแปลภาษาไทยเป็นภาษาอังกฤษที่เชี่ยวชาญ ข้อความที่ได้รับอาจเป็นภาษาไทยทางการ ภาษาไทยไม่เป็นทางการ หรือสแลงไทย ให้ตรวจจับระดับภาษาและรักษาไว้ในการแปลภาษาอังกฤษ สำหรับสำนวนและการแสดงออกภาษาไทย ให้เทียบเคียงเป็นภาษาอังกฤษแทนการแปลตรงตัว และระบุสำนวนไทยดั้งเดิมหากมีความสำคัญทางวัฒนธรรม",
         category = PresetCategory.TRANSLATION,
-        icon = "🔄"
+        icon = "🇹🇭🇬🇧"
     )
 
     private val classicalArabic = SystemPromptPreset(

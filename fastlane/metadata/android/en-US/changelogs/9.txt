@@ -1,0 +1,5 @@
+• New hand-painted coral spiral app icon
+• Fixed chat sometimes hiding the latest replies and a stuck scroll-to-bottom button
+• Redesigned the new-chat preset menu — every preset on one screen with icon, title and a one-line description
+• Fixed preset descriptions not showing in Arabic
+• Smoother first-run experience and refreshed preset colours
