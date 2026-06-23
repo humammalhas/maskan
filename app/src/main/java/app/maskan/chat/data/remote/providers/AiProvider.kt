@@ -16,6 +16,16 @@ interface AiProvider {
     val keyAcquisitionUrl: String
     val pricingInfo: String
 
+    /**
+     * Fetch the list of model ids actually available on the server (via GET /v1/models).
+     * Local/custom providers override this; cloud providers keep their curated lists and
+     * return an empty list here.
+     */
+    suspend fun fetchModels(
+        apiKey: String,
+        baseUrl: String? = null
+    ): List<String> = emptyList()
+
     suspend fun sendMessage(
         apiKey: String,
         model: String,

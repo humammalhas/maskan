@@ -145,3 +145,15 @@ data class ChatCompletionChunk(
     val obj: String = "",
     val choices: List<StreamChoice> = emptyList()
 )
+
+// Response of GET /v1/models — used to auto-detect models installed on a
+// local server (Ollama, LM Studio, any OpenAI-compatible endpoint).
+@Serializable
+data class ModelsResponse(
+    val data: List<ModelInfo> = emptyList()
+)
+
+@Serializable
+data class ModelInfo(
+    val id: String = ""
+)

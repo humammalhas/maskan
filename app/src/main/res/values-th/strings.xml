@@ -108,6 +108,9 @@
     <string name="custom_model_id_hint">พิมพ์ ID โมเดลใดก็ได้จาก openrouter.ai/models</string>
     <string name="model_name_label">ชื่อโมเดล</string>
     <string name="local_model_name_hint">พิมพ์ชื่อโมเดลที่ติดตั้งบนเซิร์ฟเวอร์ของคุณ</string>
+    <string name="load_models_button">ดึงโมเดลจากเซิร์ฟเวอร์</string>
+    <string name="models_loaded_fmt">ดึงมาได้ %1$d โมเดลจากเซิร์ฟเวอร์</string>
+    <string name="models_load_empty">ไม่พบโมเดลบนเซิร์ฟเวอร์</string>
     <string name="default_dialect_label">สำเนียงการแปลเริ่มต้น</string>
     <string name="dialect_label">สำเนียง</string>
     <string name="instructions_title_provider">วิธีรับ %1$s API Key</string>

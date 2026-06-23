@@ -80,6 +80,17 @@ class LocalProvider(
         }
     }
 
+    override suspend fun fetchModels(apiKey: String, baseUrl: String?): List<String> {
+        val service = getService(resolveUrl(baseUrl))
+        val response = service.listModels(
+            authorization = if (apiKey.isNotBlank()) "Bearer $apiKey" else ""
+        )
+        return response.data
+            .map { it.id }
+            .filter { it.isNotBlank() }
+            .distinct()
+    }
+
     override suspend fun sendMessage(
         apiKey: String,
         model: String,

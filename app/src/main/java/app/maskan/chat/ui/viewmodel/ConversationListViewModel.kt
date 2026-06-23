@@ -95,7 +95,12 @@ class ConversationListViewModel(
     fun createNewConversation(onCreated: (Long) -> Unit) {
         viewModelScope.launch {
             val defaultProviderId = keyRepository.getDefaultProviderId() ?: "deepseek"
-            val defaultModel = ProviderRegistry.getProvider(defaultProviderId)?.defaultModel
+            // Use the model the user actually selected/typed for this provider; fall back to the
+            // provider's default only if none was saved. (Previously this always used the provider
+            // default — e.g. "llama3.2" for Ollama — so new chats ignored the user's chosen model
+            // and failed with "model not found" on servers that don't have that exact model.)
+            val defaultModel = keyRepository.getSelectedModel(defaultProviderId)
+                ?: ProviderRegistry.getProvider(defaultProviderId)?.defaultModel
             val id = chatRepository.createConversation(
                 providerId = defaultProviderId,
                 modelId = defaultModel

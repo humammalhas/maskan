@@ -1,0 +1,4 @@
+• Fixed local AI servers (Ollama, LM Studio, custom) defaulting to llama3.2 and failing with "model not found" — new chats now use the model you actually choose
+• Added "Load models from server" to auto-detect the models installed on your local server
+• The model name field now shows your current model instead of starting empty
+• Thanks to the user who reported this (issue #9)

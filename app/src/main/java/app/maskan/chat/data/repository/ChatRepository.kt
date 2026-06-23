@@ -339,6 +339,19 @@ class ChatRepository(
         data object Done : StreamEvent()
     }
 
+    suspend fun fetchModels(providerId: String): Result<List<String>> {
+        return try {
+            val provider = ProviderRegistry.getProvider(providerId)
+                ?: return Result.failure(Exception("Unknown provider: $providerId"))
+            val apiKey = keyRepository.getApiKey(providerId) ?: ""
+            val storedBaseUrl = keyRepository.getBaseUrl(providerId)
+            val models = provider.fetchModels(apiKey, storedBaseUrl)
+            Result.success(models)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun testConnection(providerId: String): Result<String> {
         return try {
             val provider = ProviderRegistry.getProvider(providerId)

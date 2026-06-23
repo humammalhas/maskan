@@ -108,6 +108,9 @@
     <string name="custom_model_id_hint">اكتب معرّف أي نموذج من openrouter.ai/models</string>
     <string name="model_name_label">اسم النموذج</string>
     <string name="local_model_name_hint">اكتب اسم النموذج المثبّت على خادمك</string>
+    <string name="load_models_button">جلب النماذج من الخادم</string>
+    <string name="models_loaded_fmt">تم جلب %1$d نموذج من الخادم</string>
+    <string name="models_load_empty">لم يتم العثور على نماذج على الخادم</string>
     <string name="default_dialect_label">لهجة الترجمة الافتراضية</string>
     <string name="dialect_label">اللهجة</string>
     <string name="instructions_title_provider">كيف تحصل على مفتاح %1$s API</string>

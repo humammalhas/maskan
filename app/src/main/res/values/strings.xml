@@ -108,6 +108,9 @@
     <string name="custom_model_id_hint">Type any model ID from openrouter.ai/models</string>
     <string name="model_name_label">Model name</string>
     <string name="local_model_name_hint">Type the name of the model installed on your server</string>
+    <string name="load_models_button">Load models from server</string>
+    <string name="models_loaded_fmt">Loaded %1$d model(s) from server</string>
+    <string name="models_load_empty">No models found on the server</string>
     <string name="default_dialect_label">Default translation dialect</string>
     <string name="dialect_label">Dialect</string>
     <string name="instructions_title_provider">How to get a %1$s API Key</string>

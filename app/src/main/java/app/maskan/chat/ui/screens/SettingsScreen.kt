@@ -53,6 +53,7 @@ import app.maskan.chat.data.local.isAppArabic
 import app.maskan.chat.data.model.Dialect
 import app.maskan.chat.ui.viewmodel.SettingsViewModel
 import app.maskan.chat.ui.viewmodel.TestConnectionState
+import app.maskan.chat.ui.viewmodel.FetchModelsState
 import androidx.compose.foundation.layout.Arrangement
 import app.maskan.chat.ui.theme.maskanColors
 import androidx.compose.material3.Card
@@ -429,6 +430,12 @@ fun SettingsScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Prefer models fetched live from a local server; otherwise the curated list.
+            val modelOptions = if (state.fetchedModels.isNotEmpty())
+                state.fetchedModels
+            else
+                selectedProvider.availableModels
+
             ExposedDropdownMenuBox(
                 expanded = modelExpanded,
                 onExpandedChange = { modelExpanded = !modelExpanded }
@@ -451,7 +458,7 @@ fun SettingsScreen(
                     expanded = modelExpanded,
                     onDismissRequest = { modelExpanded = false }
                 ) {
-                    selectedProvider.availableModels.forEach { model ->
+                    modelOptions.forEach { model ->
                         val isActiveModel = model.trim() == selectedModel.trim()
                         DropdownMenuItem(
                             text = {
@@ -480,6 +487,43 @@ fun SettingsScreen(
                             }
                         )
                     }
+                }
+            }
+
+            // Load models from server (local/custom providers)
+            if (selectedProvider.supportsCustomBaseUrl) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = { viewModel.fetchModels() },
+                    enabled = baseUrl.isNotBlank() && state.fetchModelsState !is FetchModelsState.Loading
+                ) {
+                    if (state.fetchModelsState is FetchModelsState.Loading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                    Text(stringResource(R.string.load_models_button))
+                }
+                when (val fm = state.fetchModelsState) {
+                    is FetchModelsState.Success -> {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(R.string.models_loaded_fmt, fm.count),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.maskanColors.success
+                        )
+                    }
+                    is FetchModelsState.Error -> {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = fm.message,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                    else -> {}
                 }
             }
 
@@ -512,15 +556,11 @@ fun SettingsScreen(
             // Custom model field for local providers
             if (selectedProvider.supportsCustomBaseUrl && selectedProvider.id != "openrouter") {
                 Spacer(modifier = Modifier.height(8.dp))
-                var customModel by remember { mutableStateOf("") }
                 OutlinedTextField(
-                    value = customModel,
+                    value = selectedModel,
                     onValueChange = {
-                        customModel = it
-                        if (it.isNotBlank()) {
-                            viewModel.selectModel(it)
-                            onModelChanged(it)
-                        }
+                        viewModel.selectModel(it)
+                        onModelChanged(it)
                     },
                     label = { Text(stringResource(R.string.model_name_label)) },
                     placeholder = {

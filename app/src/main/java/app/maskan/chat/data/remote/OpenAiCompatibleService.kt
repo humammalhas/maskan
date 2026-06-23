@@ -3,11 +3,17 @@ package app.maskan.chat.data.remote
 import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.Streaming
 
 interface OpenAiCompatibleService {
+
+    @GET("v1/models")
+    suspend fun listModels(
+        @Header("Authorization") authorization: String
+    ): ModelsResponse
 
     @POST("v1/chat/completions")
     suspend fun createChatCompletion(
