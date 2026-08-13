@@ -140,7 +140,7 @@ cd maskan
 - Retrofit 2.11.0 + OkHttp 4.12.0 + kotlinx.serialization 1.7.3
 - EncryptedSharedPreferences (AES-256-GCM)
 - Manual DI (no Hilt, no Dagger)
-- Min SDK 26 (Android 8.0) · Target SDK 35 (Android 15)
+- Min SDK 26 (Android 8.0) · Target SDK 36 (Android 16)
 
 ---
 

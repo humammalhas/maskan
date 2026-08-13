@@ -2,6 +2,21 @@
 
 All notable changes to Maskan are documented here.
 
+## [2.4.4] — 2026-08-13
+
+### Changed
+- Now targets Android 16 (API 36) for continued Google Play compatibility and updates
+- Redesigned the new-chat preset menu so descriptions no longer get cut off on large screens or in Arabic: shorter one-line labels, a smaller icon that never clips, and tighter spacing
+- The four translation presets now show just their flags and title; the English → Arabic card no longer shows a dialect tag
+
+## [2.4.3] — 2026-06-23
+
+### Fixed
+- Local AI servers (Ollama, LM Studio, custom) no longer default to llama3.2 and fail with a model-not-found error — new chats use the model you actually select (#9)
+
+### Added
+- 'Load models from server' button for local providers — auto-detects installed models via GET /v1/models
+
 ## [2.4.2] — 2026-06-06
 
 ### Added
