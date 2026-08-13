@@ -1,0 +1,2 @@
+• Preset menu descriptions no longer get cut off on large screens or in Arabic — every card now shows its full label
+• Updated to target Android 16 (API 36) for continued Google Play compatibility and updates

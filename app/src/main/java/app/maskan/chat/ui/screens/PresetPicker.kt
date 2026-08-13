@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -40,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.maskan.chat.R
 import app.maskan.chat.data.local.Presets
+import app.maskan.chat.data.local.PresetCategory
 import app.maskan.chat.data.local.SystemPromptPreset
 import app.maskan.chat.data.local.isAppArabic
 import app.maskan.chat.data.local.localizedDescription
@@ -128,6 +130,7 @@ private fun PresetCard(
     val name = preset.localizedName()
     val description = preset.localizedDescription()
     val cardColor = presetColor(preset.id)
+    val descPull = if (isAppArabic()) (-5).dp else 0.dp
 
     Card(
         modifier = modifier
@@ -139,23 +142,23 @@ private fun PresetCard(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 6.dp, vertical = 6.dp),
+                .padding(horizontal = 6.dp, vertical = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             // Top-anchored so the icon + title sit together near the top (matching EN/TH) and the
             // description has a clear, unclipped spot directly beneath the title.
-            verticalArrangement = Arrangement.Top
+            verticalArrangement = Arrangement.Center
         ) {
             // The emoji/flag line-box renders ~2x the glyph height regardless of includeFontPadding,
             // which was eating the whole card and laying the description out at height 0. Pinning the
             // icon inside a fixed 30dp box caps that footprint so title + description always fit.
             Box(
-                modifier = Modifier.height(26.dp),
+                modifier = Modifier.height(28.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = preset.icon,
                     style = MaterialTheme.typography.titleMedium.copy(
-                        fontSize = 22.sp,
+                        fontSize = 18.sp,
                         platformStyle = PlatformTextStyle(includeFontPadding = false),
                         lineHeightStyle = LineHeightStyle(
                             alignment = LineHeightStyle.Alignment.Center,
@@ -164,7 +167,7 @@ private fun PresetCard(
                     )
                 )
             }
-            Spacer(modifier = Modifier.height(3.dp))
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = name,
                 // Unbolded and a touch smaller per request; one line so it never wraps.
@@ -172,7 +175,7 @@ private fun PresetCard(
                 // vertical padding so Arabic sits tight to the icon instead of dropping a blank line.
                 style = MaterialTheme.typography.titleSmall.copy(
                     fontSize = 12.sp,
-                    lineHeight = 14.sp,
+                    lineHeight = 13.sp,
                     platformStyle = PlatformTextStyle(includeFontPadding = false),
                     lineHeightStyle = LineHeightStyle(
                         alignment = LineHeightStyle.Alignment.Center,
@@ -184,15 +187,15 @@ private fun PresetCard(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
+            if (preset.category != PresetCategory.TRANSLATION) Text(
                 text = description,
+                modifier = Modifier.offset(y = descPull),
                 // One line. includeFontPadding=false + Trim.Both strips the extra leading that
                 // Arabic glyph metrics add above/below the line, which was pushing this line off the
                 // bottom of the short one-page card (it rendered, but got clipped to nothing).
                 style = MaterialTheme.typography.bodySmall.copy(
                     fontSize = 10.sp,
-                    lineHeight = 12.sp,
+                    lineHeight = 11.sp,
                     platformStyle = PlatformTextStyle(includeFontPadding = false),
                     lineHeightStyle = LineHeightStyle(
                         alignment = LineHeightStyle.Alignment.Center,
