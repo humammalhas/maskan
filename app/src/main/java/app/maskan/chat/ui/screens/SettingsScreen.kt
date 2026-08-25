@@ -455,6 +455,7 @@ fun SettingsScreen(
             // query and the results together above the keyboard - the only workable way to pick
             // from the 200-400 model catalogues the gateways return.
             var showModelPicker by remember { mutableStateOf(false) }
+    var showImageModelPicker by remember { mutableStateOf(false) }
 
             Box(modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(
@@ -649,6 +650,68 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+
+            // Image model: a SEPARATE preference from the chat model, so asking for a picture
+            // mid-conversation never costs the user the chat model they chose. Shown only when
+            // this provider can draw AND its catalogue actually listed image models.
+            if (selectedProvider.supportsImageGeneration && state.imageModels.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(
+                    text = stringResource(R.string.image_model_section),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Box {
+                    OutlinedTextField(
+                        value = state.selectedImageModel.ifBlank {
+                            stringResource(R.string.image_model_none)
+                        },
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text(stringResource(R.string.image_model_label)) },
+                        trailingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = null
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clickable { showImageModelPicker = true }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.image_model_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                if (showImageModelPicker) {
+                    // Same picker, no verification: checking an image model would spend a real,
+                    // paid picture on every tap.
+                    ModelPickerDialog(
+                        models = state.imageModels,
+                        visionModels = emptySet(),
+                        verifiedModels = emptySet(),
+                        freeModels = viewModel.freeModels(),
+                        selectedModel = state.selectedImageModel,
+                        onSelect = { model ->
+                            if (model.isBlank()) viewModel.clearImageModel()
+                            else viewModel.selectImageModel(model)
+                            showImageModelPicker = false
+                        },
+                        onDismiss = { showImageModelPicker = false },
+                        allowCustom = true,
+                        imageModels = state.imageModels.toSet(),
+                        allowNone = true
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))

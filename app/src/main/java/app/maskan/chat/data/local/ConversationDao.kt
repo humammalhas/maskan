@@ -1,4 +1,4 @@
-﻿package app.maskan.chat.data.local
+package app.maskan.chat.data.local
 
 import androidx.room.Dao
 import androidx.room.Delete
@@ -37,6 +37,14 @@ interface ConversationDao {
 
     @Query("UPDATE conversations SET folderId = :folderId WHERE id = :id")
     suspend fun moveToFolder(id: Long, folderId: Long?)
+
+    /**
+     * Move a conversation onto a different model WITHOUT touching its provider. A chat freezes
+     * its modelId at creation, so this is what un-sticks an old chat from a model the provider
+     * has since retired. updateProvider() rewrites providerId too and is wrong for that.
+     */
+    @Query("UPDATE conversations SET modelId = :modelId WHERE id = :id")
+    suspend fun updateConversationModel(id: Long, modelId: String?)
 
     @Query("UPDATE conversations SET providerId = :providerId, modelId = :modelId WHERE id = :id")
     suspend fun updateProvider(id: Long, providerId: String, modelId: String?)

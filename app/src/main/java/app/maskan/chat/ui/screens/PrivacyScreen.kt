@@ -77,6 +77,7 @@ fun PrivacyScreen(
             Spacer(modifier = Modifier.height(8.dp))
             PrivacyBullet(stringResource(R.string.privacy_protects_no_middleman))
             PrivacyBullet(stringResource(R.string.privacy_protects_encrypted))
+            PrivacyBullet(stringResource(R.string.privacy_protects_images))
             PrivacyBullet(stringResource(R.string.privacy_protects_your_choice))
             PrivacyBullet(stringResource(R.string.privacy_protects_no_google))
             PrivacyBullet(stringResource(R.string.privacy_protects_open_source))

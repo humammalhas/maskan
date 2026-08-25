@@ -3,6 +3,7 @@ package app.maskan.chat.ui.screens
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.Context
 import android.graphics.BitmapFactory
 import android.speech.RecognizerIntent
 import android.speech.tts.TextToSpeech
@@ -76,7 +77,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.background
@@ -173,6 +179,29 @@ fun ChatScreen(
     }
 
     var showAttachTypeDialog by remember { mutableStateOf(false) }
+    var showComposeSheet by remember { mutableStateOf(false) }
+
+    // Held between arming the Save picker and the picker returning: the SAF contract hands back
+    // only a destination, so the bytes have to wait somewhere.
+    var pendingSaveBytes by remember { mutableStateOf<ByteArray?>(null) }
+    val saveImageLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("image/png")
+    ) { uri ->
+        val bytes = pendingSaveBytes
+        pendingSaveBytes = null
+        if (uri != null && bytes != null) {
+            val ok = try {
+                context.contentResolver.openOutputStream(uri)?.use { it.write(bytes) } != null
+            } catch (_: Exception) {
+                false
+            }
+            Toast.makeText(
+                context,
+                context.getString(if (ok) R.string.image_saved else R.string.image_save_failed),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
 
     LaunchedEffect(conversationId) {
         viewModel.loadConversation(conversationId)
@@ -189,6 +218,30 @@ fun ChatScreen(
         if (visibleMessages.isNotEmpty()) {
             listState.scrollToItem(0)
         }
+    }
+
+    // The rewritten prompt opens in the big writing surface, already editable: the user reads
+    // what the model made of their words and changes anything before it is drawn.
+    uiState.improvedPrompt?.let { improved ->
+        ComposeSheet(
+            initialText = improved,
+            onDone = { edited ->
+                inputText = edited
+                viewModel.clearImprovedPrompt()
+            },
+            onDismiss = { viewModel.clearImprovedPrompt() }
+        )
+    }
+
+    if (showComposeSheet) {
+        ComposeSheet(
+            initialText = inputText,
+            onDone = { written ->
+                inputText = written
+                showComposeSheet = false
+            },
+            onDismiss = { showComposeSheet = false }
+        )
     }
 
     if (showExportDialog) {
@@ -233,6 +286,7 @@ fun ChatScreen(
                     }) {
                         Text(stringResource(R.string.attach_choose_file))
                     }
+
                 }
             },
             confirmButton = {},
@@ -284,10 +338,24 @@ fun ChatScreen(
         },
         snackbarHost = {
             uiState.error?.let { error ->
+                // The recovery action names a model id, which can be long
+                // ("google/gemma-4-31b-it:free"), so it goes on its OWN line - crammed into the
+                // trailing slot it squeezes the message down to a couple of words. Dismiss is a
+                // TextButton in the dismissAction slot, not an IconButton holding text: an icon
+                // button is a fixed 48dp box and clipped the word.
+                val recoverable = uiState.recoverableModel
                 Snackbar(
                     modifier = Modifier.padding(16.dp),
-                    action = {
-                        IconButton(onClick = { viewModel.clearError() }) {
+                    actionOnNewLine = recoverable != null,
+                    action = if (recoverable != null) {
+                        {
+                            TextButton(onClick = { viewModel.switchModelAndRetry() }) {
+                                Text(stringResource(R.string.switch_model_and_retry, recoverable))
+                            }
+                        }
+                    } else null,
+                    dismissAction = {
+                        TextButton(onClick = { viewModel.clearError() }) {
                             Text(stringResource(R.string.dismiss_button))
                         }
                     }
@@ -320,6 +388,44 @@ fun ChatScreen(
                             onRemove = { viewModel.clearPendingFile() }
                         )
                     }
+                    if (uiState.imageMode) {
+                        FileAttachmentChip(
+                            fileName = stringResource(R.string.image_mode_chip),
+                            onRemove = { viewModel.setImageMode(false) }
+                        )
+                        // Image models are trained mostly on English and reward concrete visual
+                        // detail. Rather than translate silently, the chat model drafts a prompt
+                        // and the user edits it before anything is drawn.
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            TextButton(
+                                onClick = { viewModel.improvePrompt(inputText) },
+                                enabled = inputText.isNotBlank() && !uiState.improvingPrompt
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.improve_prompt),
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                            }
+                            if (uiState.improvingPrompt) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(14.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            }
+                        }
+                        // Said once: app-private files go away with the app, so a picture worth
+                        // keeping has to be saved out. That is how Android works, not a choice
+                        // this app made, and the user should hear it before the first image.
+                        if (!preferenceRepository.hasSeenGeneratedImageNote()) {
+                            PrivacyInfoNote(
+                                text = stringResource(R.string.image_storage_note),
+                                onDismissForever = { preferenceRepository.setGeneratedImageNoteSeen() }
+                            )
+                        }
+                    }
                     MessageInputBar(
                         text = inputText,
                         onTextChange = { inputText = it },
@@ -333,6 +439,10 @@ fun ChatScreen(
                         isLoading = uiState.isLoading || uiState.isStreaming,
                         onAttach = { showAttachTypeDialog = true },
                         hasAttachment = uiState.pendingImageBytes != null || uiState.pendingFileText != null,
+                        canGenerateImages = viewModel.canGenerateImages(),
+                        imageMode = uiState.imageMode,
+                        onToggleImageMode = { viewModel.setImageMode(!uiState.imageMode) },
+                        onExpandCompose = { showComposeSheet = true },
                         preferenceRepository = preferenceRepository
                     )
                 }
@@ -395,11 +505,25 @@ fun ChatScreen(
                 ) { message ->
                     val isLastMessage = message == visibleMessages.lastOrNull()
                     val isActivelyStreaming = uiState.isStreaming && isLastMessage && message.role == "assistant"
+                    // Decrypt once per message, not once per recomposition.
+                    val generatedImage = message.imagePath?.let { path ->
+                        remember(path) { viewModel.readImage(path) }
+                    }
                     MessageBubble(
                         message = message,
                         isUser = message.role == "user",
                         isStreaming = isActivelyStreaming,
                         isSpeaking = speakingMessageId == message.id,
+                        generatedImage = generatedImage,
+                        onSaveImage = {
+                            generatedImage?.let { bytes ->
+                                pendingSaveBytes = bytes
+                                saveImageLauncher.launch("maskan-${message.id}.png")
+                            }
+                        },
+                        onShareImage = {
+                            generatedImage?.let { bytes -> shareImageBytes(context, bytes) }
+                        },
                         onSpeakToggle = {
                             val engine = tts.value
                             if (!ttsReady || engine == null) {
@@ -651,7 +775,12 @@ private fun MessageBubble(
     isUser: Boolean,
     isStreaming: Boolean = false,
     isSpeaking: Boolean = false,
-    onSpeakToggle: () -> Unit = {}
+    onSpeakToggle: () -> Unit = {},
+    // Decrypted by the caller: a generated image lives as an encrypted file, and decrypting it
+    // inside the bubble would redo the work on every recomposition.
+    generatedImage: ByteArray? = null,
+    onSaveImage: () -> Unit = {},
+    onShareImage: () -> Unit = {}
 ) {
     val backgroundColor = if (isUser) MaterialTheme.maskanColors.userBubble else MaterialTheme.maskanColors.assistantBubble
 
@@ -679,6 +808,24 @@ private fun MessageBubble(
                 colors = CardDefaults.cardColors(containerColor = backgroundColor)
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
+                    generatedImage?.let { bytes ->
+                        val bitmap = remember(bytes) {
+                            try {
+                                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                            } catch (_: Exception) { null }
+                        }
+                        bitmap?.let {
+                            Image(
+                                bitmap = it.asImageBitmap(),
+                                contentDescription = stringResource(R.string.generated_image),
+                                modifier = Modifier
+                                    .widthIn(max = 280.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .padding(bottom = if (message.content.isNotBlank()) 8.dp else 0.dp),
+                                contentScale = ContentScale.FillWidth
+                            )
+                        }
+                    }
                     message.imageBase64?.let { base64 ->
                         val bitmap = remember(base64) {
                             try {
@@ -716,6 +863,24 @@ private fun MessageBubble(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
             ) {
+                if (generatedImage != null) {
+                    // App-private files vanish when the app is uninstalled, so a picture the user
+                    // wants to keep has to leave the app deliberately. Save writes a plain PNG
+                    // wherever they choose via the Storage Access Framework - no storage
+                    // permission on any API level.
+                    TextButton(onClick = onSaveImage) {
+                        Text(
+                            text = stringResource(R.string.save_image),
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
+                    TextButton(onClick = onShareImage) {
+                        Text(
+                            text = stringResource(R.string.share_image),
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
+                }
                 if (!isUser && message.content.isNotBlank()) {
                     IconButton(
                         onClick = onSpeakToggle
@@ -750,6 +915,10 @@ private fun MessageInputBar(
     isLoading: Boolean,
     onAttach: () -> Unit = {},
     hasAttachment: Boolean = false,
+    canGenerateImages: Boolean = false,
+    imageMode: Boolean = false,
+    onToggleImageMode: () -> Unit = {},
+    onExpandCompose: () -> Unit = {},
     preferenceRepository: PreferenceRepository? = null
 ) {
     val context = LocalContext.current
@@ -793,10 +962,31 @@ private fun MessageInputBar(
                 modifier = Modifier.size(48.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Add,
+                    painter = painterResource(R.drawable.ic_attach_clip),
                     contentDescription = stringResource(R.string.attach_file),
                     tint = MaterialTheme.colorScheme.primary
                 )
+            }
+            // Drawing gets its own button rather than hiding one level down in the attach sheet:
+            // it is a different kind of action from attaching a file, and it only appears once
+            // an image model is actually chosen, so it can never lead to a dead end.
+            if (canGenerateImages) {
+                val drawLabel = stringResource(R.string.attach_generate_image)
+                IconButton(
+                    onClick = onToggleImageMode,
+                    modifier = Modifier
+                        .size(44.dp)
+                        .semantics { contentDescription = drawLabel }
+                ) {
+                    // Dimmed when idle, full strength when armed, so the state is visible
+                    // without a second control. An emoji rather than a vector because the base
+                    // Material icon set has no palette and the preset menu already reads this way.
+                    Text(
+                        text = "\uD83C\uDFA8",
+                        fontSize = 20.sp,
+                        modifier = Modifier.alpha(if (imageMode) 1f else 0.45f)
+                    )
+                }
             }
         }
         OutlinedTextField(
@@ -813,7 +1003,28 @@ private fun MessageInputBar(
             keyboardActions = KeyboardActions(onSend = { if (!isLoading) onSend() }),
             singleLine = false,
             maxLines = 5,
-            enabled = !isLoading
+            enabled = !isLoading,
+            // One tap out to a full-height writing surface. The inline field is a single row and
+            // got tighter when the draw button joined the paperclip, so anything longer than a
+            // sentence is written through a keyhole; the expand arrow is the escape hatch.
+            trailingIcon = {
+                // Only once there is something to expand. Shown on an empty field it stole
+                // enough width to wrap the placeholder onto two lines - the opposite of the
+                // problem it exists to solve.
+                if (!isLoading && text.isNotBlank()) {
+                    val expandLabel = stringResource(R.string.compose_expand)
+                    IconButton(
+                        onClick = onExpandCompose,
+                        modifier = Modifier.semantics { contentDescription = expandLabel }
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_expand_compose),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
         )
         Spacer(modifier = Modifier.width(4.dp))
         IconButton(
@@ -941,4 +1152,37 @@ private val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
 
 private fun formatTime(timestamp: Long): String {
     return timeFormat.format(Date(timestamp))
+}
+
+/**
+ * Hand a generated image to another app.
+ *
+ * The stored copy is encrypted, so sharing means writing a decrypted PNG somewhere the share
+ * target can read it. That copy goes to the cache directory behind a FileProvider - never to the
+ * shared gallery - and the directory is swept first so plaintext copies do not pile up.
+ */
+private fun shareImageBytes(context: Context, bytes: ByteArray) {
+    try {
+        val dir = java.io.File(context.cacheDir, "shared_images").apply { mkdirs() }
+        dir.listFiles()?.forEach { it.delete() }
+        val file = java.io.File(dir, "maskan-image.png")
+        file.writeBytes(bytes)
+
+        val uri = androidx.core.content.FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file
+        )
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "image/png"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(
+            Intent.createChooser(intent, null).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+    } catch (_: Exception) {
+        Toast.makeText(context, context.getString(R.string.export_failed), Toast.LENGTH_SHORT).show()
+    }
 }

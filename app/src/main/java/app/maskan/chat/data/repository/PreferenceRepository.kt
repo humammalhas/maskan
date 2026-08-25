@@ -59,6 +59,14 @@ class PreferenceRepository(context: Context) {
         plainPreferences.edit().putBoolean(KEY_IMAGE_PRIVACY_NOTE_SEEN, true).apply()
     }
 
+    /** Whether the user has been told once that generated images vanish on uninstall. */
+    fun hasSeenGeneratedImageNote(): Boolean =
+        plainPreferences.getBoolean(KEY_GENERATED_IMAGE_NOTE, false)
+
+    fun setGeneratedImageNoteSeen() {
+        plainPreferences.edit().putBoolean(KEY_GENERATED_IMAGE_NOTE, true).apply()
+    }
+
     fun hasSeenVoicePrivacyNote(): Boolean =
         plainPreferences.getBoolean(KEY_VOICE_PRIVACY_NOTE_SEEN, false)
 
@@ -80,15 +88,29 @@ class PreferenceRepository(context: Context) {
         providerId: String,
         models: List<String>,
         visionModels: Set<String> = emptySet(),
-        freeModels: Set<String> = emptySet()
+        freeModels: Set<String> = emptySet(),
+        imageModels: List<String> = emptyList()
     ) {
         plainPreferences.edit()
             .putString(KEY_MODELS_PREFIX + providerId, models.joinToString("\n"))
             .putStringSet(KEY_VISION_MODELS_PREFIX + providerId, visionModels)
             .putStringSet(KEY_FREE_MODELS_PREFIX + providerId, freeModels)
+            .putString(KEY_IMAGE_MODELS_PREFIX + providerId, imageModels.joinToString("\n"))
             .putLong(KEY_MODELS_FETCHED_AT_PREFIX + providerId, System.currentTimeMillis())
             .apply()
     }
+
+    /**
+     * Models this provider can DRAW with. Stored as an ordered list (not a Set) so the picker
+     * shows them in the same sorted order every time. Empty means either "this provider has
+     * none" or "never fetched" - the caller cannot tell those apart and does not need to: with
+     * no known image models, the feature simply is not offered.
+     */
+    fun getImageModels(providerId: String): List<String> =
+        plainPreferences.getString(KEY_IMAGE_MODELS_PREFIX + providerId, null)
+            ?.split("\n")
+            ?.filter { it.isNotBlank() }
+            ?: emptyList()
 
     /**
      * Models this provider says accept image input. Empty means the provider publishes no
@@ -142,6 +164,9 @@ class PreferenceRepository(context: Context) {
     }
 
     companion object {
+        private const val KEY_IMAGE_MODELS_PREFIX = "image_models_"
+        private const val KEY_GENERATED_IMAGE_NOTE = "generated_image_note_seen"
+
         // Must differ from KeyRepository.PREFS_NAME to avoid sharing the same encrypted file.
         private const val PREFS_NAME = "maskan_secure_preferences"
         private const val PLAIN_PREFS_NAME = "maskan_prefs"

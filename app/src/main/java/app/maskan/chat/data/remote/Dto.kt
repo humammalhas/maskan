@@ -162,3 +162,30 @@ data class ModelsResponse(
 data class ModelInfo(
     val id: String = ""
 )
+
+/**
+ * POST /v1/images/generations.
+ *
+ * [responseFormat] differs by provider: OpenAI (and everything modelled on it) calls the base64
+ * option "b64_json", Together calls it "base64". Either way we ask for BYTES rather than a URL,
+ * so the image arrives in the response we already made and needs no second fetch.
+ *
+ * The global Json sets encodeDefaults = true, so n and response_format are always sent.
+ */
+@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+@Serializable
+data class ImageGenerationRequest(
+    val model: String,
+    val prompt: String,
+    val n: Int = 1,
+    /**
+     * Null means "do not send this field at all", which matters: OpenAI's gpt-image-* models
+     * REJECT response_format (they always return base64) while dall-e-3 accepts it, and Together
+     * spells the same option "base64". encodeDefaults = true is on globally for Anthropic's sake,
+     * so a null would otherwise serialize as "response_format": null and be rejected - exactly
+     * the bug that broke every Anthropic chat in v2.4.5.
+     */
+    @SerialName("response_format")
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
+    val responseFormat: String? = null
+)

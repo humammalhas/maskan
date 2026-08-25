@@ -16,7 +16,14 @@ import kotlinx.serialization.json.jsonPrimitive
 data class FetchedModels(
     val ids: List<String> = emptyList(),
     val visionIds: Set<String> = emptySet(),
-    val freeIds: Set<String> = emptySet()
+    val freeIds: Set<String> = emptySet(),
+    /**
+     * Models that PRODUCE images. Kept in their own bucket rather than mixed into [ids]: they
+     * cannot answer a chat turn, so the chat picker must never show them, but they are exactly
+     * what the image-generation feature needs. This is the opposite of [visionIds], which take
+     * images IN.
+     */
+    val imageIds: List<String> = emptyList()
 )
 
 /**
@@ -152,6 +159,78 @@ object ModelFilter {
             if (prompt == 0.0 && completion == 0.0) id else null
         }.toSet()
     }
+
+    /**
+     * Ids that GENERATE images, from whatever the provider publishes:
+     *  - a `type` of "image" (Together tags every entry; Venice does too on its image endpoint),
+     *  - OpenRouter's architecture.output_modalities containing "image",
+     *  - Gemini's naming convention, a trailing `-image` / `-image-preview`.
+     *
+     * Router ids are excluded: "openrouter/auto" advertises image output because it may pick a
+     * model that does, but it is not itself an image model and is priced at -1.
+     */
+    fun imageIdsFrom(element: JsonElement): List<String> {
+        val array = when (element) {
+            is JsonArray -> element
+            is JsonObject -> (element["data"] ?: element["models"]) as? JsonArray
+            else -> null
+        } ?: return emptyList()
+
+        return array.mapNotNull { item ->
+            val obj = item as? JsonObject ?: return@mapNotNull null
+            val id = (obj["id"] ?: obj["name"] ?: obj["model"])
+                ?.let { (it as? JsonPrimitive)?.contentOrNull } ?: return@mapNotNull null
+            if (IMAGE_ID_EXCLUDES.any { id.lowercase().startsWith(it) }) return@mapNotNull null
+
+            val typedImage =
+                (obj["type"] as? JsonPrimitive)?.contentOrNull?.lowercase() == "image"
+            val outputsImage = (obj["architecture"] as? JsonObject)
+                ?.get("output_modalities")
+                ?.let { it as? JsonArray }
+                ?.any { (it as? JsonPrimitive)?.contentOrNull == "image" }
+                ?: false
+            val lower = id.lowercase()
+            // Name markers matter because OpenAI publishes neither a type nor modality data:
+            // dall-e-3 and gpt-image-1 are invisible to both tests above. These are the same
+            // families NON_CHAT_MARKERS uses to keep image models OUT of the chat list, read the
+            // other way round.
+            val namedImage = lower.endsWith("-image") ||
+                lower.endsWith("-image-preview") ||
+                IMAGE_NAME_MARKERS.any { lower.contains(it) }
+
+            if (typedImage || outputsImage || namedImage) id else null
+        }.distinct().sorted()
+    }
+
+    /**
+     * Image models picked out of a plain list of ids, by name alone.
+     *
+     * For providers whose catalogue carries no type or modality data at all - Gemini lists its
+     * image models beside the chat ones with nothing to tell them apart but the name.
+     */
+    fun imageIdsFromNames(ids: List<String>): List<String> =
+        ids.asSequence()
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .filter { id ->
+                val lower = id.lowercase()
+                if (IMAGE_ID_EXCLUDES.any { lower.startsWith(it) }) return@filter false
+                lower.endsWith("-image") ||
+                    lower.endsWith("-image-preview") ||
+                    IMAGE_NAME_MARKERS.any { marker -> lower.contains(marker) }
+            }
+            .distinct()
+            .sorted()
+            .toList()
+
+    /** Ids that advertise image output but are routers, not models. */
+    private val IMAGE_ID_EXCLUDES = listOf("openrouter/auto")
+
+    private val IMAGE_NAME_MARKERS = listOf(
+        "dall-e", "gpt-image", "imagen", "stable-diffusion", "flux", "seedream",
+        "qwen-image", "sdxl", "sd3", "recraft", "ideogram", "playground-v",
+        "imagine-image", "juggernaut", "krea"
+    )
 
     fun chatModelsOnly(ids: List<String>): List<String> =
         ids.asSequence()

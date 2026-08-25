@@ -2,6 +2,7 @@ package app.maskan.chat.data.remote.providers
 
 import android.util.Base64
 import app.maskan.chat.data.remote.GeminiContent
+import app.maskan.chat.data.remote.GeminiImageExtractor
 import app.maskan.chat.data.remote.GeminiInlineData
 import app.maskan.chat.data.remote.GeminiPart
 import app.maskan.chat.data.remote.GeminiRequest
@@ -12,6 +13,9 @@ import app.maskan.chat.data.remote.Message
 import app.maskan.chat.data.remote.parseSSEStream
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
 
 class GeminiProvider(
     private val config: ProviderConfig,
@@ -24,6 +28,7 @@ class GeminiProvider(
     override val defaultBaseUrl: String = config.baseUrl
     override val supportsCustomBaseUrl: Boolean = false
     override val supportsVision: Boolean = config.supportsVision
+    override val supportsImageGeneration: Boolean = true
     override val isLocal: Boolean = config.isLocal
     override val availableModels: List<String> = config.models
     override val defaultModel: String = config.defaultModel
@@ -85,8 +90,55 @@ class GeminiProvider(
             .filter { it.supportedGenerationMethods.contains("generateContent") }
             .map { it.name.removePrefix("models/") }
         val chatIds = ModelFilter.chatModelsOnly(ids)
+        // Gemini's image models advertise generateContent like everything else, so they arrive in
+        // the same list and chatModelsOnly then strips them out - correctly, they cannot hold a
+        // conversation. Pick them back out of the UNFILTERED ids for the image bucket.
+        val imageIds = ModelFilter.imageIdsFromNames(ids)
         // The generateContent models in the Gemini lineup are all multimodal on input.
-        return FetchedModels(ids = chatIds, visionIds = chatIds.toSet())
+        return FetchedModels(ids = chatIds, visionIds = chatIds.toSet(), imageIds = imageIds)
+    }
+
+    /**
+     * Draw with a Gemini image model.
+     *
+     * Same generateContent endpoint as chat, with responseModalities asking for a picture. Both
+     * TEXT and IMAGE are requested: some revisions reject an IMAGE-only request, and an extra
+     * text part costs nothing since the extractor ignores it.
+     */
+    override suspend fun generateImage(
+        apiKey: String,
+        model: String,
+        prompt: String,
+        baseUrl: String?
+    ): GeneratedImage {
+        val request = buildJsonObject {
+            put("contents", buildJsonArray {
+                add(buildJsonObject {
+                    put("role", JsonPrimitive("user"))
+                    put("parts", buildJsonArray {
+                        add(buildJsonObject { put("text", JsonPrimitive(prompt)) })
+                    })
+                })
+            })
+            put("generationConfig", buildJsonObject {
+                put("responseModalities", buildJsonArray {
+                    add(JsonPrimitive("TEXT"))
+                    add(JsonPrimitive("IMAGE"))
+                })
+            })
+        }
+
+        val response = apiService.generateContentRaw(
+            model = model,
+            apiKey = apiKey,
+            request = request
+        )
+
+        return GeminiImageExtractor.extract(response)
+            ?: throw Exception(
+                "Gemini API error: " + (GeminiImageExtractor.failureReason(response)
+                    ?: "no image in response")
+            )
     }
 
     override suspend fun sendMessage(

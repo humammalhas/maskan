@@ -175,6 +175,7 @@
     <string name="error_rate_limit">ส่งคำขอมากเกินไป กรุณารอสักครู่แล้วลองใหม่</string>
     <string name="error_insufficient_quota">เครดิต API ของคุณหมดแล้ว กรุณาเติมเงินที่เว็บไซต์ผู้ให้บริการ</string>
     <string name="error_model_not_found">โมเดลที่เลือกไม่พร้อมใช้งาน กรุณาลองโมเดลอื่นในการตั้งค่า</string>
+    <string name="switch_model_and_retry">สลับไปที่ %1$s</string>
     <string name="error_request_too_large">ข้อความของคุณยาวเกินไปสำหรับโมเดลนี้ กรุณาลองย่อให้สั้นลง</string>
     <string name="error_server_error">ผู้ให้บริการ AI กำลังมีปัญหา กรุณาลองใหม่ในอีกสักครู่</string>
     <string name="error_server_overloaded">ผู้ให้บริการ AI มีภาระงานหนัก กรุณาลองใหม่ในอีกสักครู่</string>
@@ -265,4 +266,28 @@
     <string name="color_sand">ทราย</string>
     <string name="color_sky">ฟ้า</string>
     <string name="export_failed">ไม่สามารถส่งออกการสนทนานี้ได้</string>
+    <string name="generated_image">รูปที่สร้างขึ้น</string>
+    <string name="save_image">บันทึก</string>
+    <string name="share_image">แชร์</string>
+    <string name="image_saved">บันทึกรูปแล้ว</string>
+    <string name="image_save_failed">บันทึกรูปไม่สำเร็จ</string>
+    <string name="attach_generate_image">สร้างรูปภาพ</string>
+    <string name="image_mode_chip">ข้อความถัดไปจะถูกวาด</string>
+    <string name="image_storage_note">รูปที่สร้างขึ้นถูกเข้ารหัสเก็บไว้ในแอป และจะถูกลบเมื่อถอนการติดตั้ง แตะบันทึกเพื่อเก็บสำเนาไว้ในเครื่อง</string>
+    <string name="image_model_section">โมเดลรูปภาพ</string>
+    <string name="image_model_label">โมเดลรูปภาพ</string>
+    <string name="image_model_none">ยังไม่ได้เลือก</string>
+    <string name="image_model_hint">ใช้สำหรับสร้างรูปเท่านั้น โมเดลแชทของคุณไม่เปลี่ยน การสร้างรูปมีค่าใช้จ่ายในผู้ให้บริการส่วนใหญ่</string>
+    <string name="error_no_image_model">กรุณาเลือกโมเดลรูปภาพในการตั้งค่าก่อน</string>
+    <string name="error_image_unsupported">ผู้ให้บริการนี้สร้างรูปภาพไม่ได้</string>
+    <string name="model_use_typed_fmt">ใช้ “%1$s”</string>
+    <string name="privacy_protects_images">รูปที่คุณสร้างถูกเข้ารหัสบนเครื่องของคุณเช่นกัน และไม่ออกจากเครื่องยกเว้นไปยังผู้ให้บริการที่วาดรูปนั้น</string>
+    <string name="model_tag_generates_images">🎨 สร้างรูปได้</string>
+    <string name="privacy_note_image_generation">คำอธิบายของคุณจะถูกส่งไปยัง %1$s เพื่อวาดรูป</string>
+    <string name="compose_expand">พื้นที่เขียนที่ใหญ่ขึ้น</string>
+    <string name="compose_title">เขียนข้อความของคุณ</string>
+    <string name="compose_done">เสร็จ</string>
+    <string name="improve_prompt">✨ ให้ AI ช่วยเขียนคำอธิบาย</string>
+    <string name="image_model_clear">เอาโมเดลรูปภาพออก (แชทอย่างเดียว)</string>
+    <string name="image_model_none_option">ไม่ใช้ — แชทอย่างเดียว</string>
 </resources>

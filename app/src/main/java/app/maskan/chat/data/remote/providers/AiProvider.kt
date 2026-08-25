@@ -10,6 +10,13 @@ interface AiProvider {
     val defaultBaseUrl: String
     val supportsCustomBaseUrl: Boolean
     val supportsVision: Boolean get() = false
+
+    /**
+     * Whether this provider can DRAW images (as opposed to reading them - that is
+     * [supportsVision]). Gates the "Image model" setting, so a provider whose catalogue lists
+     * image models but whose request path is not implemented yet never offers a broken button.
+     */
+    val supportsImageGeneration: Boolean get() = false
     val isLocal: Boolean get() = false
     val availableModels: List<String>
     val defaultModel: String
@@ -25,6 +32,20 @@ interface AiProvider {
         apiKey: String,
         baseUrl: String? = null
     ): FetchedModels = FetchedModels()
+
+    /**
+     * Ask this provider to draw [prompt] with [model] and hand back the raw bytes.
+     *
+     * Defaults to unsupported: only some providers generate images, and the UI only offers it
+     * once the user has picked an image model for the provider, so this is the safety net rather
+     * than the common case. The marker text is what ErrorMapper turns into a localized message.
+     */
+    suspend fun generateImage(
+        apiKey: String,
+        model: String,
+        prompt: String,
+        baseUrl: String? = null
+    ): GeneratedImage = throw Exception("image generation unsupported")
 
     suspend fun sendMessage(
         apiKey: String,
@@ -44,3 +65,9 @@ interface AiProvider {
         imageMimeType: String? = null
     ): Flow<String>
 }
+
+/**
+ * A picture a provider just drew, held as bytes so the caller decides where it lands. Not a data
+ * class: ByteArray equality is identity, which would make a generated equals() quietly wrong.
+ */
+class GeneratedImage(val bytes: ByteArray, val mimeType: String)

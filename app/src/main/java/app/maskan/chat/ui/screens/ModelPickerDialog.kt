@@ -52,7 +52,13 @@ fun ModelPickerDialog(
     freeModels: Set<String>,
     selectedModel: String,
     onSelect: (String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    /** Allow committing a typed id that is not in the list. See the comment at its use. */
+    allowCustom: Boolean = false,
+    /** Offer an explicit None row that clears the selection. */
+    allowNone: Boolean = false,
+    /** Models that DRAW. Tagged so the list says what a model is for, not just that it exists. */
+    imageModels: Set<String> = emptySet()
 ) {
     var query by remember { mutableStateOf("") }
     val filtered = remember(query, models) {
@@ -118,6 +124,28 @@ fun ModelPickerDialog(
                             )
                         }
                     }
+                    // "None" belongs in the list, not as a separate button beside it: choosing
+                    // no image model is a choice like any other, and it is what hides the draw
+                    // button for someone who only wants to chat.
+                    if (allowNone && query.isBlank()) {
+                        item {
+                            TextButton(onClick = { onSelect("") }) {
+                                Text(stringResource(R.string.image_model_none_option))
+                            }
+                        }
+                    }
+                    val typed = query.trim()
+                    // A provider catalogue is not a promise of completeness: Together serves
+                    // black-forest-labs/FLUX.1-schnell while omitting it from /v1/models.
+                    // Without this the picker would stand between the user and a model that
+                    // works. Off for chat models, where the list IS reliable.
+                    if (allowCustom && typed.isNotBlank() && filtered.none { it == typed }) {
+                        item {
+                            TextButton(onClick = { onSelect(typed) }) {
+                                Text(stringResource(R.string.model_use_typed_fmt, typed))
+                            }
+                        }
+                    }
                     items(filtered) { model ->
                         val isActive = model.trim() == selectedModel.trim()
                         Row(
@@ -143,6 +171,9 @@ fun ModelPickerDialog(
                                     }
                                     if (model in visionModels) {
                                         add(stringResource(R.string.model_tag_images))
+                                    }
+                                    if (model in imageModels) {
+                                        add(stringResource(R.string.model_tag_generates_images))
                                     }
                                     if (model in freeModels) {
                                         add(stringResource(R.string.model_tag_free))

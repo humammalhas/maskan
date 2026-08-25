@@ -17,6 +17,7 @@ import app.maskan.chat.data.repository.ExportFormat
 import app.maskan.chat.data.repository.KeyRepository
 import app.maskan.chat.data.repository.PreferenceRepository
 import app.maskan.chat.util.ErrorMapper
+import app.maskan.chat.util.ImageStore
 import app.maskan.chat.util.ImageUtils
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,14 +38,34 @@ data class ChatUiState(
     val pendingImageBytes: ByteArray? = null,
     val pendingImageMimeType: String? = null,
     val pendingFileText: String? = null,
-    val pendingFileName: String? = null
+    val pendingFileName: String? = null,
+    /**
+     * The model this chat could be moved onto to recover from the current error. Non-null only
+     * when the send failed BECAUSE the conversation is pinned to a model that no longer works
+     * and a different model is currently selected for that provider - i.e. only when the offer
+     * would actually fix something.
+     */
+    val recoverableModel: String? = null,
+    /**
+     * The composer is armed to DRAW the next message instead of chatting it. A mode rather than
+     * a separate screen so the picture lands in the same conversation as the talk around it.
+     */
+    val imageMode: Boolean = false,
+    /** True while the chat model is rewriting the user's description into an image prompt. */
+    val improvingPrompt: Boolean = false,
+    /**
+     * The rewritten prompt, waiting for the user to accept or edit it. Held here rather than
+     * pushed straight into the composer so the user always sees what changed before it is drawn.
+     */
+    val improvedPrompt: String? = null
 )
 
 class ChatViewModel(
     application: Application,
     private val chatRepository: ChatRepository,
     private val keyRepository: KeyRepository,
-    private val preferenceRepository: PreferenceRepository
+    private val preferenceRepository: PreferenceRepository,
+    private val imageStore: ImageStore
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(ChatUiState())
@@ -53,6 +74,13 @@ class ChatViewModel(
     private var currentConversationId: Long = -1
     private var messageCollectionJob: kotlinx.coroutines.Job? = null
     private var streamingJob: Job? = null
+
+    /**
+     * Whether the model this chat is pinned to is actually GONE (as opposed to merely
+     * unusable right now). Set when the recovery offer is raised, read when the user accepts
+     * it, and it decides whether the old model is also dropped from the picker.
+     */
+    private var pinnedModelIsDead = false
 
     fun loadConversation(conversationId: Long) {
         messageCollectionJob?.cancel()
@@ -236,7 +264,77 @@ class ChatViewModel(
         return _uiState.value.selectedModel.trim() in visionModels
     }
 
+    /**
+     * Whether this provider can draw, and we know of models to draw with. Gates the composer
+     * entry point, so the option never appears where tapping it could only fail.
+     */
+    fun canGenerateImages(): Boolean {
+        val providerId = _uiState.value.selectedProviderId
+        val provider = ProviderRegistry.getProvider(providerId) ?: return false
+        if (!provider.supportsImageGeneration) return false
+        // Require a CHOSEN model, not merely models that exist: the button is a one-tap arm, so
+        // it must never lead to "pick an image model in Settings first".
+        return !keyRepository.getSelectedImageModel(providerId).isNullOrBlank()
+    }
+
+    fun setImageMode(enabled: Boolean) {
+        _uiState.value = _uiState.value.copy(imageMode = enabled)
+    }
+
+    /** Decrypted bytes for a stored image, or null if the file is missing. Never throws. */
+    fun readImage(path: String): ByteArray? = imageStore.read(path)
+
+    /**
+     * Have the chat model turn a rough description into a usable image prompt. The user reviews
+     * the result before anything is drawn - see improveImagePrompt in the repository for why.
+     */
+    fun improvePrompt(rough: String) {
+        if (rough.isBlank()) return
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(improvingPrompt = true, error = null)
+            val result = chatRepository.improveImagePrompt(currentConversationId, rough)
+            result.fold(
+                onSuccess = { improved ->
+                    _uiState.value = _uiState.value.copy(
+                        improvingPrompt = false,
+                        improvedPrompt = improved
+                    )
+                },
+                onFailure = { error ->
+                    _uiState.value = _uiState.value.copy(
+                        improvingPrompt = false,
+                        error = ErrorMapper.mapToUserMessage(getApplication(), error)
+                    )
+                }
+            )
+        }
+    }
+
+    fun clearImprovedPrompt() {
+        _uiState.value = _uiState.value.copy(improvedPrompt = null)
+    }
+
+    fun generateImage(prompt: String) {
+        if (prompt.isBlank()) return
+        streamingJob = viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isLoading = true,
+                isStreaming = false,
+                error = null,
+                imageMode = false
+            )
+            chatRepository.generateImage(currentConversationId, prompt)
+                .catch { error -> handleSendFailure(error) }
+                .collect { event -> handleStreamEvent(event) }
+        }
+    }
+
     fun sendMessage(content: String) {
+        // Armed to draw: the same Send button, a different request path.
+        if (_uiState.value.imageMode) {
+            generateImage(content)
+            return
+        }
         if (content.isBlank() && _uiState.value.pendingImageBytes == null && _uiState.value.pendingFileText == null) return
 
         val imageData = _uiState.value.pendingImageBytes
@@ -265,28 +363,102 @@ class ChatViewModel(
                 imageData = imageData,
                 imageMimeType = imageMimeType
             ).catch { error ->
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    isStreaming = false,
-                    error = ErrorMapper.mapToUserMessage(getApplication(), error)
-                )
+                handleSendFailure(error)
             }.collect { event ->
-                when (event) {
-                    is ChatRepository.StreamEvent.UserSaved -> {
-                        upsertMessage(event.message)
-                    }
-                    is ChatRepository.StreamEvent.Started -> {
-                        upsertMessage(event.message)
-                        _uiState.value = _uiState.value.copy(isLoading = false, isStreaming = true)
-                    }
-                    is ChatRepository.StreamEvent.Token -> {
-                        updateMessageContent(event.messageId, event.fullContent)
-                    }
-                    is ChatRepository.StreamEvent.Done -> {
-                        _uiState.value = _uiState.value.copy(isStreaming = false)
-                    }
-                }
+                handleStreamEvent(event)
             }
+        }
+    }
+
+    private fun handleStreamEvent(event: ChatRepository.StreamEvent) {
+        when (event) {
+            is ChatRepository.StreamEvent.UserSaved -> {
+                upsertMessage(event.message)
+            }
+            is ChatRepository.StreamEvent.Started -> {
+                upsertMessage(event.message)
+                _uiState.value = _uiState.value.copy(isLoading = false, isStreaming = true)
+            }
+            is ChatRepository.StreamEvent.Token -> {
+                updateMessageContent(event.messageId, event.fullContent)
+            }
+            is ChatRepository.StreamEvent.ImageReady -> {
+                upsertMessage(event.message)
+                _uiState.value = _uiState.value.copy(isLoading = false, isStreaming = false)
+            }
+            is ChatRepository.StreamEvent.Done -> {
+                _uiState.value = _uiState.value.copy(isStreaming = false)
+            }
+        }
+    }
+
+    private suspend fun handleSendFailure(error: Throwable) {
+        // Classify BEFORE building the message: both read the error body, and the classification
+        // is the one that must not come up empty.
+        val recoverable = findRecoverableModel(error)
+        _uiState.value = _uiState.value.copy(
+            isLoading = false,
+            isStreaming = false,
+            error = ErrorMapper.mapToUserMessage(getApplication(), error),
+            recoverableModel = recoverable
+        )
+    }
+
+    /**
+     * A conversation freezes its modelId when it is created, so a chat opened months ago keeps
+     * calling a model the provider may since have retired - the model picker being clean does
+     * not help it. Offer the switch only when it would actually fix the failure: the error says
+     * the model is gone, this chat really is pinned, and the provider's current selection is a
+     * different model.
+     */
+    private suspend fun findRecoverableModel(error: Throwable): String? {
+        pinnedModelIsDead = false
+        val conversation = chatRepository.getConversationById(currentConversationId) ?: return null
+        val pinned = conversation.modelId?.trim()?.takeIf { it.isNotBlank() } ?: return null
+        // Pass the pinned id: on a 400 that is what tells "this model is gone" apart from a
+        // malformed request, since the provider names the model it refused.
+        val verdict = ErrorMapper.classifyModelFailure(error, pinned)
+        if (verdict == ErrorMapper.ModelRecovery.NONE) return null
+        val current = keyRepository.getSelectedModel(conversation.providerId)
+            ?.trim()?.takeIf { it.isNotBlank() } ?: return null
+        // Same model both sides: the user's own selection is what failed, so switching is a
+        // no-op and the error stands on its own (out of credit, rate limited, model retired).
+        if (current == pinned) return null
+        pinnedModelIsDead = verdict == ErrorMapper.ModelRecovery.DEAD
+        return current
+    }
+
+    /**
+     * Rewrite this conversation's frozen modelId to the provider's currently selected model and
+     * re-run the last turn. The retry goes through regenerateLastReply, NOT sendMessage: the
+     * user's message was already saved before the failure, so re-sending it would duplicate the
+     * bubble. The retired model is also recorded as unavailable so the picker stops offering it.
+     */
+    fun switchModelAndRetry() {
+        val newModel = _uiState.value.recoverableModel ?: return
+        streamingJob = viewModelScope.launch {
+            val conversation = chatRepository.getConversationById(currentConversationId)
+            val oldModel = conversation?.modelId
+            // Only blacklist a model the provider says is GONE. A 402 (no credit) or 429 (rate
+            // limited) model is fine and will work again - hiding it from the picker would take
+            // a manual refresh to undo.
+            if (pinnedModelIsDead && conversation != null && !oldModel.isNullOrBlank()) {
+                preferenceRepository.addUnavailableModel(conversation.providerId, oldModel)
+            }
+            pinnedModelIsDead = false
+            chatRepository.updateConversationModel(currentConversationId, newModel)
+
+            _uiState.value = _uiState.value.copy(
+                selectedModel = newModel,
+                error = null,
+                recoverableModel = null,
+                isLoading = true,
+                isStreaming = false
+            )
+
+            chatRepository.regenerateLastReply(currentConversationId)
+                .catch { error -> handleSendFailure(error) }
+                .collect { event -> handleStreamEvent(event) }
         }
     }
 
@@ -343,7 +515,7 @@ class ChatViewModel(
     }
 
     fun clearError() {
-        _uiState.value = _uiState.value.copy(error = null)
+        _uiState.value = _uiState.value.copy(error = null, recoverableModel = null)
     }
 
     companion object {

@@ -3,6 +3,8 @@ package app.maskan.chat.data.remote.providers
 import android.util.Base64
 import app.maskan.chat.data.remote.ChatCompletionChunk
 import app.maskan.chat.data.remote.ChatCompletionRequest
+import app.maskan.chat.data.remote.ImageGenerationRequest
+import app.maskan.chat.data.remote.ImageResponseParser
 import app.maskan.chat.data.remote.Message
 import app.maskan.chat.data.remote.MessageContent
 import app.maskan.chat.data.remote.OpenAiCompatibleService
@@ -27,6 +29,11 @@ class OpenAiCompatibleProvider(
 ) : AiProvider {
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
+
+    // OpenRouter is the exception among the OpenAI-compatible providers: it has no
+    // /v1/images/generations at all and returns images inside a normal chat completion instead.
+    // Until that path exists, it must not advertise image generation.
+    override val supportsImageGeneration: Boolean get() = id != "openrouter"
 
     private fun buildMessages(
         messages: List<Message>,
@@ -64,14 +71,40 @@ class OpenAiCompatibleProvider(
         if (id == "together") {
             val serverlessJson = apiService.listModels(auth, dedicated = false)
             val serverless = ModelFilter.chatModelsOnly(ModelFilter.idsFrom(serverlessJson))
-            if (serverless.isNotEmpty()) return buildResult(serverless, serverlessJson)
+            if (serverless.isNotEmpty()) {
+                // The dedicated=false filter is about CHAT models and does not return the
+                // serverless image models - FLUX.1-schnell, the one that actually works on an
+                // ordinary key, is missing from it while dedicated-only image models are present.
+                // Taking image ids from the filtered list therefore offered nothing but 403s.
+                // Read the image bucket from the FULL catalogue instead.
+                val fullJson = runCatching { apiService.listModels(auth) }.getOrNull()
+                return buildResult(serverless, serverlessJson, imageSource = fullJson ?: serverlessJson)
+            }
         }
 
         val response = apiService.listModels(auth)
+
+        // Venice keeps its image models behind ?type=image; the default list is chat only, which
+        // is why 38 of them were invisible. Failing that call must not break the chat list.
+        if (id == "venice") {
+            val imageJson = runCatching { apiService.listModels(auth, type = "image") }.getOrNull()
+            if (imageJson != null) {
+                return buildResult(
+                    ModelFilter.chatModelsOnly(ModelFilter.idsFrom(response)),
+                    response,
+                    imageSource = imageJson
+                )
+            }
+        }
+
         return buildResult(ModelFilter.chatModelsOnly(ModelFilter.idsFrom(response)), response)
     }
 
-    private fun buildResult(ids: List<String>, raw: JsonElement): FetchedModels {
+    private fun buildResult(
+        ids: List<String>,
+        raw: JsonElement,
+        imageSource: JsonElement = raw
+    ): FetchedModels {
         val published = ModelFilter.visionIdsFrom(raw)
         // OpenAI publishes no per-model capability data, but its whole current chat lineup accepts
         // image input (documented), so mark those instead of hiding the camera on all of them.
@@ -86,8 +119,42 @@ class OpenAiCompatibleProvider(
         return FetchedModels(
             ids = ids,
             visionIds = (published + known).intersect(ids.toSet()),
-            freeIds = ModelFilter.freeIdsFrom(raw).intersect(ids.toSet())
+            freeIds = ModelFilter.freeIdsFrom(raw).intersect(ids.toSet()),
+            // NOT intersected with ids: chatModelsOnly deliberately strips image models out of
+            // the chat list, so an image model is never in ids by construction.
+            imageIds = ModelFilter.imageIdsFrom(imageSource)
         )
+    }
+
+    /**
+     * Draw an image via POST /v1/images/generations - the path OpenAI, Together and Venice share.
+     *
+     * Asks for base64 rather than a URL so the bytes arrive in this response: no CDN round trip,
+     * and nothing about the picture travels anywhere the prompt did not already go. Together
+     * spells the option "base64" where everyone else says "b64_json"; ImageResponseParser copes
+     * with either coming back, and falls back to downloading a URL if one is all we get.
+     */
+    override suspend fun generateImage(
+        apiKey: String,
+        model: String,
+        prompt: String,
+        baseUrl: String?
+    ): GeneratedImage {
+        val auth = if (apiKey.isNotBlank()) "Bearer $apiKey" else ""
+        // Together calls it "base64"; OpenAI's gpt-image-* models reject the parameter outright
+        // and always answer with base64, so for OpenAI the field is omitted entirely.
+        val format = when (id) {
+            "together" -> "base64"
+            "openai" -> null
+            else -> "b64_json"
+        }
+        val response = apiService.createImage(
+            authorization = auth,
+            request = ImageGenerationRequest(model = model, prompt = prompt, responseFormat = format)
+        )
+        return ImageResponseParser.parse(response) { url ->
+            apiService.downloadUrl(url).bytes()
+        }
     }
 
     override suspend fun sendMessage(

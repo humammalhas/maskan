@@ -175,6 +175,7 @@
     <string name="error_rate_limit">Too many requests. Wait a moment and try again.</string>
     <string name="error_insufficient_quota">Your API credit has run out. Top up your account at your provider\'s website.</string>
     <string name="error_model_not_found">The selected model is not available. Try a different model in Settings.</string>
+    <string name="switch_model_and_retry">Switch to %1$s</string>
     <string name="error_request_too_large">Your message is too long for this model. Try shortening it.</string>
     <string name="error_server_error">The AI provider is having issues right now. Try again in a few minutes.</string>
     <string name="error_server_overloaded">The AI provider is overloaded. Try again shortly.</string>
@@ -210,7 +211,7 @@
     <string name="provider_badge_cloud">Cloud — sent to provider</string>
     <string name="provider_badge_local">Local — stays on device</string>
     <string name="privacy_intro_title">How Maskan handles your data</string>
-    <string name="privacy_intro_bullet_encrypted">Your keys and chats are encrypted on this device. Maskan has no server and never sees your conversations.</string>
+    <string name="privacy_intro_bullet_encrypted">Your keys, chats and generated images are encrypted on this device. Maskan has no server and never sees your conversations.</string>
     <string name="privacy_intro_bullet_cloud">When you chat with a cloud AI (OpenAI, Google, DeepSeek, etc.), your messages are sent to that provider and their privacy policy applies.</string>
     <string name="privacy_intro_bullet_venice">Prefer a cloud option? Venice is the most privacy-respecting — it doesn\'t store or log your chats.</string>
     <string name="privacy_intro_bullet_local">For maximum privacy, use a local provider (Ollama or LM Studio): the AI runs on your machine and your messages never leave your network.</string>
@@ -222,7 +223,7 @@
     <string name="privacy_core_principle">A private app is not the same as a private AI. Maskan keeps everything encrypted on your device, but when you send a message to a cloud AI, it has to reach their servers to be answered.</string>
     <string name="privacy_protects_header">What Maskan protects</string>
     <string name="privacy_protects_no_middleman">No Maskan server, no middleman. Your chats are never seen or stored by us or any third party.</string>
-    <string name="privacy_protects_encrypted">API keys and conversations are encrypted on your device.</string>
+    <string name="privacy_protects_encrypted">API keys, conversations and generated images are encrypted on your device.</string>
     <string name="privacy_protects_your_choice">You choose where your messages go — including fully local, where nothing leaves your phone.</string>
     <string name="privacy_protects_no_google">Works without Google Play Services or a Google account.</string>
     <string name="privacy_protects_open_source">Open source (GPL-3.0) — anyone can verify these claims in the code.</string>
@@ -265,4 +266,28 @@
     <string name="color_sand">Sand</string>
     <string name="color_sky">Sky blue</string>
     <string name="export_failed">Couldn\'t export this conversation</string>
+    <string name="generated_image">Generated image</string>
+    <string name="save_image">Save</string>
+    <string name="share_image">Share</string>
+    <string name="image_saved">Image saved</string>
+    <string name="image_save_failed">Could not save the image</string>
+    <string name="attach_generate_image">Generate an image</string>
+    <string name="image_mode_chip">The next message will be drawn</string>
+    <string name="image_storage_note">Generated images are kept encrypted inside the app and are deleted if you uninstall it. Tap Save on any image to keep a copy on your phone.</string>
+    <string name="image_model_section">Image model</string>
+    <string name="image_model_label">Image model</string>
+    <string name="image_model_none">Not selected</string>
+    <string name="image_model_hint">Used only for generating images. Your chat model stays as it is. Image generation is paid on most providers.</string>
+    <string name="error_no_image_model">Choose an image model in Settings first.</string>
+    <string name="error_image_unsupported">This provider cannot generate images.</string>
+    <string name="model_use_typed_fmt">Use “%1$s”</string>
+    <string name="privacy_protects_images">Images you generate are encrypted on your device too, and never leave it except to the provider that drew them.</string>
+    <string name="model_tag_generates_images">🎨 generates images</string>
+    <string name="privacy_note_image_generation">Your description is sent to %1$s to draw the image.</string>
+    <string name="compose_expand">Open a bigger writing space</string>
+    <string name="compose_title">Write your message</string>
+    <string name="compose_done">Done</string>
+    <string name="improve_prompt">✨ Let the AI write the description</string>
+    <string name="image_model_clear">Remove image model (chat only)</string>
+    <string name="image_model_none_option">None — chat only</string>
 </resources>

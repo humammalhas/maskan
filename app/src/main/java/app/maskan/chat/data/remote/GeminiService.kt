@@ -1,5 +1,6 @@
 package app.maskan.chat.data.remote
 
+import kotlinx.serialization.json.JsonElement
 import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.http.Body
@@ -23,6 +24,17 @@ interface GeminiService {
         @Query("key") apiKey: String,
         @Body request: GeminiRequest
     ): GeminiResponse
+
+    // Image generation goes through the same generateContent endpoint but needs a request body
+    // this app's GeminiRequest does not model (generationConfig.responseModalities), and returns
+    // the picture in a part shape that has changed between API revisions. Raw JSON both ways, so
+    // neither end is pinned to one revision - the same reason listModels returns raw JSON.
+    @POST("v1beta/models/{model}:generateContent")
+    suspend fun generateContentRaw(
+        @Path("model") model: String,
+        @Query("key") apiKey: String,
+        @Body request: JsonElement
+    ): JsonElement
 
     @Streaming
     @POST("v1beta/models/{model}:streamGenerateContent")

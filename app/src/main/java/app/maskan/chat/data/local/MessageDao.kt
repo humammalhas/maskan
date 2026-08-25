@@ -1,4 +1,4 @@
-﻿package app.maskan.chat.data.local
+package app.maskan.chat.data.local
 
 import androidx.room.Dao
 import androidx.room.Insert
@@ -24,6 +24,16 @@ interface MessageDao {
 
     @Query("UPDATE messages SET content = :content WHERE id = :messageId")
     suspend fun updateMessageContent(messageId: Long, content: String)
+
+    @Query("UPDATE messages SET imagePath = :imagePath, imageMimeType = :mimeType WHERE id = :messageId")
+    suspend fun updateImagePath(messageId: Long, imagePath: String, mimeType: String)
+
+    /**
+     * File names of every generated image in a conversation. Needed before deleting it: Room's
+     * cascade removes the rows but nothing removes the files on disk.
+     */
+    @Query("SELECT imagePath FROM messages WHERE conversationId = :conversationId AND imagePath IS NOT NULL")
+    suspend fun getImagePathsForConversation(conversationId: Long): List<String>
 
     @Query("DELETE FROM messages WHERE id = :messageId")
     suspend fun deleteMessageById(messageId: Long)

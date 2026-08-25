@@ -59,7 +59,10 @@ data class SettingsUiState(
     val fetchModelsState: FetchModelsState = FetchModelsState.Idle,
     val modelsFetchedAt: Long = 0L,
     val unavailableModels: Set<String> = emptySet(),
-    val modelCheckState: ModelCheckState = ModelCheckState.Idle
+    val modelCheckState: ModelCheckState = ModelCheckState.Idle,
+    /** Models this provider can DRAW with, and the one chosen. Separate from the chat model. */
+    val imageModels: List<String> = emptyList(),
+    val selectedImageModel: String = ""
 )
 
 class SettingsViewModel(
@@ -92,7 +95,9 @@ class SettingsViewModel(
             blockScreenshots = preferenceRepository.isBlockScreenshots(),
             fetchedModels = preferenceRepository.getCachedModels(provider.id),
             modelsFetchedAt = preferenceRepository.getModelsFetchedAt(provider.id),
-            unavailableModels = preferenceRepository.getUnavailableModels(provider.id)
+            unavailableModels = preferenceRepository.getUnavailableModels(provider.id),
+            imageModels = preferenceRepository.getImageModels(provider.id),
+            selectedImageModel = keyRepository.getSelectedImageModel(provider.id) ?: ""
         )
 
         maybeAutoRefreshModels()
@@ -111,7 +116,9 @@ class SettingsViewModel(
             modelsFetchedAt = preferenceRepository.getModelsFetchedAt(provider.id),
             unavailableModels = preferenceRepository.getUnavailableModels(provider.id),
             modelCheckState = ModelCheckState.Idle,
-            fetchModelsState = FetchModelsState.Idle
+            fetchModelsState = FetchModelsState.Idle,
+            imageModels = preferenceRepository.getImageModels(provider.id),
+            selectedImageModel = keyRepository.getSelectedImageModel(provider.id) ?: ""
         )
         keyRepository.setDefaultProviderId(provider.id)
         maybeAutoRefreshModels()
@@ -152,11 +159,12 @@ class SettingsViewModel(
                         }
                         // Cache it so the next Settings visit (or an offline one) still has a
                         // current list without hitting the network.
-                        preferenceRepository.saveCachedModels(providerId, models, fetched.visionIds, fetched.freeIds)
+                        preferenceRepository.saveCachedModels(providerId, models, fetched.visionIds, fetched.freeIds, fetched.imageIds)
                         _uiState.value.copy(
                             fetchedModels = models,
                             selectedModel = newSelected,
                             modelsFetchedAt = preferenceRepository.getModelsFetchedAt(providerId),
+                            imageModels = fetched.imageIds,
                             fetchModelsState = FetchModelsState.Success(models.size)
                         )
                     }
@@ -338,6 +346,29 @@ class SettingsViewModel(
     }
 
     /** Models the provider prices at zero - they work even with an empty account balance. */
+    /**
+     * Choose the model this provider draws with.
+     *
+     * Deliberately NOT verified the way a chat model is: verification spends one real request,
+     * and for an image model that is a paid picture on every tap. The user finds out it works by
+     * drawing something they actually wanted.
+     */
+    fun selectImageModel(model: String) {
+        val providerId = _uiState.value.selectedProvider.id
+        keyRepository.saveSelectedImageModel(providerId, model)
+        _uiState.value = _uiState.value.copy(selectedImageModel = model)
+    }
+
+    /**
+     * Put the provider back to chat-only. Clearing the image model is what hides the draw button
+     * in the composer, so this is the way out for someone who just wants to talk.
+     */
+    fun clearImageModel() {
+        val providerId = _uiState.value.selectedProvider.id
+        keyRepository.saveSelectedImageModel(providerId, "")
+        _uiState.value = _uiState.value.copy(selectedImageModel = "")
+    }
+
     fun freeModels(): Set<String> =
         preferenceRepository.getFreeModels(_uiState.value.selectedProvider.id)
 

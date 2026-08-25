@@ -14,7 +14,7 @@
     <string name="delete_button">حذف</string>
     <string name="cancel_button">إلغاء</string>
     <string name="search_placeholder">بحث في المحادثات…</string>
-    <string name="search_no_results">لم يتم العثور على محادثات</string>
+    <string name="search_no_results">لا توجد محادثات مطابقة</string>
 
     <!-- Chat screen -->
     <string name="chat_screen_title">محادثة</string>
@@ -41,7 +41,7 @@
     <string name="save_key_button">حفظ المفتاح</string>
     <string name="key_saved_confirmation">تم حفظ مفتاح API بشكل آمن.</string>
     <string name="test_connection_button">اختبار الاتصال</string>
-    <string name="test_connection_success">تم الاتصال بنجاح!</string>
+    <string name="test_connection_success">نجح الاتصال!</string>
     <string name="test_connection_testing">جارٍ الاختبار…</string>
 
     <!-- Provider selection -->
@@ -110,7 +110,7 @@
     <string name="local_model_name_hint">اكتب اسم النموذج المثبّت على خادمك</string>
     <string name="load_models_button">جلب النماذج من الخادم</string>
     <string name="models_loaded_fmt">تم جلب %1$d نموذج من الخادم</string>
-    <string name="models_load_empty">لم يتم العثور على نماذج على الخادم</string>
+    <string name="models_load_empty">لا توجد نماذج على الخادم</string>
     <string name="refresh_models_button">تحديث قائمة النماذج</string>
     <string name="models_updated_today">تم تحديث قائمة النماذج اليوم</string>
     <string name="models_updated_days_ago_fmt">تم تحديث قائمة النماذج قبل %1$d يوم</string>
@@ -159,7 +159,7 @@
     <string name="attach_type_title">إرفاق</string>
 
     <!-- Markdown -->
-    <string name="code_copied">تم النسخ!</string>
+    <string name="code_copied">نُسِخ!</string>
     <string name="copy_code">نسخ</string>
 
     <!-- Error messages -->
@@ -175,8 +175,9 @@
     <string name="error_rate_limit">طلبات كثيرة. انتظر قليلاً ثم حاول مرة أخرى.</string>
     <string name="error_insufficient_quota">نفد رصيد API الخاص بك. اشحن حسابك من موقع المزود.</string>
     <string name="error_model_not_found">النموذج المحدد غير متوفر. جرّب نموذجاً آخر في الإعدادات.</string>
+    <string name="switch_model_and_retry">التبديل إلى %1$s</string>
     <string name="error_request_too_large">رسالتك طويلة جداً لهذا النموذج. حاول اختصارها.</string>
-    <string name="error_server_error">المزود يواجه مشاكل الآن. حاول مرة أخرى بعد دقائق.</string>
+    <string name="error_server_error">المزوّد يواجه مشكلات الآن. حاوِل مرّة أخرى بعد دقائق.</string>
     <string name="error_server_overloaded">المزود مُحمَّل فوق طاقته. حاول بعد قليل.</string>
     <string name="error_timeout">انتهت مهلة الطلب. تحقّق من اتصالك وحاول مرة أخرى.</string>
     <string name="error_no_internet">لا يوجد اتصال بالإنترنت. تحقّق من الواي فاي أو بيانات الهاتف.</string>
@@ -219,12 +220,12 @@
 
     <!-- Privacy screen -->
     <string name="privacy_screen_title">تفاصيل الخصوصية</string>
-    <string name="privacy_core_principle">التطبيق الخاص ليس نفسه الذكاء الاصطناعي الخاص. مسكن يحفظ كل شيء مُشفَّراً على جهازك، لكن عندما ترسل رسالة إلى ذكاء اصطناعي سحابي، يجب أن تصل إلى خوادمه ليتم الرد عليها.</string>
+    <string name="privacy_core_principle">التطبيق الخاص ليس نفسه الذكاء الاصطناعي الخاص. مسكن يحفظ كل شيء مُشفَّراً على جهازك، لكن عندما ترسل رسالة إلى ذكاء اصطناعي سحابي، يجب أن تصل إلى خوادمه ليُرَدَّ عليها.</string>
     <string name="privacy_protects_header">ما يحميه مسكن</string>
     <string name="privacy_protects_no_middleman">لا خادم لمسكن، لا وسيط. محادثاتك لا يطّلع عليها أو يخزّنها أي طرف ثالث.</string>
     <string name="privacy_protects_encrypted">مفاتيح API والمحادثات مُشفَّرة على جهازك.</string>
     <string name="privacy_protects_your_choice">أنت تختار أين تذهب رسائلك — بما في ذلك محلياً بالكامل، حيث لا شيء يغادر هاتفك.</string>
-    <string name="privacy_protects_no_google">يعمل بدون خدمات Google Play أو حساب Google.</string>
+    <string name="privacy_protects_no_google">يعمل دون خدمات Google Play أو حساب Google.</string>
     <string name="privacy_protects_open_source">مفتوح المصدر (GPL-3.0) — يمكن لأي شخص التحقق من هذه الادعاءات في الكود.</string>
     <string name="privacy_cannot_header">ما لا يستطيع مسكن فعله</string>
     <string name="privacy_cannot_hide_from_provider">لا يمكنه إخفاء رسائلك عن مزوّد سحابي اخترته. إذا استخدمت OpenAI أو Google أو DeepSeek وغيرها، فهم يستلمون رسائلك ويتعاملون معها وفق سياساتهم الخاصة. لا يوجد تطبيق يمكنه تغيير هذا.</string>
@@ -243,7 +244,7 @@
 
     <!-- Privacy context notes -->
     <string name="privacy_note_image">سيتم إرسال محتوى هذه الصورة إلى %1$s.</string>
-    <string name="privacy_note_voice">يتم التعرّف على الصوت عبر خدمة النطق المدمجة في هاتفك، والتي قد ترسل الصوت إلى مزوّدها (غالباً Google).</string>
+    <string name="privacy_note_voice">تتعرّف على صوتك خدمة النطق المدمجة في هاتفك، وقد ترسله إلى مزوّدها (غالبًا Google).</string>
     <string name="privacy_note_dismiss">لا تعرض مرة أخرى</string>
     <string name="scroll_to_bottom">الانتقال إلى آخر رسالة</string>
 
@@ -265,4 +266,28 @@
     <string name="color_sand">رملي</string>
     <string name="color_sky">أزرق سماوي</string>
     <string name="export_failed">تعذّر تصدير هذه المحادثة</string>
+    <string name="generated_image">صورة مُولّدة</string>
+    <string name="save_image">حفظ</string>
+    <string name="share_image">مشاركة</string>
+    <string name="image_saved">حُفِظت الصورة</string>
+    <string name="image_save_failed">تعذّر حفظ الصورة</string>
+    <string name="attach_generate_image">توليد صورة</string>
+    <string name="image_mode_chip">الرسالة التالية ستكون صورة</string>
+    <string name="image_storage_note">تُحفظ الصور المُولّدة مشفّرة داخل التطبيق وتُحذف عند إزالته. اضغط حفظ على أيّ صورة للاحتفاظ بنسخة على هاتفك.</string>
+    <string name="image_model_section">نموذج الصور</string>
+    <string name="image_model_label">نموذج الصور</string>
+    <string name="image_model_none">غير محدَّد</string>
+    <string name="image_model_hint">يُستخدم لتوليد الصور فقط، ولا يغيّر نموذج المحادثة. توليد الصور مدفوع لدى معظم المزوّدين.</string>
+    <string name="error_no_image_model">اختر نموذج صور من الإعدادات أوّلًا.</string>
+    <string name="error_image_unsupported">هذا المزوّد لا يستطيع توليد الصور.</string>
+    <string name="model_use_typed_fmt">استخدام \"%1$s\"</string>
+    <string name="privacy_protects_images">الصور التي تولّدها مُشفَّرة على جهازك أيضًا، ولا تغادره إلّا إلى المزوّد الذي رسمها.</string>
+    <string name="model_tag_generates_images">🎨 يولّد صورًا</string>
+    <string name="privacy_note_image_generation">يُرسَل وصفك إلى %1$s لرسم الصورة.</string>
+    <string name="compose_expand">مساحة كتابة أوسع</string>
+    <string name="compose_title">اكتب رسالتك</string>
+    <string name="compose_done">تمّ</string>
+    <string name="improve_prompt">✨ اجعل الذكاء الاصطناعي يكتب الوصف</string>
+    <string name="image_model_clear">إزالة نموذج الصور (محادثة فقط)</string>
+    <string name="image_model_none_option">بلا — محادثة فقط</string>
 </resources>
