@@ -42,6 +42,9 @@ Your API keys are encrypted with AES-256-GCM on device. Your conversations never
 - **Live model lists** — models are fetched from each provider, not hardcoded, so retired models never leave you stranded; picking one verifies it against your key first
 - **Model picker with search** — tags each model as tested with your key, accepts images, or free
 - **Image input** — send photos to any vision-capable model; capability is read per model from the provider
+- **Image generation** — draw pictures with Google Gemini, OpenAI or Venice; each provider has its own image model, kept separate from your chat model
+- **AI prompt helper** — let the chat model turn a rough idea into a full image description, translated to English if needed, for you to edit before it is drawn
+- **Generated images stay private** — encrypted on your device with AES-256-GCM, never auto-saved to your gallery; save or share any one deliberately, with no storage permission needed
 - **File attach** — attach a `.txt` or `.html` file to a message
 - **Voice input** — speech-to-text with Arabic, English, and Thai recognition
 - **Voice narration** — tap to hear AI responses read aloud, uses Android's built-in text-to-speech

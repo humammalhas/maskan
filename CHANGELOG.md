@@ -2,6 +2,26 @@
 
 All notable changes to Maskan are documented here.
 
+## [Unreleased]
+
+### Added
+- **Image generation** — tap 🎨 in the composer to draw a picture instead of sending a message; the result appears in the same conversation. Works with Google Gemini, OpenAI and Venice
+- **Image model setting** — each provider has its own image model, chosen separately from your chat model, so asking for a picture never changes the model you talk to
+- **AI prompt helper** — tap ✨ and the chat model turns a rough idea into a full image description, translating it to English if needed. You see and edit the result before anything is drawn
+- **Save and Share** on every generated image — Save writes an ordinary PNG wherever you choose, and needs no storage permission
+- **Recovery for chats stuck on an old model** — if a conversation still points at a model that no longer works, the error now offers to switch that chat to your current model and try again
+- A bigger writing space — tap the expand arrow in the message box to write in a full-screen sheet
+
+### Changed
+- The attach button is now a paperclip
+- Generated images are encrypted on your device with AES-256-GCM, like your keys and conversations; only you can read them, and they are removed when a conversation is deleted
+- Model lists now show which models generate images
+- A model can be typed in by hand when a provider serves it without listing it
+
+### Fixed
+- Errors during a chat showed raw JSON instead of a readable message
+- "Not available on your plan" and "too many requests" now include the provider's own explanation, so you can tell a temporary limit apart from a model your account cannot use at all
+- Several Arabic strings rewritten to proper Modern Standard Arabic
 ## [2.4.5] — 2026-08-25
 
 ### Added

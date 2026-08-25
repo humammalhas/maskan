@@ -19,6 +19,7 @@ Maskan has no backend server, no user accounts, no analytics, no telemetry, no c
 All of the following data is stored locally on your device and is never transmitted to the developer or any third party:
 
 - **Conversations and messages** — Stored in a local SQLCipher-encrypted database (AES-256-CBC). Messages, including any attached images or text files, remain on your device unless you choose to export them or send them to an AI provider.
+- **Generated images** — Pictures you create with an image model are stored as AES-256-GCM encrypted files in the app's private storage, using a key held in the Android Keystore. They are never written to your photo gallery automatically and never leave the app unless you choose to save or share them. Deleting a conversation deletes its images. Because they live in app-private storage, they are removed if you uninstall Maskan — save any you want to keep.
 - **API keys** — Encrypted with AES-256-GCM using the Android Keystore system and stored in Android's EncryptedSharedPreferences. Keys are never logged, transmitted to the developer, or stored in plain text.
 - **App settings and preferences** — Language choice, selected provider, display preferences, and folder organization are stored locally.
 
@@ -29,6 +30,8 @@ All of the following data is stored locally on your device and is never transmit
 When you send a chat message, Maskan transmits the following to the AI provider you have configured:
 
 - Your message text (and attached images or text-file contents, if applicable)
+- The description you write when generating an image, sent to the provider that draws it
+- If you use the AI prompt helper, the description is first sent to your selected chat model at the same provider, which rewrites it before you approve it
 - Recent conversation history (up to 50 messages for context)
 - Your system prompt, if one is selected
 - Your API key, as an authentication header
@@ -64,6 +67,7 @@ Maskan includes an optional **block screenshots** setting (off by default). When
 |----------|--------------------|-----------------------|--------------------------|
 | Personal information | No | No | No |
 | Conversations | Stored locally (encrypted) | No | Sent to your chosen AI provider when you send a message |
+| Generated images | Stored locally (encrypted) | No | Never uploaded; created by the provider you chose and returned to your device |
 | API keys | Stored locally (encrypted) | No | Sent to your chosen AI provider as authentication |
 | Analytics / telemetry | No | No | No |
 | Crash reports | No | No | No |
