@@ -2,7 +2,7 @@
 
 All notable changes to Maskan are documented here.
 
-## [Unreleased]
+## [2.4.6] — 2026-08-26
 
 ### Added
 - **Image generation** — tap 🎨 in the composer to draw a picture instead of sending a message; the result appears in the same conversation. Works with Google Gemini, OpenAI and Venice

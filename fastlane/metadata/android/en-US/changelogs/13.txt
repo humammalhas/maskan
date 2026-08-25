@@ -1,0 +1,9 @@
+Generate images, and rescue chats stuck on an old model.
+
+- Draw pictures with Google Gemini, OpenAI or Venice: tap the palette in the message bar
+- Each provider has its own image model, chosen separately from your chat model
+- Let the AI write the description for you - it turns a rough idea into a full prompt, translating it if needed, and you edit it before anything is drawn
+- Generated images are encrypted on your device and never saved to your gallery on their own; Save writes an ordinary picture wherever you choose
+- If a chat still points at a model that no longer works, the error now offers to switch that chat to your current model and try again
+- Tap the expand arrow for a full-screen writing space
+- The attach button is now a paperclip
