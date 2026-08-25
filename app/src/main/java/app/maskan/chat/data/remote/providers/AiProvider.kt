@@ -24,7 +24,7 @@ interface AiProvider {
     suspend fun fetchModels(
         apiKey: String,
         baseUrl: String? = null
-    ): List<String> = emptyList()
+    ): FetchedModels = FetchedModels()
 
     suspend fun sendMessage(
         apiKey: String,

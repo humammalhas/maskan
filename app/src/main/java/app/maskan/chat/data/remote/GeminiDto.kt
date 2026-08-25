@@ -57,3 +57,16 @@ data class GeminiStreamChunk(
     val candidates: List<GeminiCandidate>? = null,
     val error: GeminiError? = null
 )
+
+// GET /v1beta/models - only entries advertising generateContent can serve a chat turn.
+@Serializable
+data class GeminiModelsResponse(
+    val models: List<GeminiModelInfo> = emptyList()
+)
+
+@Serializable
+data class GeminiModelInfo(
+    val name: String = "",
+    @SerialName("supportedGenerationMethods")
+    val supportedGenerationMethods: List<String> = emptyList()
+)

@@ -50,12 +50,15 @@ class GeminiProvider(
             val role = if (msg.role == "assistant") "model" else msg.role
             if (index == lastUserIndex && msg.role == "user" && imageData != null && imageMimeType != null) {
                 val base64 = Base64.encodeToString(imageData, Base64.NO_WRAP)
+                // Drop the text part when the image has no caption: an empty text part is not a
+                // valid content part (Venice rejects the equivalent with a 400).
+                val text = msg.content.textContent()
                 GeminiContent(
                     role = role,
-                    parts = listOf(
-                        GeminiPart(inlineData = GeminiInlineData(mimeType = imageMimeType, data = base64)),
-                        GeminiPart(text = msg.content.textContent())
-                    )
+                    parts = buildList {
+                        add(GeminiPart(inlineData = GeminiInlineData(mimeType = imageMimeType, data = base64)))
+                        if (text.isNotBlank()) add(GeminiPart(text = text))
+                    }
                 )
             } else {
                 GeminiContent(
@@ -69,6 +72,21 @@ class GeminiProvider(
             contents = contents,
             systemInstruction = systemInstruction
         )
+    }
+
+    /**
+     * Gemini's list endpoint returns every hosted model, including embedding and image models,
+     * under fully-qualified names ("models/gemini-x"). Only entries advertising generateContent
+     * can serve a chat turn, and the chat call takes the bare id, so strip the prefix.
+     */
+    override suspend fun fetchModels(apiKey: String, baseUrl: String?): FetchedModels {
+        val response = apiService.listModels(apiKey = apiKey)
+        val ids = response.models
+            .filter { it.supportedGenerationMethods.contains("generateContent") }
+            .map { it.name.removePrefix("models/") }
+        val chatIds = ModelFilter.chatModelsOnly(ids)
+        // The generateContent models in the Gemini lineup are all multimodal on input.
+        return FetchedModels(ids = chatIds, visionIds = chatIds.toSet())
     }
 
     override suspend fun sendMessage(

@@ -6,6 +6,7 @@ import app.maskan.chat.data.remote.AnthropicMessageContent
 import app.maskan.chat.data.remote.AnthropicRequest
 import app.maskan.chat.data.remote.AnthropicService
 import app.maskan.chat.data.remote.AnthropicStreamEvent
+import app.maskan.chat.data.remote.AnthropicSystemBlock
 import app.maskan.chat.data.remote.Message
 import app.maskan.chat.data.remote.parseSSEStream
 import kotlinx.coroutines.flow.Flow
@@ -67,10 +68,22 @@ class AnthropicProvider(
         return systemPrompt to AnthropicRequest(
             model = model,
             maxTokens = 4096,
-            system = systemPrompt,
+            system = systemPrompt?.let { listOf(AnthropicSystemBlock(text = it)) },
             messages = conversationMessages,
             stream = stream
         )
+    }
+
+    /**
+     * Anthropic exposes GET /v1/models (x-api-key + anthropic-version headers), so the app can
+     * discover new Claude snapshots without an app update.
+     */
+    override suspend fun fetchModels(apiKey: String, baseUrl: String?): FetchedModels {
+        val response = apiService.listModels(apiKey = apiKey)
+        val ids = ModelFilter.chatModelsOnly(response.data.map { it.id })
+        // Anthropic ships no per-model capability data, but every Claude model in the current
+        // lineup accepts image input.
+        return FetchedModels(ids = ids, visionIds = ids.toSet())
     }
 
     override suspend fun sendMessage(

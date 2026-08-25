@@ -3,6 +3,8 @@ package app.maskan.chat.ui.screens
 import android.app.Activity
 import android.view.WindowManager
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
@@ -54,6 +57,7 @@ import app.maskan.chat.data.model.Dialect
 import app.maskan.chat.ui.viewmodel.SettingsViewModel
 import app.maskan.chat.ui.viewmodel.TestConnectionState
 import app.maskan.chat.ui.viewmodel.FetchModelsState
+import app.maskan.chat.ui.viewmodel.ModelCheckState
 import androidx.compose.foundation.layout.Arrangement
 import app.maskan.chat.ui.theme.maskanColors
 import androidx.compose.material3.Card
@@ -86,7 +90,6 @@ fun SettingsScreen(
 
     var isKeyVisible by remember { mutableStateOf(false) }
     var providerExpanded by remember { mutableStateOf(false) }
-    var modelExpanded by remember { mutableStateOf(false) }
     var languageExpanded by remember { mutableStateOf(false) }
     var dialectExpanded by remember { mutableStateOf(false) }
 
@@ -341,7 +344,10 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(8.dp))
             Button(
                 onClick = { viewModel.testConnection() },
-                enabled = isSaved && testState !is TestConnectionState.Testing
+                // A stored key stays stored: gating this on isSaved (a per-session flag) meant
+                // re-tapping Save Key after every app start just to enable the test.
+                enabled = (apiKey.isNotBlank() || selectedProvider.supportsCustomBaseUrl) &&
+                    testState !is TestConnectionState.Testing
             ) {
                 if (testState is TestConnectionState.Testing) {
                     CircularProgressIndicator(
@@ -430,72 +436,110 @@ fun SettingsScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Prefer models fetched live from a local server; otherwise the curated list.
-            val modelOptions = if (state.fetchedModels.isNotEmpty())
+            // Prefer models fetched live from the provider; the bundled list is only a fallback
+            // for a provider that has never been fetched (no key yet, or offline first run).
+            val offeredModels = if (state.fetchedModels.isNotEmpty())
                 state.fetchedModels
             else
                 selectedProvider.availableModels
 
-            ExposedDropdownMenuBox(
-                expanded = modelExpanded,
-                onExpandedChange = { modelExpanded = !modelExpanded }
-            ) {
+            // Hide models this key has already been refused (403/404 on Test Connection), but
+            // never hide the one currently selected - the field and the list must agree.
+            val allModelOptions = offeredModels.filter {
+                it !in state.unavailableModels || it.trim() == selectedModel.trim()
+            }
+
+            // The model field opens a dialog rather than a dropdown. Two reasons: a dropdown
+            // popup takes focus, so a search box behind it appears dead; and once the keyboard
+            // is up it covers this whole section of the scrolling page. The dialog keeps the
+            // query and the results together above the keyboard - the only workable way to pick
+            // from the 200-400 model catalogues the gateways return.
+            var showModelPicker by remember { mutableStateOf(false) }
+
+            Box(modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(
                     value = selectedModel,
                     onValueChange = {},
                     readOnly = true,
                     label = { Text(stringResource(R.string.model_label)) },
                     trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = modelExpanded)
+                        Icon(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = null
+                        )
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(MenuAnchorType.PrimaryNotEditable),
-                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
+                    modifier = Modifier.fillMaxWidth()
                 )
+                // Transparent overlay: a read-only field swallows the tap without opening
+                // anything, so the click target has to sit on top of it.
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clickable { showModelPicker = true }
+                )
+            }
 
-                ExposedDropdownMenu(
-                    expanded = modelExpanded,
-                    onDismissRequest = { modelExpanded = false }
-                ) {
-                    modelOptions.forEach { model ->
-                        val isActiveModel = model.trim() == selectedModel.trim()
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    text = model,
-                                    fontWeight = if (isActiveModel)
-                                        androidx.compose.ui.text.font.FontWeight.Bold
-                                    else
-                                        androidx.compose.ui.text.font.FontWeight.Normal
-                                )
-                            },
-                            trailingIcon = if (isActiveModel) {
-                                {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = stringResource(R.string.model_active),
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            } else null,
-                            onClick = {
-                                viewModel.selectModel(model)
-                                modelExpanded = false
-                                onModelChanged(model)
-                            }
+            if (showModelPicker) {
+                ModelPickerDialog(
+                    models = allModelOptions,
+                    visionModels = viewModel.visionModels(),
+                    verifiedModels = viewModel.verifiedModels(),
+                    freeModels = viewModel.freeModels(),
+                    selectedModel = selectedModel,
+                    onSelect = { model ->
+                        viewModel.selectModel(model)
+                        onModelChanged(model)
+                        showModelPicker = false
+                    },
+                    onDismiss = { showModelPicker = false }
+                )
+            }
+
+            // A pick is verified against the provider before the user can chat with it.
+            when (val check = state.modelCheckState) {
+                is ModelCheckState.Checking -> {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(14.dp),
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(R.string.model_check_verifying),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
+                is ModelCheckState.Rejected -> {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.model_check_rejected_fmt, check.model),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Text(
+                        text = check.message,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                else -> {}
             }
 
-            // Load models from server (local/custom providers)
-            if (selectedProvider.supportsCustomBaseUrl) {
+            // Ask the provider itself which models it currently serves. Every provider we support
+            // exposes a models endpoint, cloud included, so a retired model id can be recovered
+            // from inside the app instead of waiting for an app update.
+            val canRefreshModels = if (selectedProvider.supportsCustomBaseUrl)
+                baseUrl.isNotBlank()
+            else
+                apiKey.isNotBlank()
+            run {
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
                     onClick = { viewModel.fetchModels() },
-                    enabled = baseUrl.isNotBlank() && state.fetchModelsState !is FetchModelsState.Loading
+                    enabled = canRefreshModels && state.fetchModelsState !is FetchModelsState.Loading
                 ) {
                     if (state.fetchModelsState is FetchModelsState.Loading) {
                         CircularProgressIndicator(
@@ -504,7 +548,14 @@ fun SettingsScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                     }
-                    Text(stringResource(R.string.load_models_button))
+                    Text(
+                        stringResource(
+                            if (selectedProvider.supportsCustomBaseUrl)
+                                R.string.load_models_button
+                            else
+                                R.string.refresh_models_button
+                        )
+                    )
                 }
                 when (val fm = state.fetchModelsState) {
                     is FetchModelsState.Success -> {
@@ -524,6 +575,20 @@ fun SettingsScreen(
                         )
                     }
                     else -> {}
+                }
+                if (state.fetchModelsState !is FetchModelsState.Loading && state.modelsFetchedAt > 0L) {
+                    val daysOld = ((System.currentTimeMillis() - state.modelsFetchedAt) / 86_400_000L)
+                        .coerceAtLeast(0L)
+                        .toInt()
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = if (daysOld == 0)
+                            stringResource(R.string.models_updated_today)
+                        else
+                            stringResource(R.string.models_updated_days_ago_fmt, daysOld),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
 

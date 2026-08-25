@@ -40,6 +40,13 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Test builds install side-by-side with the Play copy (which is signed with the Play
+            // app-signing key, so a same-id local build would fail with UPDATE_INCOMPATIBLE).
+            // Debug-only: the release/F-Droid APK is unaffected.
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+        }
         release {
             isMinifyEnabled = true
             signingConfig = signingConfigs.getByName("release")

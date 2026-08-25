@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- App name -->
     <string name="app_name">مسكن</string>
@@ -110,7 +110,22 @@
     <string name="local_model_name_hint">اكتب اسم النموذج المثبّت على خادمك</string>
     <string name="load_models_button">جلب النماذج من الخادم</string>
     <string name="models_loaded_fmt">تم جلب %1$d نموذج من الخادم</string>
-    <string name="models_load_empty">لم يتم العثور على نماذج على الخادم</string>
+    <string name="models_load_empty">لم يتم العثور على نماذج على الخادم</string>
+    <string name="refresh_models_button">تحديث قائمة النماذج</string>
+    <string name="models_updated_today">تم تحديث قائمة النماذج اليوم</string>
+    <string name="models_updated_days_ago_fmt">تم تحديث قائمة النماذج قبل %1$d يوم</string>
+    <string name="model_search_label">ابحث في النماذج</string>
+    <string name="model_search_hint">اكتب لتصفية القائمة</string>
+    <string name="model_search_no_match">لا يوجد نموذج يطابق بحثك</string>
+    <string name="model_picker_title">اختر النموذج</string>
+    <string name="model_check_verifying">جارٍ التحقق من عمل هذا النموذج مع مفتاحك…</string>
+    <string name="model_check_rejected_fmt">%1$s لا يعمل مع مفتاحك. تمت إزالته من القائمة.</string>
+    <string name="model_vision_legend">📷 = يقبل إرفاق الصور</string>
+    <string name="model_tag_tested">✓ مُجرَّب بمفتاحك</string>
+    <string name="model_tag_images">📷 يقبل الصور</string>
+    <string name="model_tag_free">💸 مجاني</string>
+    <string name="model_picker_count_fmt">عرض %1$d من %2$d</string>
+    <string name="model_search_more_fmt">+%1$d أخرى — تابع الكتابة لتضييق النتائج</string>
     <string name="default_dialect_label">لهجة الترجمة الافتراضية</string>
     <string name="dialect_label">اللهجة</string>
     <string name="instructions_title_provider">كيف تحصل على مفتاح %1$s API</string>
@@ -154,7 +169,8 @@
     <string name="error_network">تعذّر الاتصال بالخادم. تحقق من اتصالك بالإنترنت.</string>
 
     <!-- Detailed error messages -->
-    <string name="error_auth_invalid">مفتاح API مرفوض. تحقّق منه في الإعدادات.</string>
+    <string name="error_auth_invalid">مفتاح API مرفوض. تحقّق منه في الإعدادات.</string>
+    <string name="error_model_access_denied">هذا النموذج غير متاح في حسابك أو باقتك. اختر نموذجاً آخر من الإعدادات.</string>
     <string name="error_auth_expired">انتهت صلاحية مفتاح API. أنشئ مفتاحاً جديداً من لوحة تحكم المزود.</string>
     <string name="error_rate_limit">طلبات كثيرة. انتظر قليلاً ثم حاول مرة أخرى.</string>
     <string name="error_insufficient_quota">نفد رصيد API الخاص بك. اشحن حسابك من موقع المزود.</string>

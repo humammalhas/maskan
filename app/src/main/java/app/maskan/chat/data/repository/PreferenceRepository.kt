@@ -14,7 +14,7 @@ class PreferenceRepository(context: Context) {
 
     fun getDefaultDialect(): Dialect {
         val id = sharedPreferences.getString(KEY_DEFAULT_DIALECT, null)
-        return if (id != null) Dialect.fromId(id) else Dialect.LEVANTINE
+        return if (id != null) Dialect.fromId(id) else Dialect.MSA
     }
 
     fun setDefaultDialect(dialect: Dialect) {
@@ -66,6 +66,81 @@ class PreferenceRepository(context: Context) {
         plainPreferences.edit().putBoolean(KEY_VOICE_PRIVACY_NOTE_SEEN, true).apply()
     }
 
+    // Model lists fetched from a provider's /models endpoint. Cached in the PLAIN prefs on
+    // purpose: model ids are public catalogue data, not secrets, and keeping them out of the
+    // encrypted file avoids bloating it. The timestamp drives the staleness check that triggers
+    // an automatic refresh.
+    fun getCachedModels(providerId: String): List<String> =
+        plainPreferences.getString(KEY_MODELS_PREFIX + providerId, null)
+            ?.split("\n")
+            ?.filter { it.isNotBlank() }
+            ?: emptyList()
+
+    fun saveCachedModels(
+        providerId: String,
+        models: List<String>,
+        visionModels: Set<String> = emptySet(),
+        freeModels: Set<String> = emptySet()
+    ) {
+        plainPreferences.edit()
+            .putString(KEY_MODELS_PREFIX + providerId, models.joinToString("\n"))
+            .putStringSet(KEY_VISION_MODELS_PREFIX + providerId, visionModels)
+            .putStringSet(KEY_FREE_MODELS_PREFIX + providerId, freeModels)
+            .putLong(KEY_MODELS_FETCHED_AT_PREFIX + providerId, System.currentTimeMillis())
+            .apply()
+    }
+
+    /**
+     * Models this provider says accept image input. Empty means the provider publishes no
+     * capability data (or was never fetched), NOT that none of them can see images - callers
+     * fall back to the provider-level flag instead of hiding the camera on everything.
+     */
+    fun getVisionModels(providerId: String): Set<String> =
+        plainPreferences.getStringSet(KEY_VISION_MODELS_PREFIX + providerId, emptySet())
+            ?.toSet() ?: emptySet()
+
+    /** Epoch millis of the last successful fetch, or 0 if this provider was never fetched. */
+    fun getModelsFetchedAt(providerId: String): Long =
+        plainPreferences.getLong(KEY_MODELS_FETCHED_AT_PREFIX + providerId, 0L)
+
+    // Models the provider itself rejected (403 "not on your plan" / 404 "no such model"). A
+    // catalogue lists what the provider hosts, not what THIS key may call - Together is the worst
+    // offender but every provider gates something behind a tier. Rejected ids are hidden from the
+    // picker so the user does not keep choosing dead models; a manual refresh wipes the slate.
+    fun getUnavailableModels(providerId: String): Set<String> =
+        plainPreferences.getStringSet(KEY_UNAVAILABLE_MODELS_PREFIX + providerId, emptySet())
+            ?.toSet() ?: emptySet()
+
+    fun addUnavailableModel(providerId: String, model: String) {
+        val updated = getUnavailableModels(providerId) + model
+        plainPreferences.edit()
+            .putStringSet(KEY_UNAVAILABLE_MODELS_PREFIX + providerId, updated)
+            .apply()
+    }
+
+    // Models that have actually answered with this key. Lets the picker say "tested" instead of
+    // leaving the user to find out by chatting.
+    fun getVerifiedModels(providerId: String): Set<String> =
+        plainPreferences.getStringSet(KEY_VERIFIED_MODELS_PREFIX + providerId, emptySet())
+            ?.toSet() ?: emptySet()
+
+    /** Models the provider prices at zero - they answer even with no credit on the account. */
+    fun getFreeModels(providerId: String): Set<String> =
+        plainPreferences.getStringSet(KEY_FREE_MODELS_PREFIX + providerId, emptySet())
+            ?.toSet() ?: emptySet()
+
+    fun addVerifiedModel(providerId: String, model: String) {
+        plainPreferences.edit()
+            .putStringSet(KEY_VERIFIED_MODELS_PREFIX + providerId, getVerifiedModels(providerId) + model)
+            .apply()
+    }
+
+    fun clearUnavailableModels(providerId: String) {
+        plainPreferences.edit()
+            .remove(KEY_UNAVAILABLE_MODELS_PREFIX + providerId)
+            .apply()
+    }
+
     companion object {
         // Must differ from KeyRepository.PREFS_NAME to avoid sharing the same encrypted file.
         private const val PREFS_NAME = "maskan_secure_preferences"
@@ -77,5 +152,11 @@ class PreferenceRepository(context: Context) {
         private const val KEY_ONBOARDING_IN_PROGRESS = "onboarding_in_progress"
         private const val KEY_IMAGE_PRIVACY_NOTE_SEEN = "image_privacy_note_seen"
         private const val KEY_VOICE_PRIVACY_NOTE_SEEN = "voice_privacy_note_seen"
+        private const val KEY_MODELS_PREFIX = "models_"
+        private const val KEY_MODELS_FETCHED_AT_PREFIX = "models_fetched_at_"
+        private const val KEY_UNAVAILABLE_MODELS_PREFIX = "models_unavailable_"
+        private const val KEY_VISION_MODELS_PREFIX = "models_vision_"
+        private const val KEY_VERIFIED_MODELS_PREFIX = "models_verified_"
+        private const val KEY_FREE_MODELS_PREFIX = "models_free_"
     }
 }

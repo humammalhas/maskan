@@ -15,6 +15,7 @@ import android.content.Intent
 import app.maskan.chat.data.repository.ChatRepository
 import app.maskan.chat.data.repository.ExportFormat
 import app.maskan.chat.data.repository.KeyRepository
+import app.maskan.chat.data.repository.PreferenceRepository
 import app.maskan.chat.util.ErrorMapper
 import app.maskan.chat.util.ImageUtils
 import kotlinx.coroutines.Job
@@ -42,7 +43,8 @@ data class ChatUiState(
 class ChatViewModel(
     application: Application,
     private val chatRepository: ChatRepository,
-    private val keyRepository: KeyRepository
+    private val keyRepository: KeyRepository,
+    private val preferenceRepository: PreferenceRepository
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(ChatUiState())
@@ -66,7 +68,7 @@ class ChatViewModel(
             val preset = when (conversation?.systemPromptId) {
                 null -> null
                 "en_to_ar" -> {
-                    val dialect = conversation.dialectId?.let { Dialect.fromId(it) } ?: Dialect.LEVANTINE
+                    val dialect = conversation.dialectId?.let { Dialect.fromId(it) } ?: Dialect.MSA
                     Presets.enToArPreset(dialect)
                 }
                 "custom" -> null
@@ -95,7 +97,7 @@ class ChatViewModel(
 
     fun setPreset(preset: SystemPromptPreset, dialect: Dialect? = null) {
         viewModelScope.launch {
-            val dialectId = if (preset.id == "en_to_ar") (dialect?.id ?: Dialect.LEVANTINE.id) else null
+            val dialectId = if (preset.id == "en_to_ar") (dialect?.id ?: Dialect.MSA.id) else null
             chatRepository.updateSystemPrompt(currentConversationId, preset.id, dialectId)
             _uiState.value = _uiState.value.copy(
                 currentPreset = preset,
@@ -219,9 +221,19 @@ class ChatViewModel(
         )
     }
 
+    /**
+     * Vision is a property of the MODEL, not the provider. Where the provider publishes
+     * capability data (OpenRouter, Venice, Ollama) or its whole lineup is known multimodal
+     * (Gemini, Anthropic, OpenAI), the cached set decides - so the camera shows up for Qwen3-VL
+     * on Venice and hides on a text-only model at a provider that also hosts vision ones.
+     * With no data cached, fall back to the provider-level flag rather than guessing.
+     */
     fun currentProviderSupportsVision(): Boolean {
-        val provider = ProviderRegistry.getProvider(_uiState.value.selectedProviderId)
-        return provider?.supportsVision == true
+        val providerId = _uiState.value.selectedProviderId
+        val provider = ProviderRegistry.getProvider(providerId)
+        val visionModels = preferenceRepository.getVisionModels(providerId)
+        if (visionModels.isEmpty()) return provider?.supportsVision == true
+        return _uiState.value.selectedModel.trim() in visionModels
     }
 
     fun sendMessage(content: String) {

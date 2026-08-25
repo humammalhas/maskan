@@ -266,7 +266,7 @@ For each text shared, provide: vocabulary glosses, grammatical parsing where use
         )
     )
 
-    fun all(dialect: Dialect = Dialect.LEVANTINE): List<SystemPromptPreset> {
+    fun all(dialect: Dialect = Dialect.MSA): List<SystemPromptPreset> {
         val enToAr = enToArPreset(dialect)
         return buildList {
             add(staticPresets[0]) // general
@@ -276,9 +276,9 @@ For each text shared, provide: vocabulary glosses, grammatical parsing where use
         }
     }
 
-    fun getById(id: String, dialect: Dialect = Dialect.LEVANTINE): SystemPromptPreset? =
+    fun getById(id: String, dialect: Dialect = Dialect.MSA): SystemPromptPreset? =
         all(dialect).find { it.id == id }
 
-    fun getByCategory(category: PresetCategory, dialect: Dialect = Dialect.LEVANTINE): List<SystemPromptPreset> =
+    fun getByCategory(category: PresetCategory, dialect: Dialect = Dialect.MSA): List<SystemPromptPreset> =
         all(dialect).filter { it.category == category }
 }

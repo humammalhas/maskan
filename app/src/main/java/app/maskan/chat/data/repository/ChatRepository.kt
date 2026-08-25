@@ -225,7 +225,7 @@ class ChatRepository(
     private fun resolvePreset(conversation: ConversationEntity) =
         when (conversation.systemPromptId) {
             "en_to_ar" -> {
-                val dialect = conversation.dialectId?.let { Dialect.fromId(it) } ?: Dialect.LEVANTINE
+                val dialect = conversation.dialectId?.let { Dialect.fromId(it) } ?: Dialect.MSA
                 Presets.enToArPreset(dialect)
             }
             "custom" -> null
@@ -339,7 +339,7 @@ class ChatRepository(
         data object Done : StreamEvent()
     }
 
-    suspend fun fetchModels(providerId: String): Result<List<String>> {
+    suspend fun fetchModels(providerId: String): Result<app.maskan.chat.data.remote.providers.FetchedModels> {
         return try {
             val provider = ProviderRegistry.getProvider(providerId)
                 ?: return Result.failure(Exception("Unknown provider: $providerId"))

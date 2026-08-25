@@ -80,15 +80,23 @@ class LocalProvider(
         }
     }
 
-    override suspend fun fetchModels(apiKey: String, baseUrl: String?): List<String> {
+    override suspend fun fetchModels(apiKey: String, baseUrl: String?): FetchedModels {
         val service = getService(resolveUrl(baseUrl))
         val response = service.listModels(
             authorization = if (apiKey.isNotBlank()) "Bearer $apiKey" else ""
         )
-        return response.data
-            .map { it.id }
-            .filter { it.isNotBlank() }
-            .distinct()
+        // Local servers are the loosest of the lot (Ollama, LM Studio, llama.cpp forks all differ),
+        // so go through the same tolerant parser as the cloud providers.
+        val ids = ModelFilter.chatModelsOnly(ModelFilter.idsFrom(response))
+
+        // Best-effort: ask Ollama which of those can see images. Anything else 404s here, which
+        // just means "no capability data" - the provider flag decides in that case.
+        val visionIds = try {
+            ModelFilter.ollamaVisionIds(service.listOllamaTags(), ids)
+        } catch (e: Exception) {
+            emptySet()
+        }
+        return FetchedModels(ids = ids, visionIds = visionIds)
     }
 
     override suspend fun sendMessage(

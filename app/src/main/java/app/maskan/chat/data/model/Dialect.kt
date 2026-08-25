@@ -44,6 +44,6 @@ enum class Dialect(
     );
 
     companion object {
-        fun fromId(id: String): Dialect = entries.firstOrNull { it.id == id } ?: LEVANTINE
+        fun fromId(id: String): Dialect = entries.firstOrNull { it.id == id } ?: MSA
     }
 }

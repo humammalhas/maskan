@@ -110,7 +110,22 @@
     <string name="local_model_name_hint">พิมพ์ชื่อโมเดลที่ติดตั้งบนเซิร์ฟเวอร์ของคุณ</string>
     <string name="load_models_button">ดึงโมเดลจากเซิร์ฟเวอร์</string>
     <string name="models_loaded_fmt">ดึงมาได้ %1$d โมเดลจากเซิร์ฟเวอร์</string>
-    <string name="models_load_empty">ไม่พบโมเดลบนเซิร์ฟเวอร์</string>
+    <string name="models_load_empty">ไม่พบโมเดลบนเซิร์ฟเวอร์</string>
+    <string name="refresh_models_button">รีเฟรชรายการโมเดล</string>
+    <string name="models_updated_today">อัปเดตรายการโมเดลวันนี้</string>
+    <string name="models_updated_days_ago_fmt">อัปเดตรายการโมเดลเมื่อ %1$d วันที่แล้ว</string>
+    <string name="model_search_label">ค้นหาโมเดล</string>
+    <string name="model_search_hint">พิมพ์เพื่อกรองรายการ</string>
+    <string name="model_search_no_match">ไม่พบโมเดลที่ตรงกับการค้นหา</string>
+    <string name="model_picker_title">เลือกโมเดล</string>
+    <string name="model_check_verifying">กำลังตรวจสอบว่าโมเดลนี้ใช้งานได้กับคีย์ของคุณ…</string>
+    <string name="model_check_rejected_fmt">%1$s ใช้งานกับคีย์ของคุณไม่ได้ นำออกจากรายการแล้ว</string>
+    <string name="model_vision_legend">📷 = แนบรูปภาพได้</string>
+    <string name="model_tag_tested">✓ ทดสอบกับคีย์ของคุณแล้ว</string>
+    <string name="model_tag_images">📷 แนบรูปได้</string>
+    <string name="model_tag_free">💸 ฟรี</string>
+    <string name="model_picker_count_fmt">แสดง %1$d จาก %2$d</string>
+    <string name="model_search_more_fmt">+%1$d เพิ่มเติม — พิมพ์ต่อเพื่อจำกัดผลลัพธ์</string>
     <string name="default_dialect_label">สำเนียงการแปลเริ่มต้น</string>
     <string name="dialect_label">สำเนียง</string>
     <string name="instructions_title_provider">วิธีรับ %1$s API Key</string>
@@ -154,7 +169,8 @@
     <string name="error_network">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต</string>
 
     <!-- Detailed error messages -->
-    <string name="error_auth_invalid">API Key ถูกปฏิเสธ กรุณาตรวจสอบในการตั้งค่า</string>
+    <string name="error_auth_invalid">API Key ถูกปฏิเสธ กรุณาตรวจสอบในการตั้งค่า</string>
+    <string name="error_model_access_denied">โมเดลนี้ไม่พร้อมใช้งานในบัญชีหรือแพ็กเกจของคุณ กรุณาเลือกโมเดลอื่นในการตั้งค่า</string>
     <string name="error_auth_expired">API Key หมดอายุแล้ว กรุณาสร้าง Key ใหม่จากแดชบอร์ดของผู้ให้บริการ</string>
     <string name="error_rate_limit">ส่งคำขอมากเกินไป กรุณารอสักครู่แล้วลองใหม่</string>
     <string name="error_insufficient_quota">เครดิต API ของคุณหมดแล้ว กรุณาเติมเงินที่เว็บไซต์ผู้ให้บริการ</string>

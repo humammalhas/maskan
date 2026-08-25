@@ -39,10 +39,15 @@ object MessageContentSerializer : KSerializer<MessageContent> {
             is MessageContent.Text -> jsonEncoder.encodeJsonElement(JsonPrimitive(value.text))
             is MessageContent.WithImage -> {
                 val array = buildJsonArray {
-                    add(buildJsonObject {
-                        put("type", JsonPrimitive("text"))
-                        put("text", JsonPrimitive(value.text))
-                    })
+                    // Only send a text part when there IS text. An image attached without a
+                    // caption used to ship "text": "", which Venice rejects with
+                    // 400 "Text content cannot be empty".
+                    if (value.text.isNotBlank()) {
+                        add(buildJsonObject {
+                            put("type", JsonPrimitive("text"))
+                            put("text", JsonPrimitive(value.text))
+                        })
+                    }
                     add(buildJsonObject {
                         put("type", JsonPrimitive("image_url"))
                         put("image_url", buildJsonObject {

@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 
 sealed class TestConnectionState {
     data object Idle : TestConnectionState()
@@ -32,6 +33,17 @@ sealed class FetchModelsState {
     data class Error(val message: String) : FetchModelsState()
 }
 
+/**
+ * Result of the silent check run when a model is picked. The user should never have to discover
+ * a dead model by chatting with it: choosing one costs a single tiny request, and a model the
+ * provider refuses is dropped from the list on the spot.
+ */
+sealed class ModelCheckState {
+    data object Idle : ModelCheckState()
+    data object Checking : ModelCheckState()
+    data class Rejected(val model: String, val message: String) : ModelCheckState()
+}
+
 data class SettingsUiState(
     val selectedProvider: AiProvider = ProviderRegistry.getDefaultProvider(),
     val apiKey: String = "",
@@ -40,11 +52,14 @@ data class SettingsUiState(
     val isSaved: Boolean = false,
     val testState: TestConnectionState = TestConnectionState.Idle,
     val selectedLocale: String = "",
-    val selectedDialect: Dialect = Dialect.LEVANTINE,
+    val selectedDialect: Dialect = Dialect.MSA,
     val configuredProviderIds: Set<String> = emptySet(),
     val blockScreenshots: Boolean = false,
     val fetchedModels: List<String> = emptyList(),
-    val fetchModelsState: FetchModelsState = FetchModelsState.Idle
+    val fetchModelsState: FetchModelsState = FetchModelsState.Idle,
+    val modelsFetchedAt: Long = 0L,
+    val unavailableModels: Set<String> = emptySet(),
+    val modelCheckState: ModelCheckState = ModelCheckState.Idle
 )
 
 class SettingsViewModel(
@@ -74,8 +89,13 @@ class SettingsViewModel(
             selectedLocale = localeRepository.getLocale(),
             selectedDialect = preferenceRepository.getDefaultDialect(),
             configuredProviderIds = keyRepository.getAllStoredProviderIds().toSet(),
-            blockScreenshots = preferenceRepository.isBlockScreenshots()
+            blockScreenshots = preferenceRepository.isBlockScreenshots(),
+            fetchedModels = preferenceRepository.getCachedModels(provider.id),
+            modelsFetchedAt = preferenceRepository.getModelsFetchedAt(provider.id),
+            unavailableModels = preferenceRepository.getUnavailableModels(provider.id)
         )
+
+        maybeAutoRefreshModels()
     }
 
     fun selectProvider(provider: AiProvider) {
@@ -87,25 +107,39 @@ class SettingsViewModel(
             selectedModel = model,
             isSaved = false,
             testState = TestConnectionState.Idle,
-            fetchedModels = emptyList(),
+            fetchedModels = preferenceRepository.getCachedModels(provider.id),
+            modelsFetchedAt = preferenceRepository.getModelsFetchedAt(provider.id),
+            unavailableModels = preferenceRepository.getUnavailableModels(provider.id),
+            modelCheckState = ModelCheckState.Idle,
             fetchModelsState = FetchModelsState.Idle
         )
         keyRepository.setDefaultProviderId(provider.id)
+        maybeAutoRefreshModels()
     }
 
-    fun fetchModels() {
+    fun fetchModels(auto: Boolean = false) {
         val providerId = _uiState.value.selectedProvider.id
+        // A manual refresh is the user saying "try again from scratch": forget what was rejected
+        // before, since plans change and providers add access.
+        if (!auto) {
+            preferenceRepository.clearUnavailableModels(providerId)
+            _uiState.value = _uiState.value.copy(unavailableModels = emptySet())
+        }
         // Persist the current URL first so the fetch hits the server the user just typed.
-        keyRepository.saveBaseUrl(providerId, _uiState.value.baseUrl)
+        // Cloud providers have a fixed endpoint, so never overwrite it from UI state.
+        if (_uiState.value.selectedProvider.supportsCustomBaseUrl) {
+            keyRepository.saveBaseUrl(providerId, _uiState.value.baseUrl)
+        }
         _uiState.value = _uiState.value.copy(fetchModelsState = FetchModelsState.Loading)
         viewModelScope.launch {
             val result = chatRepository.fetchModels(providerId)
             val context = getApplication<Application>()
             _uiState.value = result.fold(
-                onSuccess = { models ->
+                onSuccess = { fetched ->
+                    val models = fetched.ids
                     if (models.isEmpty()) {
                         _uiState.value.copy(
-                            fetchModelsState = FetchModelsState.Error(
+                            fetchModelsState = if (auto) FetchModelsState.Idle else FetchModelsState.Error(
                                 context.getString(app.maskan.chat.R.string.models_load_empty)
                             )
                         )
@@ -116,21 +150,48 @@ class SettingsViewModel(
                         } else {
                             models.first().also { keyRepository.saveSelectedModel(providerId, it) }
                         }
+                        // Cache it so the next Settings visit (or an offline one) still has a
+                        // current list without hitting the network.
+                        preferenceRepository.saveCachedModels(providerId, models, fetched.visionIds, fetched.freeIds)
                         _uiState.value.copy(
                             fetchedModels = models,
                             selectedModel = newSelected,
+                            modelsFetchedAt = preferenceRepository.getModelsFetchedAt(providerId),
                             fetchModelsState = FetchModelsState.Success(models.size)
                         )
                     }
                 },
                 onFailure = {
+                    // An automatic refresh must never shout at the user: fall back silently to
+                    // the cached list (or the bundled one). Only a manual tap surfaces errors.
                     _uiState.value.copy(
-                        fetchModelsState = FetchModelsState.Error(
+                        fetchModelsState = if (auto) FetchModelsState.Idle else FetchModelsState.Error(
                             ErrorMapper.mapToUserMessage(context, it)
                         )
                     )
                 }
             )
+        }
+    }
+
+    /**
+     * Refresh the model list in the background when it is missing or older than the TTL, so a
+     * provider retiring a model id cannot leave the user stuck on a dead one. Silent on failure:
+     * the cached list, then the bundled fallback, still work.
+     */
+    private fun maybeAutoRefreshModels() {
+        val state = _uiState.value
+        val provider = state.selectedProvider
+        val hasCredentials = if (provider.supportsCustomBaseUrl) {
+            state.baseUrl.isNotBlank()
+        } else {
+            state.apiKey.isNotBlank()
+        }
+        if (!hasCredentials) return
+        if (state.fetchModelsState is FetchModelsState.Loading) return
+        val age = System.currentTimeMillis() - state.modelsFetchedAt
+        if (state.fetchedModels.isEmpty() || age !in 0..MODEL_CACHE_TTL_MS) {
+            fetchModels(auto = true)
         }
     }
 
@@ -153,6 +214,8 @@ class SettingsViewModel(
             isSaved = true,
             configuredProviderIds = keyRepository.getAllStoredProviderIds().toSet()
         )
+        // A newly saved key is the first chance to ask this provider what it actually serves.
+        maybeAutoRefreshModels()
     }
 
     fun saveBaseUrl() {
@@ -163,28 +226,94 @@ class SettingsViewModel(
 
     fun selectModel(model: String) {
         val state = _uiState.value
-        keyRepository.saveSelectedModel(state.selectedProvider.id, model)
-        _uiState.value = state.copy(selectedModel = model)
+        val previousModel = state.selectedModel
+        val providerId = state.selectedProvider.id
+        keyRepository.saveSelectedModel(providerId, model)
+        _uiState.value = state.copy(
+            selectedModel = model,
+            modelCheckState = ModelCheckState.Checking,
+            testState = TestConnectionState.Idle
+        )
+
+        // Verify the pick immediately. A catalogue lists what the provider HOSTS; only a real
+        // request proves this key may call it. One tiny call here saves the user from a dead
+        // conversation later.
+        viewModelScope.launch {
+            val result = chatRepository.testConnection(providerId)
+            val context = getApplication<Application>()
+            result.fold(
+                onSuccess = {
+                    preferenceRepository.addVerifiedModel(providerId, model)
+                    _uiState.value = _uiState.value.copy(modelCheckState = ModelCheckState.Idle)
+                },
+                onFailure = { throwable ->
+                    val code = (throwable as? HttpException)?.code()
+                    if (code == 403 || code == 404 || code == 400) {
+                        // The provider refused this model: remember it, drop it from the picker
+                        // and put the working model back.
+                        preferenceRepository.addUnavailableModel(providerId, model)
+                        val restored = previousModel.takeIf { it.isNotBlank() && it != model }
+                            ?: state.selectedProvider.defaultModel
+                        keyRepository.saveSelectedModel(providerId, restored)
+                        _uiState.value = _uiState.value.copy(
+                            selectedModel = restored,
+                            unavailableModels = preferenceRepository.getUnavailableModels(providerId),
+                            modelCheckState = ModelCheckState.Rejected(
+                                model = model,
+                                message = ErrorMapper.mapToUserMessage(context, throwable)
+                            )
+                        )
+                    } else {
+                        // Network trouble or a provider hiccup says nothing about the model.
+                        _uiState.value = _uiState.value.copy(modelCheckState = ModelCheckState.Idle)
+                    }
+                }
+            )
+        }
     }
 
     fun testConnection() {
-        _uiState.value = _uiState.value.copy(testState = TestConnectionState.Testing)
+        // Test what is in the field. Requiring a separate Save tap first was pure friction, and
+        // saving an unchanged key costs nothing.
+        val current = _uiState.value
+        keyRepository.saveApiKey(current.selectedProvider.id, current.apiKey)
+        _uiState.value = current.copy(
+            testState = TestConnectionState.Testing,
+            configuredProviderIds = keyRepository.getAllStoredProviderIds().toSet()
+        )
         viewModelScope.launch {
-            val result = chatRepository.testConnection(_uiState.value.selectedProvider.id)
+            val providerId = _uiState.value.selectedProvider.id
+            val model = _uiState.value.selectedModel
+            val result = chatRepository.testConnection(providerId)
             val context = getApplication<Application>()
-            _uiState.value = _uiState.value.copy(
-                testState = result.fold(
-                    onSuccess = {
-                        TestConnectionState.Success(
-                            context.getString(app.maskan.chat.R.string.test_connection_success)
-                        )
-                    },
-                    onFailure = {
-                        TestConnectionState.Error(
-                            ErrorMapper.mapToUserMessage(context, it)
-                        )
+
+            // Compute both updates BEFORE touching _uiState: writing to it inside the fold would
+            // be clobbered, because the copy() receiver is read before its arguments run.
+            var rejected: Set<String>? = null
+            val newTestState = result.fold(
+                onSuccess = {
+                    TestConnectionState.Success(
+                        context.getString(app.maskan.chat.R.string.test_connection_success)
+                    )
+                },
+                onFailure = { throwable ->
+                    // 403/404 means the provider refused THIS model (not on your plan, or no such
+                    // id) rather than the key - remember it so the picker stops offering a model
+                    // that cannot work. Cleared by a manual refresh.
+                    val code = (throwable as? HttpException)?.code()
+                    if ((code == 403 || code == 404) && model.isNotBlank()) {
+                        preferenceRepository.addUnavailableModel(providerId, model)
+                        rejected = preferenceRepository.getUnavailableModels(providerId)
                     }
-                )
+                    TestConnectionState.Error(
+                        ErrorMapper.mapToUserMessage(context, throwable)
+                    )
+                }
+            )
+
+            _uiState.value = _uiState.value.copy(
+                testState = newTestState,
+                unavailableModels = rejected ?: _uiState.value.unavailableModels
             )
         }
     }
@@ -208,5 +337,23 @@ class SettingsViewModel(
         return newValue
     }
 
+    /** Models the provider prices at zero - they work even with an empty account balance. */
+    fun freeModels(): Set<String> =
+        preferenceRepository.getFreeModels(_uiState.value.selectedProvider.id)
+
+    /** Models already proven to answer with this key - drives the "tested" tag in the picker. */
+    fun verifiedModels(): Set<String> =
+        preferenceRepository.getVerifiedModels(_uiState.value.selectedProvider.id)
+
+    /** Models this provider says accept image input - drives the camera badge in the picker. */
+    fun visionModels(): Set<String> =
+        preferenceRepository.getVisionModels(_uiState.value.selectedProvider.id)
+
     fun getProviderConfig() = ProviderConfigs.ALL.firstOrNull { it.id == _uiState.value.selectedProvider.id }
+
+    companion object {
+        // Model catalogues move on the order of weeks, so a 7-day TTL keeps the list current
+        // without a network call every time Settings opens.
+        private const val MODEL_CACHE_TTL_MS = 7L * 24 * 60 * 60 * 1000
+    }
 }
