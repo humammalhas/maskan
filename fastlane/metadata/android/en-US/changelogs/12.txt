@@ -1,0 +1,8 @@
+Models now load live from every provider - no more dead or outdated model lists.
+
+- Refresh model list works for every provider, cloud and local, and refreshes itself weekly
+- Models are verified when you pick one: anything your key cannot use is removed, with the provider's own reason
+- New model picker with search and tags: tested with your key / accepts images / free
+- Image attachments work on more providers, and no longer need a caption
+- Fixed Anthropic (Claude) chats failing completely
+- Default Arabic dialect is now Modern Standard Arabic
