@@ -2,6 +2,26 @@
 
 All notable changes to Maskan are documented here.
 
+## [2.4.5] — 2026-08-25
+
+### Added
+- Model lists are fetched live from every provider, cloud and local, instead of being hardcoded in the app — a provider retiring a model can no longer leave you stuck on a dead one
+- "Refresh model list" for every provider, plus an automatic background refresh once the cached list is a week old
+- Picking a model verifies it against the provider first; if your key cannot use it, the model is removed from the list and the provider's own reason is shown
+- New model picker with search, for gateways that return hundreds of models, with per-model tags: tested with your key, accepts images, free
+- Non-chat models (embeddings, moderation, safety classifiers, speech, image generation) are filtered out of the list
+
+### Changed
+- Whether a model accepts image input is now read per model from the provider's capability data instead of a single flag per provider — vision models on Venice, OpenRouter and Ollama can now receive images
+- The default Arabic dialect is now الفصحى (Modern Standard Arabic)
+- Refreshed the built-in fallback model lists for every provider
+
+### Fixed
+- Anthropic (Claude) chats were failing completely — the system prompt is now sent as content blocks and omitted when empty
+- Sending an image without a caption no longer fails
+- Error messages carry the provider's own explanation instead of "an unknown error occurred"
+- A 403 no longer claims your API key was rejected; it means the model is not available on your plan
+- Test Connection no longer requires re-saving a key you already saved
 ## [2.4.4] — 2026-08-13
 
 ### Changed

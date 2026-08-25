@@ -39,7 +39,9 @@ Your API keys are encrypted with AES-256-GCM on device. Your conversations never
 - **Encrypted on device** — API keys stored with AES-256-GCM via Android Keystore, conversations encrypted with SQLCipher
 - **Network-locked** — `network_security_config.xml` restricts traffic to only enabled provider hosts
 - **Markdown rendering** — AI replies render headings, bold, lists, and code blocks, including Arabic/RTL
-- **Image input** — send photos to vision-capable models (OpenAI, Anthropic, Gemini, OpenRouter)
+- **Live model lists** — models are fetched from each provider, not hardcoded, so retired models never leave you stranded; picking one verifies it against your key first
+- **Model picker with search** — tags each model as tested with your key, accepts images, or free
+- **Image input** — send photos to any vision-capable model; capability is read per model from the provider
 - **File attach** — attach a `.txt` or `.html` file to a message
 - **Voice input** — speech-to-text with Arabic, English, and Thai recognition
 - **Voice narration** — tap to hear AI responses read aloud, uses Android's built-in text-to-speech
