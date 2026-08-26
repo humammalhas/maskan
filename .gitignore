@@ -1,4 +1,4 @@
-﻿# Maskan
+# Maskan
 #
 # Android project file patterns to ignore.
 # For more information, see https://developer.android.com/studio/intellij-idea#ignoring-files
@@ -67,3 +67,6 @@ keystore.properties
 *.hprof
 captures/
 build_*.txt
+
+# Local Claude brief (not published)
+CLAUDE.md
