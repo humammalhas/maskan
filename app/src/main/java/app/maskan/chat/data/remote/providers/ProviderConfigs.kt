@@ -234,8 +234,8 @@ object ProviderConfigs {
         keyAcquisitionUrl = "",
         pricingInfo = "Your own endpoint",
         pricingInfoAr = "نقطة النهاية الخاصة بك",
-        instructionsEn = "Enter the base URL of any OpenAI-compatible API server.\nThe server must support POST /v1/chat/completions.\nAdd an API key if your server requires authentication.\nType the model name you want to use.",
-        instructionsAr = "أدخل رابط أي خادم API متوافق مع OpenAI.\nيجب أن يدعم الخادم POST /v1/chat/completions.\nأضف مفتاح API إذا كان خادمك يتطلب مصادقة.\nاكتب اسم النموذج الذي تريد استخدامه."
+        instructionsEn = "Enter the base URL of any OpenAI-compatible API server.\nThe server must support POST /v1/chat/completions.\nAdd an API key if your server requires authentication.\nType the model name you want to use.\nIf your server can also draw (LocalAI, or ComfyUI behind a proxy), pick or type an image model in the Image model section — pictures are then made on your own machine and never leave it.",
+        instructionsAr = "أدخل رابط أي خادم API متوافق مع OpenAI.\nيجب أن يدعم الخادم POST /v1/chat/completions.\nأضف مفتاح API إذا كان خادمك يتطلب مصادقة.\nاكتب اسم النموذج الذي تريد استخدامه.\nإذا كان خادمك يولّد الصور أيضاً (LocalAI أو ComfyUI خلف وسيط)، اختر نموذج صور أو اكتبه في قسم نموذج الصور — فتُرسم الصور على جهازك ولا تغادره أبداً."
     )
 
     val ALL_OPENAI_COMPATIBLE = listOf(DEEPSEEK, OPENAI, GROQ, TOGETHER, MISTRAL, VENICE, OPENROUTER)

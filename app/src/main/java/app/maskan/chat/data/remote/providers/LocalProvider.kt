@@ -3,10 +3,13 @@ package app.maskan.chat.data.remote.providers
 import android.util.Base64
 import app.maskan.chat.data.remote.ChatCompletionChunk
 import app.maskan.chat.data.remote.ChatCompletionRequest
+import app.maskan.chat.data.remote.ImageGenerationRequest
+import app.maskan.chat.data.remote.ImageResponseParser
 import app.maskan.chat.data.remote.Message
 import app.maskan.chat.data.remote.MessageContent
 import app.maskan.chat.data.remote.OpenAiCompatibleService
 import app.maskan.chat.data.remote.parseSSEStream
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -27,6 +30,16 @@ class LocalProvider(
     override val supportsCustomBaseUrl: Boolean = true
     override val supportsVision: Boolean = config.supportsVision
     override val isLocal: Boolean = config.isLocal
+
+    /**
+     * Only the Custom URL provider draws. Ollama and LM Studio are LLM runtimes - neither
+     * serves /v1/images/generations (verified 2026-08-28), so they keep the honest
+     * "cannot generate images" answer in Settings. Custom URL is where LOCAL image generation
+     * lives: LocalAI natively, or ComfyUI/SD-WebUI behind an OpenAI-compatible proxy. The
+     * prompt and the picture never leave the user's own network - for a privacy-first app
+     * this is not a feature, it is the argument.
+     */
+    override val supportsImageGeneration: Boolean = config.id == "custom"
     override val availableModels: List<String> = config.models
     override val defaultModel: String = config.defaultModel
     override val keyAcquisitionUrl: String = config.keyAcquisitionUrl
@@ -77,6 +90,70 @@ class LocalProvider(
                     mimeType = imageMimeType
                 )
             )
+        }
+    }
+
+    // Image renders on someone's own GPU are minutes, not seconds - a local Flux 2 run takes
+    // ~150 s where the shared client's read timeout is 60 s. A dedicated client keeps the long
+    // wait confined to this one path; chat keeps its tight timeout.
+    private val imageServiceCache = LinkedHashMap<String, OpenAiCompatibleService>(4, 0.75f, false)
+
+    private fun getImageService(baseUrl: String): OpenAiCompatibleService {
+        val normalizedUrl = if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
+        imageServiceCache[normalizedUrl]?.let { return it }
+        if (imageServiceCache.size >= 3) {
+            imageServiceCache.remove(imageServiceCache.keys.first())
+        }
+        return imageServiceCache.getOrPut(normalizedUrl) {
+            Retrofit.Builder()
+                .baseUrl(normalizedUrl)
+                .client(
+                    okHttpClient.newBuilder()
+                        .readTimeout(300, TimeUnit.SECONDS)
+                        .build()
+                )
+                .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+                .build()
+                .create(OpenAiCompatibleService::class.java)
+        }
+    }
+
+    /**
+     * Draw via POST /v1/images/generations on the user's own server - the same request path
+     * OpenAI uses, which is exactly why it is the contract here: LocalAI implements it natively
+     * and a ComfyUI or SD-WebUI proxy can implement it in ~100 lines. Asks for base64 so the
+     * bytes arrive in the response body and nothing leaves the user's network.
+     */
+    override suspend fun generateImage(
+        apiKey: String,
+        model: String,
+        prompt: String,
+        baseUrl: String?
+    ): GeneratedImage {
+        val service = getImageService(resolveUrl(baseUrl))
+        val response = service.createImage(
+            authorization = if (apiKey.isNotBlank()) "Bearer $apiKey" else "",
+            request = ImageGenerationRequest(model = model, prompt = prompt, responseFormat = "b64_json")
+        )
+        val image = ImageResponseParser.parse(response) { url ->
+            service.downloadUrl(url).bytes()
+        }
+        // Local servers may hand back WebP (a ComfyUI proxy can even return an ANIMATED WebP -
+        // a short video wearing an image's clothes) or JPEG while the parser assumes PNG. The
+        // magic bytes know best, and the stored mime type is what Save-to-phone names the file by.
+        return GeneratedImage(image.bytes, sniffMime(image.bytes) ?: image.mimeType)
+    }
+
+    /** Content-type from magic bytes; null means "no opinion, keep what the parser said". */
+    private fun sniffMime(bytes: ByteArray): String? {
+        if (bytes.size < 12) return null
+        return when {
+            bytes[0] == 0x89.toByte() && bytes[1] == 'P'.code.toByte() -> "image/png"
+            bytes[0] == 0xFF.toByte() && bytes[1] == 0xD8.toByte() -> "image/jpeg"
+            bytes[0] == 'R'.code.toByte() && bytes[1] == 'I'.code.toByte() &&
+                bytes[8] == 'W'.code.toByte() && bytes[9] == 'E'.code.toByte() -> "image/webp"
+            bytes[0] == 'G'.code.toByte() && bytes[1] == 'I'.code.toByte() -> "image/gif"
+            else -> null
         }
     }
 
