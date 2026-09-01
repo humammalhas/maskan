@@ -82,6 +82,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.input.ImeAction
@@ -301,46 +303,64 @@ fun ChatScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(stringResource(R.string.chat_screen_title), maxLines = 1)
-                        uiState.currentPreset?.let { preset ->
-                            // One line, ellipsised: the 64dp bar has no room for a wrap, and the
-                            // Arabic clipping this row used to show is fixed at the cause in
-                            // Theme.kt (includeFontPadding), not here.
-                            Text(
-                                text = preset.localizedName(),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+            // The preset name lives in a thin strip UNDER the bar, not inside the title slot.
+            // Material's small TopAppBar sizes its title slot for ONE line; two lines only ever
+            // fit by luck, and the Arabic face's tall mark-space metrics ran out of luck - the
+            // subtitle rendered half-clipped. A separate strip in the same colour reads as one
+            // header and gives every script the room it actually needs.
+            Column {
+                TopAppBar(
+                    // Slimmer than the default 64dp: with the preset strip below, the pair reads
+                    // as one compact header instead of a bar floating above a caption.
+                    expandedHeight = 52.dp,
+                    title = {
+                        Text(
+                            text = stringResource(R.string.chat_screen_title),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.maskanColors.softLavender
+                    ),
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.back_button)
                             )
                         }
+                    },
+                    actions = {
+                        if (visibleMessages.isNotEmpty()) {
+                            IconButton(onClick = { showExportDialog = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.Share,
+                                    contentDescription = stringResource(R.string.export_conversation)
+                                )
+                            }
+                        }
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.maskanColors.softLavender
-                ),
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back_button)
+                )
+                uiState.currentPreset?.let { preset ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.maskanColors.softLavender)
+                            // 16dp bar inset + 48dp nav icon, so the name sits under the title.
+                            // Start-relative, so it mirrors correctly in RTL.
+                            .padding(start = 60.dp, end = 16.dp, bottom = 8.dp)
+                    ) {
+                        Text(
+                            text = preset.localizedName(),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
-                },
-                actions = {
-                    if (visibleMessages.isNotEmpty()) {
-                        IconButton(onClick = { showExportDialog = true }) {
-                            Icon(
-                                imageVector = Icons.Default.Share,
-                                contentDescription = stringResource(R.string.export_conversation)
-                            )
-                        }
-                    }
                 }
-            )
+            }
         },
         snackbarHost = {
             uiState.error?.let { error ->

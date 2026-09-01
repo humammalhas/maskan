@@ -49,12 +49,11 @@ class MainActivity : ComponentActivity() {
         val conversationListViewModel = ViewModelProvider(this, factory)[ConversationListViewModel::class.java]
         val settingsViewModel = ViewModelProvider(this, factory)[SettingsViewModel::class.java]
 
-        val isArabic = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val lm = getSystemService(LocaleManager::class.java)
-            lm?.applicationLocales?.get(0)?.language == "ar"
-        } else {
-            AppCompatDelegate.getApplicationLocales().get(0)?.language == "ar"
-        }
+        // Read the language from the resource configuration - the source the strings actually
+        // resolve from. LocaleManager.applicationLocales misses a per-app language set from the
+        // SYSTEM settings (or adb), which silently rendered Arabic with the DEFAULT typography -
+        // hiding the Arabic-font layout bugs this theme flag exists to handle.
+        val isArabic = resources.configuration.locales.get(0)?.language == "ar"
 
         val isFirstLaunch = !app.preferenceRepository.hasCompletedSetup()
         val needsPrivacyIntro = !app.preferenceRepository.hasSeenPrivacyIntro()
