@@ -12,6 +12,7 @@ import android.util.Base64
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -188,7 +189,11 @@ fun ChatScreen(
     // only a destination, so the bytes have to wait somewhere.
     var pendingSaveBytes by remember { mutableStateOf<ByteArray?>(null) }
     val saveImageLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("image/png")
+        // Not the stock CreateDocument: that contract fixes the mime at creation time, and a
+        // local server can hand back WebP - even an ANIMATED WebP - where cloud providers send
+        // PNG. Saving that with a .png name and image/png mime makes every gallery treat the
+        // animation as a still, which is exactly the bug this replaces.
+        SaveImageDocumentContract
     ) { uri ->
         val bytes = pendingSaveBytes
         pendingSaveBytes = null
@@ -545,11 +550,16 @@ fun ChatScreen(
                         onSaveImage = {
                             generatedImage?.let { bytes ->
                                 pendingSaveBytes = bytes
-                                saveImageLauncher.launch("maskan-${message.id}.png")
+                                val mime = message.imageMimeType ?: "image/png"
+                                saveImageLauncher.launch(
+                                    "maskan-${message.id}.${extensionFor(mime)}" to mime
+                                )
                             }
                         },
                         onShareImage = {
-                            generatedImage?.let { bytes -> shareImageBytes(context, bytes) }
+                            generatedImage?.let { bytes ->
+                                shareImageBytes(context, bytes, message.imageMimeType ?: "image/png")
+                            }
                         },
                         onSpeakToggle = {
                             val engine = tts.value
@@ -1204,11 +1214,11 @@ private fun formatTime(timestamp: Long): String {
  * target can read it. That copy goes to the cache directory behind a FileProvider - never to the
  * shared gallery - and the directory is swept first so plaintext copies do not pile up.
  */
-private fun shareImageBytes(context: Context, bytes: ByteArray) {
+private fun shareImageBytes(context: Context, bytes: ByteArray, mimeType: String = "image/png") {
     try {
         val dir = java.io.File(context.cacheDir, "shared_images").apply { mkdirs() }
         dir.listFiles()?.forEach { it.delete() }
-        val file = java.io.File(dir, "maskan-image.png")
+        val file = java.io.File(dir, "maskan-image.${extensionFor(mimeType)}")
         file.writeBytes(bytes)
 
         val uri = androidx.core.content.FileProvider.getUriForFile(
@@ -1217,7 +1227,7 @@ private fun shareImageBytes(context: Context, bytes: ByteArray) {
             file
         )
         val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "image/png"
+            type = mimeType
             putExtra(Intent.EXTRA_STREAM, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -1228,4 +1238,29 @@ private fun shareImageBytes(context: Context, bytes: ByteArray) {
     } catch (_: Exception) {
         Toast.makeText(context, context.getString(R.string.export_failed), Toast.LENGTH_SHORT).show()
     }
+}
+
+/** File extension for a stored image mime - the mime was sniffed from the actual bytes. */
+private fun extensionFor(mimeType: String): String = when (mimeType) {
+    "image/webp" -> "webp"
+    "image/jpeg" -> "jpg"
+    "image/gif" -> "gif"
+    else -> "png"
+}
+
+/**
+ * ACTION_CREATE_DOCUMENT with the mime chosen per call - (fileName, mimeType) in - because a
+ * message's image format is only known at save time. The stock CreateDocument contract bakes a
+ * single mime into the launcher, which mislabelled animated WebP as PNG.
+ */
+private object SaveImageDocumentContract : ActivityResultContract<Pair<String, String>, android.net.Uri?>() {
+    override fun createIntent(context: Context, input: Pair<String, String>): Intent =
+        Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = input.second
+            putExtra(Intent.EXTRA_TITLE, input.first)
+        }
+
+    override fun parseResult(resultCode: Int, intent: Intent?): android.net.Uri? =
+        intent?.data?.takeIf { resultCode == Activity.RESULT_OK }
 }
