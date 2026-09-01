@@ -2,6 +2,26 @@
 
 All notable changes to Maskan are documented here.
 
+## [Unreleased]
+
+### Added
+- **"What can my key do?"** — one button in Settings that answers in plain language: whether chat actually works with your key (and the provider's own reason when it doesn't), how many models you can choose from, which are free where the provider really publishes that, whether it can draw, and your live account balance on OpenRouter and DeepSeek
+- **Image generation with OpenRouter** — one key now draws with Gemini, GPT-Image and more through OpenRouter; verified end-to-end
+- A one-line description under each provider saying what it is — everyone knows ChatGPT, nobody knows Groq or Venice
+- The model picker now lists models tested with your key first, then free ones; models your key was refused sit greyed at the bottom with the provider's own reason
+- Models on your own local server are tagged free
+
+### Changed
+- The 🎨 draw button is always visible when a provider can generate images — dimmed with a hint to choose an image model, instead of invisible on a fresh install
+- Providers that cannot generate images now say so plainly in Settings instead of showing nothing
+- Together AI's image error now explains the two account settings that unblock its image models
+- Mistral and Groq provider notes now say their free tiers are rate-limited and cover all models
+
+### Fixed
+- **Arabic chat header** — the preset name was clipped in half; it now sits fully visible on its own line under the title, in Arabic, English and Thai
+- Preset names and Arabic typography now follow the app language however it was set — choosing Arabic in Android's per-app language settings used to leave preset names in English
+- Arabic wording polish in presets per the MSA style guide
+
 ## [2.4.6] — 2026-08-26
 
 ### Added

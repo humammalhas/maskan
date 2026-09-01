@@ -42,7 +42,8 @@ Your API keys are encrypted with AES-256-GCM on device. Your conversations never
 - **Live model lists** — models are fetched from each provider, not hardcoded, so retired models never leave you stranded; picking one verifies it against your key first
 - **Model picker with search** — tags each model as tested with your key, accepts images, or free
 - **Image input** — send photos to any vision-capable model; capability is read per model from the provider
-- **Image generation** — draw pictures with Google Gemini, OpenAI or Venice; each provider has its own image model, kept separate from your chat model
+- **Image generation** — draw pictures with Google Gemini, OpenAI, Venice, OpenRouter or Together; each provider has its own image model, kept separate from your chat model
+- **"What can my key do?"** — one tap tells you in plain language what your key can actually do: whether chat works (with the provider's own reason when it doesn't), what's free where that's truly published, whether it draws, and your live balance where the provider exposes one
 - **AI prompt helper** — let the chat model turn a rough idea into a full image description, translated to English if needed, for you to edit before it is drawn
 - **Generated images stay private** — encrypted on your device with AES-256-GCM, never auto-saved to your gallery; save or share any one deliberately, with no storage permission needed
 - **File attach** — attach a `.txt` or `.html` file to a message
