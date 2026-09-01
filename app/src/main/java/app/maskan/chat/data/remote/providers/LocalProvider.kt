@@ -96,7 +96,9 @@ class LocalProvider(
         } catch (e: Exception) {
             emptySet()
         }
-        return FetchedModels(ids = ids, visionIds = visionIds)
+        // Everything on the user's own machine is free by construction - tag it so the picker
+        // can say so, the same way OpenRouter's published zero prices do.
+        return FetchedModels(ids = ids, visionIds = visionIds, freeIds = ids.toSet())
     }
 
     override suspend fun sendMessage(

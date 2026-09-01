@@ -34,6 +34,13 @@ interface AiProvider {
     ): FetchedModels = FetchedModels()
 
     /**
+     * The account's remaining balance, formatted for display, where the provider has an
+     * endpoint for it (OpenRouter, DeepSeek). Null means "not knowable here", which is most
+     * providers - and a real number beats any free/paid badge we could invent.
+     */
+    suspend fun fetchBalance(apiKey: String): String? = null
+
+    /**
      * Ask this provider to draw [prompt] with [model] and hand back the raw bytes.
      *
      * Defaults to unsupported: only some providers generate images, and the UI only offers it

@@ -13,6 +13,12 @@ data class ProviderConfig(
     val keyAcquisitionUrl: String,
     val pricingInfo: String,
     val pricingInfoAr: String,
+    /**
+     * One sentence saying what this provider IS. Users know Gemini and ChatGPT; nobody knows
+     * Groq, Venice or DeepSeek, and a name alone is not enough to choose with.
+     */
+    val taglineEn: String = "",
+    val taglineAr: String = "",
     val instructionsEn: String,
     val instructionsAr: String
 )
@@ -21,6 +27,8 @@ object ProviderConfigs {
 
     val DEEPSEEK = ProviderConfig(
         id = "deepseek",
+        taglineEn = "Chinese lab known for strong, very cheap models.",
+        taglineAr = "مختبر صيني معروف بنماذج قوية ومنخفضة التكلفة.",
         displayName = "DeepSeek",
         nameAr = "ديب سيك",
         baseUrl = "https://api.deepseek.com/",
@@ -35,6 +43,8 @@ object ProviderConfigs {
 
     val OPENAI = ProviderConfig(
         id = "openai",
+        taglineEn = "The company behind ChatGPT.",
+        taglineAr = "الشركة التي تقف خلف ChatGPT.",
         displayName = "OpenAI",
         nameAr = "أوبن إيه آي",
         baseUrl = "https://api.openai.com/",
@@ -50,20 +60,24 @@ object ProviderConfigs {
 
     val GROQ = ProviderConfig(
         id = "groq",
+        taglineEn = "Ultra-fast chips serving open models, with a generous free tier.",
+        taglineAr = "شرائح فائقة السرعة تشغّل نماذج مفتوحة، مع باقة مجانية سخية.",
         displayName = "Groq",
         nameAr = "جروك",
         baseUrl = "https://api.groq.com/openai/",
         models = listOf("openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.6-27b"),
         defaultModel = "openai/gpt-oss-120b",
         keyAcquisitionUrl = "https://console.groq.com/keys",
-        pricingInfo = "Free tier available",
-        pricingInfoAr = "باقة مجانية متوفرة",
+        pricingInfo = "Free tier available (rate-limited, covers all models)",
+        pricingInfoAr = "باقة مجانية متوفرة (محدودة المعدل وتشمل كل النماذج)",
         instructionsEn = "Go to console.groq.com and sign up or log in.\nNavigate to \"API Keys\".\nCreate a new API key and copy it.\nGroq offers a generous free tier — great for trying out fast inference.",
         instructionsAr = "اذهب إلى console.groq.com وسجّل الدخول أو أنشئ حساباً.\nانتقل إلى \"API Keys\".\nأنشئ مفتاح API جديداً وانسخه.\nجروك يوفر باقة مجانية سخية — ممتازة لتجربة الاستدلال السريع."
     )
 
     val TOGETHER = ProviderConfig(
         id = "together",
+        taglineEn = "Hosts hundreds of open-source models, including image models.",
+        taglineAr = "يستضيف مئات النماذج مفتوحة المصدر، ومنها نماذج صور.",
         displayName = "Together AI",
         nameAr = "توجيذر",
         baseUrl = "https://api.together.xyz/",
@@ -86,20 +100,24 @@ object ProviderConfigs {
 
     val MISTRAL = ProviderConfig(
         id = "mistral",
+        taglineEn = "French AI lab under EU privacy rules.",
+        taglineAr = "مختبر ذكاء اصطناعي فرنسي يخضع لقواعد الخصوصية الأوروبية.",
         displayName = "Mistral AI",
         nameAr = "ميسترال",
         baseUrl = "https://api.mistral.ai/",
         models = listOf("mistral-large-latest", "mistral-medium-latest", "mistral-small-latest", "codestral-latest"),
         defaultModel = "mistral-small-latest",
         keyAcquisitionUrl = "https://console.mistral.ai/api-keys/",
-        pricingInfo = "Pay-as-you-go, EU-based",
-        pricingInfoAr = "الدفع حسب الاستخدام، مقرّه أوروبا",
+        pricingInfo = "Free tier available (rate-limited, covers all models); paid plans beyond",
+        pricingInfoAr = "باقة مجانية متوفرة (محدودة المعدل وتشمل كل النماذج)؛ وخطط مدفوعة لما بعدها",
         instructionsEn = "Go to console.mistral.ai and sign up or log in.\nNavigate to \"API Keys\".\nCreate a new API key and copy it.\nMistral is EU-based and GDPR-friendly.",
         instructionsAr = "اذهب إلى console.mistral.ai وسجّل الدخول أو أنشئ حساباً.\nانتقل إلى \"API Keys\".\nأنشئ مفتاح API جديداً وانسخه.\nميسترال شركة أوروبية ومتوافقة مع GDPR."
     )
 
     val VENICE = ProviderConfig(
         id = "venice",
+        taglineEn = "Privacy-first: keeps nothing you send, offers uncensored models.",
+        taglineAr = "خصوصية أولاً: لا يحتفظ بما ترسله، ويوفّر نماذج غير مقيّدة.",
         displayName = "Venice AI",
         nameAr = "فينيس",
         baseUrl = "https://api.venice.ai/api/",
@@ -114,6 +132,8 @@ object ProviderConfigs {
 
     val OPENROUTER = ProviderConfig(
         id = "openrouter",
+        taglineEn = "One key that reaches models from many companies.",
+        taglineAr = "مفتاح واحد يصل إلى نماذج من شركات كثيرة.",
         displayName = "OpenRouter",
         nameAr = "أوبن راوتر",
         baseUrl = "https://openrouter.ai/api/",
@@ -129,6 +149,8 @@ object ProviderConfigs {
 
     val ANTHROPIC = ProviderConfig(
         id = "anthropic",
+        taglineEn = "The company behind Claude.",
+        taglineAr = "الشركة التي تقف خلف كلود.",
         displayName = "Anthropic Claude",
         nameAr = "أنثروبيك كلود",
         baseUrl = "https://api.anthropic.com/",
@@ -144,6 +166,8 @@ object ProviderConfigs {
 
     val GEMINI = ProviderConfig(
         id = "gemini",
+        taglineEn = "Google\u2019s AI, with a free tier to start.",
+        taglineAr = "ذكاء جوجل الاصطناعي، مع باقة مجانية للبدء.",
         displayName = "Google Gemini",
         nameAr = "جوجل جيميناي",
         baseUrl = "https://generativelanguage.googleapis.com/",
@@ -159,6 +183,8 @@ object ProviderConfigs {
 
     val OLLAMA = ProviderConfig(
         id = "ollama",
+        taglineEn = "Runs models on your own computer. Nothing leaves your home.",
+        taglineAr = "يشغّل النماذج على جهازك الخاص. لا يغادر شيء منزلك.",
         displayName = "Ollama (Local)",
         nameAr = "أولاما (محلي)",
         baseUrl = "http://localhost:11434/",
@@ -176,6 +202,8 @@ object ProviderConfigs {
 
     val LM_STUDIO = ProviderConfig(
         id = "lmstudio",
+        taglineEn = "Runs models on your own computer through an easy desktop app.",
+        taglineAr = "يشغّل النماذج على جهازك عبر تطبيق سطح مكتب سهل.",
         displayName = "LM Studio (Local)",
         nameAr = "إل إم ستوديو (محلي)",
         baseUrl = "http://localhost:1234/",
@@ -193,6 +221,8 @@ object ProviderConfigs {
 
     val CUSTOM = ProviderConfig(
         id = "custom",
+        taglineEn = "Any server that speaks the OpenAI API.",
+        taglineAr = "أي خادم يتحدث واجهة OpenAI.",
         displayName = "Custom (OpenAI-compatible)",
         nameAr = "مخصص (متوافق مع OpenAI)",
         baseUrl = "",

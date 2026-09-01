@@ -38,6 +38,14 @@ sealed class FetchModelsState {
  * a dead model by chatting with it: choosing one costs a single tiny request, and a model the
  * provider refuses is dropped from the list on the spot.
  */
+/** The "what can my key do?" report: a handful of plain-language lines, or why it failed. */
+sealed class KeyReportState {
+    data object Idle : KeyReportState()
+    data object Running : KeyReportState()
+    data class Ready(val lines: List<String>) : KeyReportState()
+    data class Error(val message: String) : KeyReportState()
+}
+
 sealed class ModelCheckState {
     data object Idle : ModelCheckState()
     data object Checking : ModelCheckState()
@@ -62,7 +70,8 @@ data class SettingsUiState(
     val modelCheckState: ModelCheckState = ModelCheckState.Idle,
     /** Models this provider can DRAW with, and the one chosen. Separate from the chat model. */
     val imageModels: List<String> = emptyList(),
-    val selectedImageModel: String = ""
+    val selectedImageModel: String = "",
+    val keyReportState: KeyReportState = KeyReportState.Idle
 )
 
 class SettingsViewModel(
@@ -118,7 +127,8 @@ class SettingsViewModel(
             modelCheckState = ModelCheckState.Idle,
             fetchModelsState = FetchModelsState.Idle,
             imageModels = preferenceRepository.getImageModels(provider.id),
-            selectedImageModel = keyRepository.getSelectedImageModel(provider.id) ?: ""
+            selectedImageModel = keyRepository.getSelectedImageModel(provider.id) ?: "",
+            keyReportState = KeyReportState.Idle
         )
         keyRepository.setDefaultProviderId(provider.id)
         maybeAutoRefreshModels()
@@ -257,9 +267,11 @@ class SettingsViewModel(
                 onFailure = { throwable ->
                     val code = (throwable as? HttpException)?.code()
                     if (code == 403 || code == 404 || code == 400) {
-                        // The provider refused this model: remember it, drop it from the picker
-                        // and put the working model back.
-                        preferenceRepository.addUnavailableModel(providerId, model)
+                        // The provider refused this model: remember it (with the provider's own
+                        // reason), drop it from the picker and put the working model back.
+                        preferenceRepository.addUnavailableModel(
+                            providerId, model, ErrorMapper.mapToUserMessage(context, throwable)
+                        )
                         val restored = previousModel.takeIf { it.isNotBlank() && it != model }
                             ?: state.selectedProvider.defaultModel
                         keyRepository.saveSelectedModel(providerId, restored)
@@ -310,7 +322,9 @@ class SettingsViewModel(
                     // that cannot work. Cleared by a manual refresh.
                     val code = (throwable as? HttpException)?.code()
                     if ((code == 403 || code == 404) && model.isNotBlank()) {
-                        preferenceRepository.addUnavailableModel(providerId, model)
+                        preferenceRepository.addUnavailableModel(
+                            providerId, model, ErrorMapper.mapToUserMessage(context, throwable)
+                        )
                         rejected = preferenceRepository.getUnavailableModels(providerId)
                     }
                     TestConnectionState.Error(
@@ -322,6 +336,71 @@ class SettingsViewModel(
             _uiState.value = _uiState.value.copy(
                 testState = newTestState,
                 unavailableModels = rejected ?: _uiState.value.unavailableModels
+            )
+        }
+    }
+
+    /**
+     * "What can my key do?" - Test Connection grown up. Answers in whole sentences: whether
+     * chat works (and the provider's own reason when it does not), how many models the key
+     * sees, which are free where that is actually published, whether this provider draws, and
+     * the live balance where one exists. Built only on requests just made, never on guesses.
+     */
+    fun runKeyReport() {
+        val current = _uiState.value
+        // Test what is in the field, exactly like testConnection.
+        keyRepository.saveApiKey(current.selectedProvider.id, current.apiKey)
+        if (current.selectedProvider.supportsCustomBaseUrl) {
+            keyRepository.saveBaseUrl(current.selectedProvider.id, current.baseUrl)
+        }
+        _uiState.value = current.copy(
+            keyReportState = KeyReportState.Running,
+            configuredProviderIds = keyRepository.getAllStoredProviderIds().toSet()
+        )
+        viewModelScope.launch {
+            val context = getApplication<Application>()
+            val provider = _uiState.value.selectedProvider
+            val providerName = if (localeRepository.getLocale() == "ar") provider.nameAr else provider.displayName
+            val result = chatRepository.keyCapabilityReport(provider.id)
+            _uiState.value = _uiState.value.copy(
+                keyReportState = result.fold(
+                    onSuccess = { report ->
+                        val lines = buildList {
+                            if (report.chatFailure == null) {
+                                add(context.getString(app.maskan.chat.R.string.key_report_chat_ok_fmt, report.modelCount))
+                            } else {
+                                add(context.getString(
+                                    app.maskan.chat.R.string.key_report_chat_fail_fmt,
+                                    ErrorMapper.mapToUserMessage(context, report.chatFailure)
+                                ))
+                            }
+                            if (report.isLocal) {
+                                add(context.getString(app.maskan.chat.R.string.key_report_local_free))
+                            } else if (report.freeCount > 0) {
+                                add(context.getString(app.maskan.chat.R.string.key_report_free_fmt, report.freeCount))
+                            } else {
+                                add(context.getString(app.maskan.chat.R.string.key_report_free_unknown))
+                            }
+                            if (!report.imageSupported) {
+                                add(context.getString(app.maskan.chat.R.string.key_report_images_unsupported_fmt, providerName))
+                            } else if (report.imageModelCount > 0) {
+                                add(context.getString(app.maskan.chat.R.string.key_report_images_ok_fmt, report.imageModelCount))
+                            } else {
+                                add(context.getString(app.maskan.chat.R.string.image_models_none_found))
+                            }
+                            report.balance?.let {
+                                add(context.getString(app.maskan.chat.R.string.key_report_balance_fmt, it))
+                            }
+                        }
+                        KeyReportState.Ready(lines)
+                    },
+                    onFailure = {
+                        KeyReportState.Error(context.getString(
+                            app.maskan.chat.R.string.key_report_error_fmt,
+                            ErrorMapper.mapToUserMessage(context, it)
+                        ))
+                    }
+                )
             )
         }
     }
@@ -368,6 +447,10 @@ class SettingsViewModel(
         keyRepository.saveSelectedImageModel(providerId, "")
         _uiState.value = _uiState.value.copy(selectedImageModel = "")
     }
+
+    /** Rejected models and the provider's words for why - drives the greyed picker section. */
+    fun unavailableReasons(): Map<String, String> =
+        preferenceRepository.getUnavailableReasons(_uiState.value.selectedProvider.id)
 
     fun freeModels(): Set<String> =
         preferenceRepository.getFreeModels(_uiState.value.selectedProvider.id)

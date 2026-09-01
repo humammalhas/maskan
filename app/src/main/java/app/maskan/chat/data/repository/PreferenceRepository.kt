@@ -133,12 +133,34 @@ class PreferenceRepository(context: Context) {
         plainPreferences.getStringSet(KEY_UNAVAILABLE_MODELS_PREFIX + providerId, emptySet())
             ?.toSet() ?: emptySet()
 
-    fun addUnavailableModel(providerId: String, model: String) {
+    fun addUnavailableModel(providerId: String, model: String, reason: String? = null) {
         val updated = getUnavailableModels(providerId) + model
-        plainPreferences.edit()
+        val editor = plainPreferences.edit()
             .putStringSet(KEY_UNAVAILABLE_MODELS_PREFIX + providerId, updated)
-            .apply()
+        if (!reason.isNullOrBlank()) {
+            val reasons = getUnavailableReasons(providerId) + (model to reason)
+            editor.putString(
+                KEY_UNAVAILABLE_REASONS_PREFIX + providerId,
+                reasons.entries.joinToString("\n") { "${it.key}\t${it.value.replace("\n", " ").replace("\t", " ")}" }
+            )
+        }
+        editor.apply()
     }
+
+    /**
+     * The provider's own words for WHY each rejected model was refused ("requires a dedicated
+     * endpoint", "accept the terms"). Shown under the greyed rows in the picker: "not available"
+     * alone sends the user guessing, the reason tells them whether anything can be done.
+     */
+    fun getUnavailableReasons(providerId: String): Map<String, String> =
+        plainPreferences.getString(KEY_UNAVAILABLE_REASONS_PREFIX + providerId, null)
+            ?.split("\n")
+            ?.mapNotNull { line ->
+                val tab = line.indexOf('\t')
+                if (tab <= 0) null else line.substring(0, tab) to line.substring(tab + 1)
+            }
+            ?.toMap()
+            ?: emptyMap()
 
     // Models that have actually answered with this key. Lets the picker say "tested" instead of
     // leaving the user to find out by chatting.
@@ -160,6 +182,7 @@ class PreferenceRepository(context: Context) {
     fun clearUnavailableModels(providerId: String) {
         plainPreferences.edit()
             .remove(KEY_UNAVAILABLE_MODELS_PREFIX + providerId)
+            .remove(KEY_UNAVAILABLE_REASONS_PREFIX + providerId)
             .apply()
     }
 
@@ -180,6 +203,7 @@ class PreferenceRepository(context: Context) {
         private const val KEY_MODELS_PREFIX = "models_"
         private const val KEY_MODELS_FETCHED_AT_PREFIX = "models_fetched_at_"
         private const val KEY_UNAVAILABLE_MODELS_PREFIX = "models_unavailable_"
+        private const val KEY_UNAVAILABLE_REASONS_PREFIX = "models_unavailable_why_"
         private const val KEY_VISION_MODELS_PREFIX = "models_vision_"
         private const val KEY_VERIFIED_MODELS_PREFIX = "models_verified_"
         private const val KEY_FREE_MODELS_PREFIX = "models_free_"

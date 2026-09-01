@@ -11,7 +11,13 @@ import app.maskan.chat.data.remote.OpenAiCompatibleService
 import app.maskan.chat.data.remote.parseSSEStream
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.buildJsonObject
 
 class OpenAiCompatibleProvider(
     override val id: String,
@@ -30,10 +36,11 @@ class OpenAiCompatibleProvider(
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
-    // OpenRouter is the exception among the OpenAI-compatible providers: it has no
-    // /v1/images/generations at all and returns images inside a normal chat completion instead.
-    // Until that path exists, it must not advertise image generation.
-    override val supportsImageGeneration: Boolean get() = id != "openrouter"
+    // A whitelist, not a default: DeepSeek, Groq and Mistral host no image models at all, and
+    // advertising a capability they lack put an empty, puzzling "Image model" list in Settings.
+    // The UI now tells the user plainly that those providers cannot draw. OpenRouter draws
+    // through its own path - see generateImage.
+    override val supportsImageGeneration: Boolean get() = id in IMAGE_CAPABLE_IDS
 
     private fun buildMessages(
         messages: List<Message>,
@@ -141,6 +148,9 @@ class OpenAiCompatibleProvider(
         baseUrl: String?
     ): GeneratedImage {
         val auth = if (apiKey.isNotBlank()) "Bearer $apiKey" else ""
+        // OpenRouter draws through the chat endpoint, not /v1/images/generations - it has no
+        // such endpoint at all.
+        if (id == "openrouter") return generateImageViaChat(auth, model, prompt)
         // Together calls it "base64"; OpenAI's gpt-image-* models reject the parameter outright
         // and always answer with base64, so for OpenAI the field is omitted entirely.
         val format = when (id) {
@@ -148,12 +158,91 @@ class OpenAiCompatibleProvider(
             "openai" -> null
             else -> "b64_json"
         }
-        val response = apiService.createImage(
-            authorization = auth,
-            request = ImageGenerationRequest(model = model, prompt = prompt, responseFormat = format)
-        )
+        val response = try {
+            apiService.createImage(
+                authorization = auth,
+                request = ImageGenerationRequest(model = model, prompt = prompt, responseFormat = format)
+            )
+        } catch (e: retrofit2.HttpException) {
+            // Together's image endpoint answers 403 with an EMPTY body when the account's
+            // "Allow passthrough models" toggle is off - the single switch that gates all of its
+            // image models. With no provider wording to surface, name the cause ourselves so
+            // ErrorMapper can attach the how-to-fix hint instead of a dead "not on your plan".
+            if (id == "together" && e.code() == 403) {
+                val body = runCatching { e.response()?.errorBody()?.string() }.getOrNull()
+                    ?.takeIf { it.isNotBlank() }
+                throw app.maskan.chat.data.remote.ApiHttpException(
+                    code = 403,
+                    providerMessage = body?.let { app.maskan.chat.data.remote.extractProviderMessage(it) }
+                        ?: "image models on Together require third-party data sharing (the \"Allow passthrough models\" account setting)"
+                )
+            }
+            throw e
+        }
         return ImageResponseParser.parse(response) { url ->
             apiService.downloadUrl(url).bytes()
+        }
+    }
+
+    /**
+     * OpenRouter's third request path: ask the ordinary chat endpoint to answer with a picture.
+     *
+     * modalities: ["image","text"] tells the router the reply may be an image; the picture comes
+     * back as a data: URL in choices[0].message.images, which is exactly one of the shapes
+     * ImageResponseParser already reads - so the message object is handed to it as-is.
+     */
+    private suspend fun generateImageViaChat(
+        auth: String,
+        model: String,
+        prompt: String
+    ): GeneratedImage {
+        val request = buildJsonObject {
+            put("model", JsonPrimitive(model))
+            put("messages", buildJsonArray {
+                add(buildJsonObject {
+                    put("role", JsonPrimitive("user"))
+                    put("content", JsonPrimitive(prompt))
+                })
+            })
+            put("modalities", buildJsonArray {
+                add(JsonPrimitive("image"))
+                add(JsonPrimitive("text"))
+            })
+        }
+        val response = apiService.createChatCompletionRaw(auth, request)
+        val message = ((response as? JsonObject)?.get("choices") as? JsonArray)
+            ?.firstOrNull()?.let { it as? JsonObject }
+            ?.get("message") as? JsonObject
+            ?: throw Exception("Provider returned no image")
+        return ImageResponseParser.parse(message) { url ->
+            apiService.downloadUrl(url).bytes()
+        }
+    }
+
+    /**
+     * Live balance for the two providers that publish one. "\u0631\u0635\u064a\u062f\u0643: $3.20" answers the
+     * free-or-paid question better than any badge - a badge is a guess, a balance is a fact.
+     */
+    override suspend fun fetchBalance(apiKey: String): String? {
+        if (apiKey.isBlank()) return null
+        val auth = "Bearer $apiKey"
+        return when (id) {
+            "openrouter" -> {
+                val data = (apiService.openRouterCredits(auth) as? JsonObject)
+                    ?.get("data") as? JsonObject ?: return null
+                val total = (data["total_credits"] as? JsonPrimitive)?.contentOrNull?.toDoubleOrNull()
+                    ?: return null
+                val used = (data["total_usage"] as? JsonPrimitive)?.contentOrNull?.toDoubleOrNull() ?: 0.0
+                "$" + String.format(java.util.Locale.US, "%.2f", total - used)
+            }
+            "deepseek" -> {
+                val info = ((apiService.deepSeekBalance(auth) as? JsonObject)
+                    ?.get("balance_infos") as? JsonArray)?.firstOrNull() as? JsonObject ?: return null
+                val amount = (info["total_balance"] as? JsonPrimitive)?.contentOrNull ?: return null
+                val currency = (info["currency"] as? JsonPrimitive)?.contentOrNull ?: ""
+                "$amount $currency".trim()
+            }
+            else -> null
         }
     }
 
@@ -198,5 +287,9 @@ class OpenAiCompatibleProvider(
             val chunk = json.decodeFromString<ChatCompletionChunk>(data)
             chunk.choices.firstOrNull()?.delta?.content
         }
+    }
+    companion object {
+        /** The OpenAI-compatible providers that can actually draw, verified on device. */
+        private val IMAGE_CAPABLE_IDS = setOf("openai", "together", "venice", "openrouter")
     }
 }

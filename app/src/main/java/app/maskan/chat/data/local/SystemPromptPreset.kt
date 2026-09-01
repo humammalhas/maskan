@@ -1,10 +1,7 @@
 package app.maskan.chat.data.local
 
-import android.app.LocaleManager
-import android.os.Build
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 
 enum class PresetCategory {
     WRITING,
@@ -45,13 +42,12 @@ fun SystemPromptPreset.localizedDescription(): String = when {
 
 @Composable
 private fun getAppLanguage(): String? {
-    val context = LocalContext.current
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        val localeManager = context.getSystemService(LocaleManager::class.java)
-        localeManager?.applicationLocales?.get(0)?.language
-    } else {
-        AppCompatDelegate.getApplicationLocales().get(0)?.language
-    }
+    // Read the language from the resource CONFIGURATION - the same source stringResource
+    // resolves from - not from LocaleManager. LocaleManager.applicationLocales only reflects a
+    // locale the app set for itself; a per-app language chosen in the SYSTEM settings (or over
+    // adb) never appears there, which left every preset name in English while the rest of the
+    // screen spoke Arabic.
+    return LocalConfiguration.current.locales.get(0)?.language
 }
 
 @Composable

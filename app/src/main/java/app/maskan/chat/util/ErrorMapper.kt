@@ -120,7 +120,18 @@ object ErrorMapper {
                 // "accept the terms", "not enabled for your account" are all 403s that read
                 // identically otherwise, and the user cannot act without knowing which.
                 val base = context.getString(R.string.error_model_access_denied)
-                if (detail.isNullOrBlank()) base else "$base ($detail)"
+                val message = if (detail.isNullOrBlank()) base else "$base ($detail)"
+                // Together's own wording for this 403 is "third-party data sharing", but the
+                // switch that fixes it is labelled "Allow passthrough models" in its dashboard -
+                // different words for the same thing, which is exactly why nobody finds it.
+                // Say where the switch is instead of dead-ending.
+                if (detail?.contains("third-party data sharing", ignoreCase = true) == true ||
+                    detail?.contains("passthrough", ignoreCase = true) == true
+                ) {
+                    message + "\n" + context.getString(R.string.error_together_passthrough_hint)
+                } else {
+                    message
+                }
             }
             404 -> detail ?: context.getString(R.string.error_model_not_found)
             413 -> context.getString(R.string.error_request_too_large)

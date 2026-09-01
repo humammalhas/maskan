@@ -268,6 +268,17 @@ class ChatViewModel(
      * Whether this provider can draw, and we know of models to draw with. Gates the composer
      * entry point, so the option never appears where tapping it could only fail.
      */
+    /**
+     * Whether this provider can draw AT ALL - decides if the draw button exists in the composer.
+     * canGenerateImages() then decides whether it is armed. Split because hiding the button
+     * until an image model was chosen made the whole feature invisible on a fresh install -
+     * indistinguishable from a broken APK.
+     */
+    fun imageFeatureAvailable(): Boolean {
+        val provider = ProviderRegistry.getProvider(_uiState.value.selectedProviderId)
+        return provider?.supportsImageGeneration == true
+    }
+
     fun canGenerateImages(): Boolean {
         val providerId = _uiState.value.selectedProviderId
         val provider = ProviderRegistry.getProvider(providerId) ?: return false

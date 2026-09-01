@@ -57,6 +57,7 @@ import app.maskan.chat.data.model.Dialect
 import app.maskan.chat.ui.viewmodel.SettingsViewModel
 import app.maskan.chat.ui.viewmodel.TestConnectionState
 import app.maskan.chat.ui.viewmodel.FetchModelsState
+import app.maskan.chat.ui.viewmodel.KeyReportState
 import app.maskan.chat.ui.viewmodel.ModelCheckState
 import androidx.compose.foundation.layout.Arrangement
 import app.maskan.chat.ui.theme.maskanColors
@@ -220,6 +221,16 @@ fun SettingsScreen(
             }
 
             Spacer(modifier = Modifier.height(4.dp))
+            // What this provider IS, then what it costs. Users know Gemini and ChatGPT; nobody
+            // knows Groq or Venice, and choosing needs more than a name.
+            val tagline = providerConfig?.let { if (isArabic) it.taglineAr else it.taglineEn }.orEmpty()
+            if (tagline.isNotBlank()) {
+                Text(
+                    text = tagline,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             Text(
                 text = if (isArabic)
                     providerConfig?.pricingInfoAr ?: selectedProvider.pricingInfo
@@ -388,6 +399,66 @@ fun SettingsScreen(
                 else -> {}
             }
 
+            // "What can my key do?" - the report that answers in sentences what the badges
+            // cannot: what works with THIS key, what is free where that is knowable, whether
+            // this provider draws, and the live balance where one exists.
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = { viewModel.runKeyReport() },
+                enabled = (apiKey.isNotBlank() || selectedProvider.supportsCustomBaseUrl) &&
+                    state.keyReportState !is KeyReportState.Running
+            ) {
+                if (state.keyReportState is KeyReportState.Running) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                Text(stringResource(R.string.key_report_button))
+            }
+            when (val report = state.keyReportState) {
+                is KeyReportState.Running -> {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.key_report_running),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                is KeyReportState.Ready -> {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.maskanColors.warmPeach.copy(alpha = 0.35f)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            report.lines.forEach { line ->
+                                Text(
+                                    text = line,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
+                    }
+                }
+                is KeyReportState.Error -> {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = report.message,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+                else -> {}
+            }
+
             // Server URL section (local/custom providers only)
             if (selectedProvider.supportsCustomBaseUrl) {
                 Spacer(modifier = Modifier.height(24.dp))
@@ -492,7 +563,11 @@ fun SettingsScreen(
                         onModelChanged(model)
                         showModelPicker = false
                     },
-                    onDismiss = { showModelPicker = false }
+                    onDismiss = { showModelPicker = false },
+                    unavailableModels = state.unavailableModels
+                        .filter { it.trim() != selectedModel.trim() }
+                        .sorted(),
+                    unavailableReasons = viewModel.unavailableReasons()
                 )
             }
 
@@ -653,9 +728,11 @@ fun SettingsScreen(
             }
 
             // Image model: a SEPARATE preference from the chat model, so asking for a picture
-            // mid-conversation never costs the user the chat model they chose. Shown only when
-            // this provider can draw AND its catalogue actually listed image models.
-            if (selectedProvider.supportsImageGeneration && state.imageModels.isNotEmpty()) {
+            // mid-conversation never costs the user the chat model they chose. The section shows
+            // for EVERY provider: capable ones get the picker (even with an empty catalogue -
+            // the typed custom id still works), incapable ones say plainly that they cannot
+            // draw, because an absent section reads as a broken app, not an absent feature.
+            if (selectedProvider.supportsImageGeneration) {
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(
                     text = stringResource(R.string.image_model_section),
@@ -691,6 +768,14 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                if (state.imageModels.isEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.image_models_none_found),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
 
                 if (showImageModelPicker) {
                     // Same picker, no verification: checking an image model would spend a real,
@@ -712,6 +797,23 @@ fun SettingsScreen(
                         allowNone = true
                     )
                 }
+            } else {
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(
+                    text = stringResource(R.string.image_model_section),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                // "Anthropic cannot generate images." is an answer; an empty dropdown is a
+                // puzzle. Named, so the sentence survives being screenshotted out of context.
+                Text(
+                    text = stringResource(
+                        R.string.image_gen_unsupported_fmt,
+                        if (isArabic) selectedProvider.nameAr else selectedProvider.displayName
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))

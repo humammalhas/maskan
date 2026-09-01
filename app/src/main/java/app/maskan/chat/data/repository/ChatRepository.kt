@@ -547,6 +547,65 @@ class ChatRepository(
         }
     }
 
+    /**
+     * Everything the app can honestly say about what this key can do, gathered in one pass:
+     * what the catalogue offers, whether a real chat call answers, and the account balance
+     * where the provider exposes one. This exists because "is it free?" is mostly unknowable
+     * (a 200 looks identical on free and paid tiers) - but "does it work with YOUR key, and
+     * why not" is always knowable, and that is the question users actually have.
+     */
+    data class KeyCapabilityReport(
+        val chatFailure: Throwable?,   // null = chat answered
+        val modelCount: Int,
+        val freeCount: Int,
+        val imageSupported: Boolean,
+        val imageModelCount: Int,
+        val balance: String?,          // formatted, only OpenRouter/DeepSeek publish one
+        val isLocal: Boolean
+    )
+
+    suspend fun keyCapabilityReport(providerId: String): Result<KeyCapabilityReport> {
+        return try {
+            val provider = ProviderRegistry.getProvider(providerId)
+                ?: return Result.failure(Exception("Unknown provider: $providerId"))
+            val apiKey = keyRepository.getApiKey(providerId) ?: ""
+            val isLocal = provider.supportsCustomBaseUrl
+            if (apiKey.isBlank() && !isLocal) {
+                return Result.failure(Exception("API key not set. Please add your API key in Settings."))
+            }
+            val baseUrl = keyRepository.getBaseUrl(providerId)
+
+            // What the provider says it serves. Failure here is not fatal - the report can
+            // still say whether chat answers.
+            val fetched = runCatching { provider.fetchModels(apiKey, baseUrl) }
+                .getOrDefault(app.maskan.chat.data.remote.providers.FetchedModels())
+            val modelCount = if (fetched.ids.isNotEmpty()) fetched.ids.size
+                else provider.availableModels.size
+
+            // Does a real chat call answer? The provider's own refusal wording rides along.
+            val model = keyRepository.getSelectedModel(providerId) ?: provider.defaultModel
+            val chat = runCatching {
+                provider.sendMessage(apiKey, model, listOf(Message(role = "user", text = "Hi")), baseUrl)
+            }
+
+            val balance = runCatching { provider.fetchBalance(apiKey) }.getOrNull()
+
+            Result.success(
+                KeyCapabilityReport(
+                    chatFailure = chat.exceptionOrNull(),
+                    modelCount = modelCount,
+                    freeCount = fetched.freeIds.size,
+                    imageSupported = provider.supportsImageGeneration,
+                    imageModelCount = fetched.imageIds.size,
+                    balance = balance,
+                    isLocal = isLocal
+                )
+            )
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun testConnection(providerId: String): Result<String> {
         return try {
             val provider = ProviderRegistry.getProvider(providerId)

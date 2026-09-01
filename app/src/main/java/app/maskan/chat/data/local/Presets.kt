@@ -182,7 +182,7 @@ For each text shared, provide: vocabulary glosses, grammatical parsing where use
             descriptionAr = "أخطاء، أسلوب، أداء",
             descriptionTh = "บัก สไตล์ ประสิทธิภาพ",
             systemPromptEn = "You are a senior code reviewer. When the user shares code, analyze it for: 1) Bugs and logic errors. 2) Performance issues. 3) Security vulnerabilities. 4) Readability and naming. Give specific, actionable feedback with corrected code snippets. Be direct but constructive.",
-            systemPromptAr = "أنت مراجع أكواد خبير. عند مشاركة كود، حلّله من حيث: 1) الأخطاء المنطقية. 2) مشاكل الأداء. 3) الثغرات الأمنية. 4) سهولة القراءة. قدّم ملاحظات محدّدة مع كود مصحّح.",
+            systemPromptAr = "أنت مراجع أكواد خبير. عند مشاركة كود، حلّله من حيث: 1) الأخطاء المنطقية. 2) مشكلات الأداء. 3) الثغرات الأمنية. 4) سهولة القراءة. قدّم ملاحظات محدّدة مع كود مصحّح.",
             category = PresetCategory.CODE,
             icon = "💻"
         ),
@@ -244,10 +244,10 @@ For each text shared, provide: vocabulary glosses, grammatical parsing where use
             nameAr = "إجابات مختصرة",
             nameTh = "คำตอบสั้น",
             descriptionEn = "No filler, just answers",
-            descriptionAr = "بدون مقدّمات، إجابات مباشرة",
+            descriptionAr = "دون مقدّمات، إجابات مباشرة",
             descriptionTh = "ตอบสั้นไม่มีน้ำ",
             systemPromptEn = "You are an expert who values brevity. Rules: 1) Answer in the fewest words possible. 2) No filler phrases, no preambles, no \"Great question!\". 3) Use bullet points over paragraphs. 4) If the user asks a yes/no question, start with yes or no. 5) Code answers: code only, no explanation unless asked.",
-            systemPromptAr = "أنت خبير يقدّر الإيجاز. القواعد: 1) أجب بأقل عدد من الكلمات. 2) بدون مقدّمات أو حشو. 3) استخدم النقاط بدل الفقرات. 4) إن كان السؤال نعم/لا، ابدأ بنعم أو لا. 5) إجابات الكود: كود فقط.",
+            systemPromptAr = "أنت خبير يقدّر الإيجاز. القواعد: 1) أجب بأقل عدد من الكلمات. 2) دون مقدّمات أو حشو. 3) استخدم النقاط بدل الفقرات. 4) إن كان السؤال نعم/لا، ابدأ بنعم أو لا. 5) إجابات الكود: كود فقط.",
             category = PresetCategory.CONVERSATION,
             icon = "⚡"
         ),

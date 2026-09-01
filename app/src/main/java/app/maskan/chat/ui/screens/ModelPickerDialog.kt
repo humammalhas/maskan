@@ -58,12 +58,30 @@ fun ModelPickerDialog(
     /** Offer an explicit None row that clears the selection. */
     allowNone: Boolean = false,
     /** Models that DRAW. Tagged so the list says what a model is for, not just that it exists. */
-    imageModels: Set<String> = emptySet()
+    imageModels: Set<String> = emptySet(),
+    /**
+     * Models this key has been refused (403/404), listed greyed at the BOTTOM with the
+     * provider's own reason. Hidden entirely they left the user wondering where a model went;
+     * at the top they would bury the ones that work.
+     */
+    unavailableModels: List<String> = emptyList(),
+    unavailableReasons: Map<String, String> = emptyMap()
 ) {
     var query by remember { mutableStateOf("") }
-    val filtered = remember(query, models) {
-        if (query.isBlank()) models
-        else models.filter { it.contains(query.trim(), ignoreCase = true) }
+    // Proven-working models first, then free ones - the two questions users actually bring to
+    // this list - then everything else alphabetically.
+    val ordered = remember(models, verifiedModels, freeModels) {
+        models.sortedWith(
+            compareBy({ it !in verifiedModels }, { it !in freeModels }, { it.lowercase() })
+        )
+    }
+    val filtered = remember(query, ordered) {
+        if (query.isBlank()) ordered
+        else ordered.filter { it.contains(query.trim(), ignoreCase = true) }
+    }
+    val filteredUnavailable = remember(query, unavailableModels) {
+        if (query.isBlank()) unavailableModels
+        else unavailableModels.filter { it.contains(query.trim(), ignoreCase = true) }
     }
 
     Dialog(
@@ -114,7 +132,7 @@ fun ModelPickerDialog(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                    if (filtered.isEmpty()) {
+                    if (filtered.isEmpty() && filteredUnavailable.isEmpty()) {
                         item {
                             Text(
                                 text = stringResource(R.string.model_search_no_match),
@@ -194,6 +212,36 @@ fun ModelPickerDialog(
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(18.dp)
                                 )
+                            }
+                        }
+                    }
+                    if (filteredUnavailable.isNotEmpty()) {
+                        item {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "\uD83D\uDD12  " + stringResource(R.string.model_group_unavailable),
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        items(filteredUnavailable) { model ->
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 10.dp)
+                            ) {
+                                Text(
+                                    text = model,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                )
+                                unavailableReasons[model]?.let { reason ->
+                                    Text(
+                                        text = reason,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                    )
+                                }
                             }
                         }
                     }

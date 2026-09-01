@@ -290,4 +290,21 @@
     <string name="improve_prompt">✨ اجعل الذكاء الاصطناعي يكتب الوصف</string>
     <string name="image_model_clear">إزالة نموذج الصور (محادثة فقط)</string>
     <string name="image_model_none_option">بلا — محادثة فقط</string>
+
+    <!-- v2.4.7: key capability report, image coverage, picker grouping -->
+    <string name="error_together_passthrough_hint">توجيذر يحجب نماذج الصور حتى تفعّل الخيارين \"Store prompts and model responses\" و\"Allow passthrough models\" معًا من إعدادات حسابك في api.together.ai ثم تحفظ. بعدها أعد المحاولة.</string>
+    <string name="image_gen_unsupported_fmt">%1$s لا يولّد الصور.</string>
+    <string name="image_models_none_found">لا توجد نماذج صور محمَّلة بعد — اضغط \"تحديث النماذج\" أو اكتب معرّف نموذج في القائمة.</string>
+    <string name="key_report_button">ماذا يستطيع مفتاحي؟</string>
+    <string name="key_report_running">جارٍ فحص مفتاحك…</string>
+    <string name="key_report_chat_ok_fmt">المحادثة: تعمل — %1$d من النماذج للاختيار</string>
+    <string name="key_report_chat_fail_fmt">المحادثة: لا تعمل — %1$s</string>
+    <string name="key_report_free_fmt">النماذج المجانية: %1$d تعمل حتى دون رصيد</string>
+    <string name="key_report_free_unknown">لا يعلن هذا المزوّد أي النماذج مجانية</string>
+    <string name="key_report_images_ok_fmt">الصور: يتوفر %1$d من نماذج الصور — توليد الصور مدفوع لدى معظم المزوّدين</string>
+    <string name="key_report_images_unsupported_fmt">الصور: لا يوفّر %1$s توليد الصور</string>
+    <string name="key_report_balance_fmt">رصيدك: %1$s</string>
+    <string name="key_report_local_free">خادمك الخاص — كل ما عليه مجاني.</string>
+    <string name="model_group_unavailable">غير متاح لمفتاحك</string>
+    <string name="key_report_error_fmt">تعذّر فحص المفتاح — %1$s</string>
 </resources>

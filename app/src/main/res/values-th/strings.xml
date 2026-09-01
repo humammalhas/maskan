@@ -290,4 +290,21 @@
     <string name="improve_prompt">✨ ให้ AI ช่วยเขียนคำอธิบาย</string>
     <string name="image_model_clear">เอาโมเดลรูปภาพออก (แชทอย่างเดียว)</string>
     <string name="image_model_none_option">ไม่ใช้ — แชทอย่างเดียว</string>
+
+    <!-- v2.4.7: key capability report, image coverage, picker grouping -->
+    <string name="error_together_passthrough_hint">Together AI จะปิดกั้นโมเดลรูปภาพจนกว่าคุณจะเปิดทั้ง \"Store prompts and model responses\" และ \"Allow passthrough models\" ในการตั้งค่าบัญชีที่ api.together.ai แล้วกดบันทึก จากนั้นลองอีกครั้ง</string>
+    <string name="image_gen_unsupported_fmt">%1$s สร้างรูปภาพไม่ได้</string>
+    <string name="image_models_none_found">ยังไม่มีโมเดลรูปภาพ — แตะ \"รีเฟรชโมเดล\" หรือพิมพ์ชื่อโมเดลในรายการ</string>
+    <string name="key_report_button">คีย์ของฉันทำอะไรได้บ้าง</string>
+    <string name="key_report_running">กำลังตรวจสอบคีย์ของคุณ…</string>
+    <string name="key_report_chat_ok_fmt">แชท: ใช้ได้ — มีโมเดลให้เลือก %1$d โมเดล</string>
+    <string name="key_report_chat_fail_fmt">แชท: ใช้ไม่ได้ — %1$s</string>
+    <string name="key_report_free_fmt">โมเดลฟรี: %1$d โมเดลใช้ได้แม้ไม่มียอดเงิน</string>
+    <string name="key_report_free_unknown">ผู้ให้บริการนี้ไม่ระบุว่าโมเดลใดฟรี</string>
+    <string name="key_report_images_ok_fmt">รูปภาพ: มีโมเดลรูปภาพ %1$d โมเดล — การสร้างรูปมีค่าใช้จ่ายในผู้ให้บริการส่วนใหญ่</string>
+    <string name="key_report_images_unsupported_fmt">รูปภาพ: %1$s ไม่มีบริการสร้างรูป</string>
+    <string name="key_report_balance_fmt">ยอดคงเหลือ: %1$s</string>
+    <string name="key_report_local_free">เซิร์ฟเวอร์ของคุณเอง — ทุกอย่างฟรี</string>
+    <string name="model_group_unavailable">ใช้กับคีย์ของคุณไม่ได้</string>
+    <string name="key_report_error_fmt">ตรวจสอบคีย์ไม่ได้ — %1$s</string>
 </resources>

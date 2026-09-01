@@ -82,6 +82,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -305,10 +306,15 @@ fun ChatScreen(
                     Column {
                         Text(stringResource(R.string.chat_screen_title), maxLines = 1)
                         uiState.currentPreset?.let { preset ->
+                            // One line, ellipsised: the 64dp bar has no room for a wrap, and the
+                            // Arabic clipping this row used to show is fixed at the cause in
+                            // Theme.kt (includeFontPadding), not here.
                             Text(
                                 text = preset.localizedName(),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
@@ -439,6 +445,7 @@ fun ChatScreen(
                         isLoading = uiState.isLoading || uiState.isStreaming,
                         onAttach = { showAttachTypeDialog = true },
                         hasAttachment = uiState.pendingImageBytes != null || uiState.pendingFileText != null,
+                        imageFeatureAvailable = viewModel.imageFeatureAvailable(),
                         canGenerateImages = viewModel.canGenerateImages(),
                         imageMode = uiState.imageMode,
                         onToggleImageMode = { viewModel.setImageMode(!uiState.imageMode) },
@@ -915,6 +922,7 @@ private fun MessageInputBar(
     isLoading: Boolean,
     onAttach: () -> Unit = {},
     hasAttachment: Boolean = false,
+    imageFeatureAvailable: Boolean = false,
     canGenerateImages: Boolean = false,
     imageMode: Boolean = false,
     onToggleImageMode: () -> Unit = {},
@@ -968,23 +976,38 @@ private fun MessageInputBar(
                 )
             }
             // Drawing gets its own button rather than hiding one level down in the attach sheet:
-            // it is a different kind of action from attaching a file, and it only appears once
-            // an image model is actually chosen, so it can never lead to a dead end.
-            if (canGenerateImages) {
+            // it is a different kind of action from attaching a file. It exists whenever the
+            // provider CAN draw - hiding it until an image model was chosen made the feature
+            // invisible on a fresh install. Without a chosen model it is dimmed, and tapping it
+            // says where to choose one instead of dead-ending.
+            if (imageFeatureAvailable) {
                 val drawLabel = stringResource(R.string.attach_generate_image)
+                val chooseModelFirst = stringResource(R.string.error_no_image_model)
                 IconButton(
-                    onClick = onToggleImageMode,
+                    onClick = {
+                        if (canGenerateImages) {
+                            onToggleImageMode()
+                        } else {
+                            Toast.makeText(context, chooseModelFirst, Toast.LENGTH_LONG).show()
+                        }
+                    },
                     modifier = Modifier
                         .size(44.dp)
                         .semantics { contentDescription = drawLabel }
                 ) {
-                    // Dimmed when idle, full strength when armed, so the state is visible
-                    // without a second control. An emoji rather than a vector because the base
-                    // Material icon set has no palette and the preset menu already reads this way.
+                    // Dimmed when idle, full strength when armed, faint when no model is chosen
+                    // yet. An emoji rather than a vector because the base Material icon set has
+                    // no palette and the preset menu already reads this way.
                     Text(
                         text = "\uD83C\uDFA8",
                         fontSize = 20.sp,
-                        modifier = Modifier.alpha(if (imageMode) 1f else 0.45f)
+                        modifier = Modifier.alpha(
+                            when {
+                                imageMode -> 1f
+                                canGenerateImages -> 0.45f
+                                else -> 0.25f
+                            }
+                        )
                     )
                 }
             }

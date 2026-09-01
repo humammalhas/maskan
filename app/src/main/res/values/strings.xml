@@ -290,4 +290,21 @@
     <string name="improve_prompt">✨ Let the AI write the description</string>
     <string name="image_model_clear">Remove image model (chat only)</string>
     <string name="image_model_none_option">None — chat only</string>
+
+    <!-- v2.4.7: key capability report, image coverage, picker grouping -->
+    <string name="error_together_passthrough_hint">Together AI blocks image models until, in your account settings at api.together.ai, you set BOTH \"Store prompts and model responses\" and \"Allow passthrough models\" to Yes and save. Then try again.</string>
+    <string name="image_gen_unsupported_fmt">%1$s cannot generate images.</string>
+    <string name="image_models_none_found">No image models loaded yet — tap \"Refresh models\", or type a model ID in the list.</string>
+    <string name="key_report_button">What can my key do?</string>
+    <string name="key_report_running">Checking your key…</string>
+    <string name="key_report_chat_ok_fmt">Chat: works — %1$d models to choose from</string>
+    <string name="key_report_chat_fail_fmt">Chat: not working — %1$s</string>
+    <string name="key_report_free_fmt">Free models: %1$d work even with no balance</string>
+    <string name="key_report_free_unknown">This provider does not say which models are free</string>
+    <string name="key_report_images_ok_fmt">Images: %1$d image models offered — image generation is paid on most providers</string>
+    <string name="key_report_images_unsupported_fmt">Images: %1$s does not offer image generation</string>
+    <string name="key_report_balance_fmt">Balance: %1$s</string>
+    <string name="key_report_local_free">Your own server — everything on it is free.</string>
+    <string name="model_group_unavailable">Not available for your key</string>
+    <string name="key_report_error_fmt">Could not check the key — %1$s</string>
 </resources>

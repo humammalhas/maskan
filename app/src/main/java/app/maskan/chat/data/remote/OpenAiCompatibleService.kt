@@ -35,6 +35,16 @@ interface OpenAiCompatibleService {
     @GET("api/tags")
     suspend fun listOllamaTags(): JsonElement
 
+    // Balance endpoints. Only two of the twelve providers expose one; both are read-only.
+    // OpenRouter: {"data":{"total_credits":..,"total_usage":..}} relative to its /api/ base.
+    @GET("v1/credits")
+    suspend fun openRouterCredits(@Header("Authorization") authorization: String): JsonElement
+
+    // DeepSeek: {"balance_infos":[{"currency":"USD","total_balance":"..."}]} - note the path has
+    // no v1 prefix on purpose; that is where DeepSeek serves it.
+    @GET("user/balance")
+    suspend fun deepSeekBalance(@Header("Authorization") authorization: String): JsonElement
+
     // Image generation. Returns raw JSON for the same reason listModels does: providers disagree
     // on where the bytes live ({"data":[{"b64_json":...}]}, {"data":[{"base64":...}]},
     // {"data":[{"url":...}]}, and some return the string directly).
@@ -49,6 +59,16 @@ interface OpenAiCompatibleService {
     // second one.
     @GET
     suspend fun downloadUrl(@Url url: String): ResponseBody
+
+    // OpenRouter's image path. It has NO /v1/images/generations: you ask at the ordinary chat
+    // endpoint with modalities: ["image","text"] and the picture comes back as a data: URL inside
+    // choices[0].message.images. Raw JSON both ways - the request needs a field no chat DTO has,
+    // and the response shape fits none of them either.
+    @POST("v1/chat/completions")
+    suspend fun createChatCompletionRaw(
+        @Header("Authorization") authorization: String,
+        @Body request: JsonElement
+    ): JsonElement
 
     @POST("v1/chat/completions")
     suspend fun createChatCompletion(
