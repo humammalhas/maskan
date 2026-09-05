@@ -145,7 +145,8 @@ class OpenAiCompatibleProvider(
         apiKey: String,
         model: String,
         prompt: String,
-        baseUrl: String?
+        baseUrl: String?,
+        size: String?
     ): GeneratedImage {
         val auth = if (apiKey.isNotBlank()) "Bearer $apiKey" else ""
         // OpenRouter draws through the chat endpoint, not /v1/images/generations - it has no

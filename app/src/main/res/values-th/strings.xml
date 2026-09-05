@@ -330,4 +330,16 @@
     <string name="video_model_label">โมเดลวิดีโอ</string>
     <string name="video_model_hint">ใช้สำหรับสร้างวิดีโอเท่านั้น การสร้างในเครื่องใช้เวลาสองสามนาที ระหว่างนั้นล็อกหน้าจอได้</string>
     <string name="video_models_none_found">ยังไม่มีโมเดลวิดีโอ — แตะ \"รีเฟรชโมเดล\" หรือพิมพ์ชื่อโมเดลในรายการ</string>
+    <string name="attach_edit_photo">แก้ไขรูปที่แนบ</string>
+    <string name="edit_mode_chip">ข้อความถัดไปจะแก้ไขรูปที่แนบ</string>
+    <string name="error_no_photo_to_edit">แนบรูปก่อน แล้วจึงเลือกแก้ไข</string>
+    <string name="video_size_tall_fast">9:16 เร็ว</string>
+    <string name="video_size_tall_sharp">9:16 คมชัด</string>
+    <string name="video_size_wide_fast">16:9 เร็ว</string>
+    <string name="video_size_wide_sharp">16:9 คมชัด</string>
+    <string name="video_length_seconds_fmt">%1$d วิ</string>
+    <string name="video_cost_minutes_fmt">~%1$d นาที</string>
+    <string name="image_size_square">1:1</string>
+    <string name="image_size_wide">16:9</string>
+    <string name="image_size_tall">9:16</string>
 </resources>

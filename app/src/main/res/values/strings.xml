@@ -330,4 +330,16 @@
     <string name="video_model_label">Video model</string>
     <string name="video_model_hint">Used only for generating videos. A local render takes a few minutes; the phone can be locked meanwhile.</string>
     <string name="video_models_none_found">No video models loaded yet — tap \"Refresh models\", or type a model ID in the list.</string>
+    <string name="attach_edit_photo">Edit the attached photo</string>
+    <string name="edit_mode_chip">The next message will edit the attached photo</string>
+    <string name="error_no_photo_to_edit">Attach a photo first, then choose Edit.</string>
+    <string name="video_size_tall_fast">9:16 fast</string>
+    <string name="video_size_tall_sharp">9:16 sharp</string>
+    <string name="video_size_wide_fast">16:9 fast</string>
+    <string name="video_size_wide_sharp">16:9 sharp</string>
+    <string name="video_length_seconds_fmt">%1$d s</string>
+    <string name="video_cost_minutes_fmt">~%1$d min</string>
+    <string name="image_size_square">1:1</string>
+    <string name="image_size_wide">16:9</string>
+    <string name="image_size_tall">9:16</string>
 </resources>

@@ -187,5 +187,14 @@ data class ImageGenerationRequest(
      */
     @SerialName("response_format")
     @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
-    val responseFormat: String? = null
+    val responseFormat: String? = null,
+    /**
+     * The photo to EDIT, as a data: URI, for edit models on a local server (flux2-edit). Same
+     * never-encode-null rule as above: cloud providers must not see an unknown field.
+     */
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
+    val image: String? = null,
+    /** "WxH". Only the local path sends it; cloud size vocabularies differ and are left alone. */
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
+    val size: String? = null
 )

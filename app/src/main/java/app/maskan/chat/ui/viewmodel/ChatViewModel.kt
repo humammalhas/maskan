@@ -22,6 +22,7 @@ import app.maskan.chat.util.ErrorMapper
 import app.maskan.chat.util.ImageStore
 import app.maskan.chat.util.ImageUtils
 import app.maskan.chat.video.VideoJobs
+import app.maskan.chat.video.VideoOptions
 import app.maskan.chat.video.VideoProgress
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -57,6 +58,12 @@ data class ChatUiState(
     val imageMode: Boolean = false,
     /** Armed to make a VIDEO of the next message (with the attached photo, if any). */
     val videoMode: Boolean = false,
+    /** Armed to EDIT the attached photo with the next message as the instruction. */
+    val editMode: Boolean = false,
+    /** The composer's shape/length choices - remembered across sessions, see VideoOptions. */
+    val videoSize: String = VideoOptions.DEFAULT_SIZE,
+    val videoSeconds: Int = VideoOptions.DEFAULT_SECONDS,
+    val imageSize: String = VideoOptions.DEFAULT_IMAGE_SIZE,
     /** True while the chat model is rewriting the user's description into an image prompt. */
     val improvingPrompt: Boolean = false,
     /**
@@ -109,7 +116,11 @@ class ChatViewModel(
         _uiState.value = ChatUiState(
             selectedProviderId = _uiState.value.selectedProviderId,
             selectedModel = _uiState.value.selectedModel,
-            isLoading = true
+            isLoading = true,
+            videoSize = preferenceRepository.getVideoSize() ?: VideoOptions.DEFAULT_SIZE,
+            videoSeconds = preferenceRepository.getVideoSeconds().takeIf { it in VideoOptions.LENGTHS }
+                ?: VideoOptions.DEFAULT_SECONDS,
+            imageSize = preferenceRepository.getImageSize() ?: VideoOptions.DEFAULT_IMAGE_SIZE
         )
 
         messageCollectionJob = viewModelScope.launch {
@@ -202,6 +213,7 @@ class ChatViewModel(
     }
 
     fun clearPendingImage() {
+        if (_uiState.value.editMode) _uiState.value = _uiState.value.copy(editMode = false)
         _uiState.value = _uiState.value.copy(
             pendingImageBytes = null,
             pendingImageMimeType = null
@@ -310,7 +322,40 @@ class ChatViewModel(
     }
 
     fun setImageMode(enabled: Boolean) {
-        _uiState.value = _uiState.value.copy(imageMode = enabled, videoMode = false)
+        _uiState.value = _uiState.value.copy(imageMode = enabled, videoMode = false, editMode = false)
+    }
+
+    /** The server's edit model, if it lists one - the whole gate for the edit entry. */
+    fun editModel(): String? {
+        val providerId = _uiState.value.selectedProviderId
+        val provider = ProviderRegistry.getProvider(providerId) ?: return null
+        if (!provider.supportsImageGeneration) return null
+        return app.maskan.chat.data.remote.providers.ModelFilter.editModelIn(
+            preferenceRepository.getImageModels(providerId)
+        )
+    }
+
+    fun setEditMode(enabled: Boolean) {
+        _uiState.value = _uiState.value.copy(editMode = enabled, imageMode = false, videoMode = false)
+    }
+
+    fun editImage(prompt: String) {
+        if (prompt.isBlank()) return
+        val bytes = _uiState.value.pendingImageBytes ?: return
+        val mime = _uiState.value.pendingImageMimeType ?: "image/jpeg"
+        val model = editModel() ?: return
+        clearPendingImage()
+        streamingJob = viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isLoading = true,
+                isStreaming = false,
+                error = null,
+                editMode = false
+            )
+            chatRepository.editImage(currentConversationId, prompt, model, bytes, mime)
+                .catch { error -> handleSendFailure(error) }
+                .collect { event -> handleStreamEvent(event) }
+        }
     }
 
     fun videoFeatureAvailable(): Boolean {
@@ -326,8 +371,27 @@ class ChatViewModel(
         return !keyRepository.getSelectedVideoModel(providerId).isNullOrBlank()
     }
 
+    fun setVideoSize(size: String) {
+        preferenceRepository.setVideoSize(size)
+        _uiState.value = _uiState.value.copy(videoSize = size)
+    }
+
+    fun setVideoSeconds(seconds: Int) {
+        preferenceRepository.setVideoSeconds(seconds)
+        _uiState.value = _uiState.value.copy(videoSeconds = seconds)
+    }
+
+    fun setImageSize(size: String) {
+        preferenceRepository.setImageSize(size)
+        _uiState.value = _uiState.value.copy(imageSize = size)
+    }
+
+    /** Shape chips only where the size is honoured as typed - the user's own server. */
+    fun imageSizeChoiceAvailable(): Boolean =
+        ProviderRegistry.getProvider(_uiState.value.selectedProviderId)?.supportsCustomBaseUrl == true
+
     fun setVideoMode(enabled: Boolean) {
-        _uiState.value = _uiState.value.copy(videoMode = enabled, imageMode = false)
+        _uiState.value = _uiState.value.copy(videoMode = enabled, imageMode = false, editMode = false)
     }
 
     fun generateVideo(prompt: String) {
@@ -342,7 +406,10 @@ class ChatViewModel(
                 error = null,
                 videoMode = false
             )
-            chatRepository.generateVideo(currentConversationId, prompt, imageData, imageMimeType)
+            chatRepository.generateVideo(
+                currentConversationId, prompt, imageData, imageMimeType,
+                _uiState.value.videoSize, _uiState.value.videoSeconds
+            )
                 .catch { error -> handleSendFailure(error) }
                 .collect { event -> handleStreamEvent(event) }
         }
@@ -390,7 +457,7 @@ class ChatViewModel(
                 error = null,
                 imageMode = false
             )
-            chatRepository.generateImage(currentConversationId, prompt)
+            chatRepository.generateImage(currentConversationId, prompt, _uiState.value.imageSize)
                 .catch { error -> handleSendFailure(error) }
                 .collect { event -> handleStreamEvent(event) }
         }
@@ -404,6 +471,10 @@ class ChatViewModel(
         }
         if (_uiState.value.videoMode) {
             generateVideo(content)
+            return
+        }
+        if (_uiState.value.editMode) {
+            editImage(content)
             return
         }
         if (content.isBlank() && _uiState.value.pendingImageBytes == null && _uiState.value.pendingFileText == null) return

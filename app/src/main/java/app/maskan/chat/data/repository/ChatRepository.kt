@@ -15,6 +15,7 @@ import app.maskan.chat.data.remote.VideoJobClient
 import app.maskan.chat.data.remote.providers.ProviderRegistry
 import app.maskan.chat.util.ImageStore
 import app.maskan.chat.video.VideoJobs
+import app.maskan.chat.video.VideoOptions
 import app.maskan.chat.video.VideoRenderWorker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -405,7 +406,7 @@ class ChatRepository(
      * The image model is a SEPARATE preference from the chat model - asking for a picture must
      * not cost the user the chat model they picked.
      */
-    fun generateImage(conversationId: Long, prompt: String): Flow<StreamEvent> = flow {
+    fun generateImage(conversationId: Long, prompt: String, size: String? = null): Flow<StreamEvent> = flow {
         val conversation = conversationDao.getConversationById(conversationId)
             ?: throw Exception("Conversation not found")
 
@@ -430,7 +431,8 @@ class ChatRepository(
         if (isLocalProvider && !baseUrl.isNullOrBlank()) {
             val capabilities = withContext(Dispatchers.IO) { videoJobClient.probe(baseUrl, apiKey) }
             if (capabilities != null && model in capabilities.videoModels) {
-                submitVideo(conversation, providerId, apiKey, baseUrl, model, prompt, null)
+                submitVideo(conversation, providerId, apiKey, baseUrl, model, prompt, null,
+                    VideoOptions.DEFAULT_SIZE, VideoOptions.DEFAULT_SECONDS)
                 return@flow
             }
         }
@@ -456,7 +458,9 @@ class ChatRepository(
                 apiKey = apiKey,
                 model = model,
                 prompt = prompt,
-                baseUrl = keyRepository.getBaseUrl(providerId)
+                baseUrl = keyRepository.getBaseUrl(providerId),
+                // Only the user's own server takes a free-form WxH; cloud vocabularies differ.
+                size = if (isLocalProvider) size else null
             )
             val fileName = imageStore.save(image.bytes)
             messageDao.updateImagePath(assistantMessageId, fileName, image.mimeType)
@@ -500,7 +504,9 @@ class ChatRepository(
         model: String,
         prompt: String,
         /** An attached photo makes it photo-to-video: the photo is what moves. */
-        image: Pair<ByteArray, String>?
+        image: Pair<ByteArray, String>?,
+        size: String,
+        seconds: Int
     ) {
         val conversationId = conversation.id
         val userEntity = MessageEntity(
@@ -521,8 +527,8 @@ class ChatRepository(
                 apiKey = apiKey,
                 model = model,
                 prompt = prompt,
-                seconds = DEFAULT_VIDEO_SECONDS,
-                size = DEFAULT_VIDEO_SIZE,
+                seconds = seconds,
+                size = size,
                 enhance = true,
                 imageDataUri = image?.let { (bytes, mime) ->
                     "data:$mime;base64," + Base64.encodeToString(bytes, Base64.NO_WRAP)
@@ -550,6 +556,76 @@ class ChatRepository(
     }
 
     /**
+     * Edit the attached photo. The user's bubble keeps the original (attached-image shape,
+     * imageBase64) so before and after sit one above the other; the result lands in the same
+     * stored-image bubble a drawing does. Blocking like a drawing - an edit is ~2-3 minutes on
+     * a home GPU, inside the image client's timeout.
+     */
+    fun editImage(
+        conversationId: Long,
+        prompt: String,
+        model: String,
+        imageBytes: ByteArray,
+        imageMimeType: String
+    ): Flow<StreamEvent> = flow {
+        val conversation = conversationDao.getConversationById(conversationId)
+            ?: throw Exception("Conversation not found")
+        val providerId = conversation.providerId
+        val provider = ProviderRegistry.getProvider(providerId)
+            ?: throw Exception("Unknown provider: $providerId")
+        val apiKey = keyRepository.getApiKey(providerId) ?: ""
+
+        val base64 = Base64.encodeToString(imageBytes, Base64.NO_WRAP)
+        val userEntity = MessageEntity(
+            conversationId = conversationId,
+            role = "user",
+            content = prompt,
+            imageBase64 = base64,
+            imageMimeType = imageMimeType
+        )
+        val userMessageId = messageDao.insertMessage(userEntity)
+        emit(StreamEvent.UserSaved(userEntity.copy(id = userMessageId)))
+
+        val assistantEntity = MessageEntity(
+            conversationId = conversationId,
+            role = "assistant",
+            content = ""
+        )
+        val assistantMessageId = messageDao.insertMessage(assistantEntity)
+        emit(StreamEvent.Started(assistantEntity.copy(id = assistantMessageId)))
+
+        try {
+            val image = provider.editImage(
+                apiKey = apiKey,
+                model = model,
+                prompt = prompt,
+                imageDataUri = "data:$imageMimeType;base64,$base64",
+                baseUrl = keyRepository.getBaseUrl(providerId)
+            )
+            val fileName = imageStore.save(image.bytes)
+            messageDao.updateImagePath(assistantMessageId, fileName, image.mimeType)
+            emit(
+                StreamEvent.ImageReady(
+                    assistantEntity.copy(
+                        id = assistantMessageId,
+                        imagePath = fileName,
+                        imageMimeType = image.mimeType
+                    )
+                )
+            )
+        } catch (e: Exception) {
+            messageDao.deleteMessageById(assistantMessageId)
+            throw e
+        }
+
+        if (conversation.title == "New Chat") {
+            val title = prompt.take(50).let { if (it.length == 50) "$it..." else it }
+            conversationDao.updateConversationTitle(conversationId, title)
+        }
+        emit(StreamEvent.Done)
+    }
+
+    /**
      * Make a video from the composer's dedicated video entry: the chosen VIDEO model, the
      * prompt as typed, and the attached photo if there is one. Same flow shape as
      * [generateImage]; the render itself happens in the worker.
@@ -558,7 +634,9 @@ class ChatRepository(
         conversationId: Long,
         prompt: String,
         imageBytes: ByteArray?,
-        imageMimeType: String?
+        imageMimeType: String?,
+        size: String,
+        seconds: Int
     ): Flow<StreamEvent> = flow {
         val conversation = conversationDao.getConversationById(conversationId)
             ?: throw Exception("Conversation not found")
@@ -576,7 +654,7 @@ class ChatRepository(
             ?: throw Exception("no video model selected")
 
         val image = if (imageBytes != null && imageMimeType != null) imageBytes to imageMimeType else null
-        submitVideo(conversation, providerId, apiKey, baseUrl, model, prompt, image)
+        submitVideo(conversation, providerId, apiKey, baseUrl, model, prompt, image, size, seconds)
     }
 
     /**
@@ -801,10 +879,6 @@ class ChatRepository(
     }
 
     companion object {
-        // Step 2 defaults - the fast size and the shortest clip, because the first thing anyone
-        // does is experiment. The size/length chips (plan section 3.8) replace these constants.
-        const val DEFAULT_VIDEO_SECONDS = 5
-        const val DEFAULT_VIDEO_SIZE = "576x1024"
         const val MAX_CONTEXT_MESSAGES = 50
     }
 }

@@ -57,6 +57,20 @@ interface AiProvider {
         apiKey: String,
         model: String,
         prompt: String,
+        baseUrl: String? = null,
+        /** "WxH" from the composer's shape chips; providers that do not take it ignore it. */
+        size: String? = null
+    ): GeneratedImage = throw Exception("image generation unsupported")
+
+    /**
+     * Change an existing photo according to [prompt]. Only servers with an edit-capable model
+     * (see ModelFilter.editModelIn) implement it; the default keeps the honest refusal.
+     */
+    suspend fun editImage(
+        apiKey: String,
+        model: String,
+        prompt: String,
+        imageDataUri: String,
         baseUrl: String? = null
     ): GeneratedImage = throw Exception("image generation unsupported")
 

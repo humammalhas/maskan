@@ -109,7 +109,8 @@ class GeminiProvider(
         apiKey: String,
         model: String,
         prompt: String,
-        baseUrl: String?
+        baseUrl: String?,
+        size: String?
     ): GeneratedImage {
         val request = buildJsonObject {
             put("contents", buildJsonArray {

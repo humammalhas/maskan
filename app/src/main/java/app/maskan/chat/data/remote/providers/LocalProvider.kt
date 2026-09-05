@@ -135,12 +135,18 @@ class LocalProvider(
         apiKey: String,
         model: String,
         prompt: String,
-        baseUrl: String?
+        baseUrl: String?,
+        size: String?
     ): GeneratedImage {
         val service = getImageService(resolveUrl(baseUrl))
         val response = service.createImage(
             authorization = if (apiKey.isNotBlank()) "Bearer $apiKey" else "",
-            request = ImageGenerationRequest(model = model, prompt = prompt, responseFormat = "b64_json")
+            request = ImageGenerationRequest(
+                model = model,
+                prompt = prompt,
+                responseFormat = "b64_json",
+                size = size
+            )
         )
         val image = ImageResponseParser.parse(response) { url ->
             service.downloadUrl(url).bytes()
@@ -148,6 +154,34 @@ class LocalProvider(
         // Local servers may hand back WebP (a ComfyUI proxy can even return an ANIMATED WebP -
         // a short video wearing an image's clothes) or JPEG while the parser assumes PNG. The
         // magic bytes know best, and the stored mime type is what Save-to-phone names the file by.
+        return GeneratedImage(image.bytes, sniffMime(image.bytes) ?: image.mimeType)
+    }
+
+    /**
+     * Edit: the same request as [generateImage] with the photo in the image field. The server
+     * expands the instruction itself ("change the shirt to blue" becomes a precise edit that
+     * says what to keep), so the words go through untouched, in any language.
+     */
+    override suspend fun editImage(
+        apiKey: String,
+        model: String,
+        prompt: String,
+        imageDataUri: String,
+        baseUrl: String?
+    ): GeneratedImage {
+        val service = getImageService(resolveUrl(baseUrl))
+        val response = service.createImage(
+            authorization = if (apiKey.isNotBlank()) "Bearer $apiKey" else "",
+            request = ImageGenerationRequest(
+                model = model,
+                prompt = prompt,
+                responseFormat = "b64_json",
+                image = imageDataUri
+            )
+        )
+        val image = ImageResponseParser.parse(response) { url ->
+            service.downloadUrl(url).bytes()
+        }
         return GeneratedImage(image.bytes, sniffMime(image.bytes) ?: image.mimeType)
     }
 

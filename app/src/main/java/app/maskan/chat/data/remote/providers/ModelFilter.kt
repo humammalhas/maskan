@@ -120,6 +120,14 @@ object ModelFilter {
      * alongside its text family. Matching is loose because the OpenAI-compatible id and the tag
      * name can differ by a ":latest" suffix.
      */
+    /**
+     * The model in an image list that EDITS a photo rather than drawing a new one, by name -
+     * "flux2-edit", "qwen-image-edit", "...-edit". Null when the server has none, which is
+     * what hides the edit entry in the composer.
+     */
+    fun editModelIn(imageModels: List<String>): String? =
+        imageModels.firstOrNull { it.lowercase().contains("edit") }
+
     /** Every model name in an Ollama /api/tags answer; empty for anything that is not one. */
     fun ollamaModelNames(element: JsonElement?): Set<String> {
         val models = (element as? JsonObject)?.get("models") as? JsonArray ?: return emptySet()

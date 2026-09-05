@@ -398,6 +398,12 @@ fun ChatScreen(
                             onRemove = { viewModel.clearPendingFile() }
                         )
                     }
+                    if (uiState.editMode) {
+                        FileAttachmentChip(
+                            fileName = stringResource(R.string.edit_mode_chip),
+                            onRemove = { viewModel.setEditMode(false) }
+                        )
+                    }
                     if (uiState.videoMode) {
                         FileAttachmentChip(
                             fileName = stringResource(
@@ -406,12 +412,21 @@ fun ChatScreen(
                             ),
                             onRemove = { viewModel.setVideoMode(false) }
                         )
+                        VideoOptionChips(
+                            size = uiState.videoSize,
+                            seconds = uiState.videoSeconds,
+                            onSize = { viewModel.setVideoSize(it) },
+                            onSeconds = { viewModel.setVideoSeconds(it) }
+                        )
                     }
                     if (uiState.imageMode) {
                         FileAttachmentChip(
                             fileName = stringResource(R.string.image_mode_chip),
                             onRemove = { viewModel.setImageMode(false) }
                         )
+                        if (viewModel.imageSizeChoiceAvailable()) {
+                            ImageSizeChips(size = uiState.imageSize, onSize = { viewModel.setImageSize(it) })
+                        }
                         // Image models are trained mostly on English and reward concrete visual
                         // detail. Rather than translate silently, the chat model drafts a prompt
                         // and the user edits it before anything is drawn.
@@ -468,6 +483,10 @@ fun ChatScreen(
                         canGenerateImages = viewModel.canGenerateImages(),
                         imageMode = uiState.imageMode,
                         onToggleImageMode = { viewModel.setImageMode(!uiState.imageMode) },
+                        editFeatureAvailable = viewModel.editModel() != null,
+                        canEditPhoto = uiState.pendingImageBytes != null,
+                        editMode = uiState.editMode,
+                        onToggleEditMode = { viewModel.setEditMode(!uiState.editMode) },
                         videoFeatureAvailable = viewModel.videoFeatureAvailable(),
                         canGenerateVideos = viewModel.canGenerateVideos(),
                         videoMode = uiState.videoMode,
@@ -996,6 +1015,10 @@ private fun MessageInputBar(
     canGenerateImages: Boolean = false,
     imageMode: Boolean = false,
     onToggleImageMode: () -> Unit = {},
+    editFeatureAvailable: Boolean = false,
+    canEditPhoto: Boolean = false,
+    editMode: Boolean = false,
+    onToggleEditMode: () -> Unit = {},
     videoFeatureAvailable: Boolean = false,
     canGenerateVideos: Boolean = false,
     videoMode: Boolean = false,
@@ -1047,6 +1070,7 @@ private fun MessageInputBar(
             var menuOpen by remember { mutableStateOf(false) }
             val chooseImageModelFirst = stringResource(R.string.error_no_image_model)
             val chooseVideoModelFirst = stringResource(R.string.error_no_video_model)
+            val attachPhotoFirst = stringResource(R.string.error_no_photo_to_edit)
             Box {
                 IconButton(
                     onClick = { menuOpen = true },
@@ -1055,7 +1079,7 @@ private fun MessageInputBar(
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = stringResource(R.string.attach_type_title),
-                        tint = if (imageMode || videoMode) MaterialTheme.colorScheme.tertiary
+                        tint = if (imageMode || videoMode || editMode) MaterialTheme.colorScheme.tertiary
                         else MaterialTheme.colorScheme.primary
                     )
                 }
@@ -1086,6 +1110,18 @@ private fun MessageInputBar(
                                 menuOpen = false
                                 if (canGenerateImages) onToggleImageMode()
                                 else Toast.makeText(context, chooseImageModelFirst, Toast.LENGTH_LONG).show()
+                            }
+                        )
+                    }
+                    if (editFeatureAvailable) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.attach_edit_photo)) },
+                            leadingIcon = { Text("\u270F\uFE0F", fontSize = 18.sp) },
+                            modifier = Modifier.alpha(if (canEditPhoto) 1f else 0.4f),
+                            onClick = {
+                                menuOpen = false
+                                if (canEditPhoto) onToggleEditMode()
+                                else Toast.makeText(context, attachPhotoFirst, Toast.LENGTH_LONG).show()
                             }
                         )
                     }

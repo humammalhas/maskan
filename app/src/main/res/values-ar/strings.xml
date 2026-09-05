@@ -330,4 +330,16 @@
     <string name="video_model_label">نموذج الفيديو</string>
     <string name="video_model_hint">يُستخدم لتوليد الفيديو فقط. يستغرق الإنشاء المحلي بضع دقائق، ويمكنك قفل الهاتف في أثناء ذلك.</string>
     <string name="video_models_none_found">لا توجد نماذج فيديو محمَّلة بعد — اضغط \"تحديث النماذج\" أو اكتب معرّف نموذج في القائمة.</string>
+    <string name="attach_edit_photo">تعديل الصورة المرفقة</string>
+    <string name="edit_mode_chip">الرسالة التالية ستعدّل الصورة المرفقة</string>
+    <string name="error_no_photo_to_edit">أرفق صورة أوّلًا، ثم اختر التعديل.</string>
+    <string name="video_size_tall_fast">9:16 سريع</string>
+    <string name="video_size_tall_sharp">9:16 حاد</string>
+    <string name="video_size_wide_fast">16:9 سريع</string>
+    <string name="video_size_wide_sharp">16:9 حاد</string>
+    <string name="video_length_seconds_fmt">%1$d ث</string>
+    <string name="video_cost_minutes_fmt">~%1$d د</string>
+    <string name="image_size_square">1:1</string>
+    <string name="image_size_wide">16:9</string>
+    <string name="image_size_tall">9:16</string>
 </resources>

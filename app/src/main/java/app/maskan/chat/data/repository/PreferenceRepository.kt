@@ -114,6 +114,15 @@ class PreferenceRepository(context: Context) {
             ?.filter { it.isNotBlank() }
             ?: emptyList()
 
+    // The composer's last shape and length choices. Plain, not encrypted: nothing secret in
+    // "9:16". Remembered so a person who always wants tall clips sets it once.
+    fun getVideoSize(): String? = plainPreferences.getString(KEY_VIDEO_SIZE, null)
+    fun setVideoSize(size: String) = plainPreferences.edit().putString(KEY_VIDEO_SIZE, size).apply()
+    fun getVideoSeconds(): Int = plainPreferences.getInt(KEY_VIDEO_SECONDS, 0)
+    fun setVideoSeconds(seconds: Int) = plainPreferences.edit().putInt(KEY_VIDEO_SECONDS, seconds).apply()
+    fun getImageSize(): String? = plainPreferences.getString(KEY_IMAGE_SIZE, null)
+    fun setImageSize(size: String) = plainPreferences.edit().putString(KEY_IMAGE_SIZE, size).apply()
+
     /** Models this provider can make VIDEO with. Same shape and caveats as [getImageModels]. */
     fun getVideoModels(providerId: String): List<String> =
         plainPreferences.getString(KEY_VIDEO_MODELS_PREFIX + providerId, null)
@@ -198,6 +207,9 @@ class PreferenceRepository(context: Context) {
     companion object {
         private const val KEY_IMAGE_MODELS_PREFIX = "image_models_"
         private const val KEY_VIDEO_MODELS_PREFIX = "video_models_"
+        private const val KEY_VIDEO_SIZE = "video_size"
+        private const val KEY_VIDEO_SECONDS = "video_seconds"
+        private const val KEY_IMAGE_SIZE = "image_size"
         private const val KEY_GENERATED_IMAGE_NOTE = "generated_image_note_seen"
 
         // Must differ from KeyRepository.PREFS_NAME to avoid sharing the same encrypted file.
