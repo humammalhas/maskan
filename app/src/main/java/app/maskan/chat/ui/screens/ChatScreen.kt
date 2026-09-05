@@ -91,6 +91,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.input.ImeAction
@@ -413,6 +414,8 @@ fun ChatScreen(
                             onRemove = { viewModel.setVideoMode(false) }
                         )
                         VideoOptionChips(
+                            providerId = uiState.selectedProviderId,
+                            model = viewModel.selectedVideoModel(),
                             size = uiState.videoSize,
                             seconds = uiState.videoSeconds,
                             onSize = { viewModel.setVideoSize(it) },
@@ -575,6 +578,12 @@ fun ChatScreen(
                         generatedImage = generatedImage,
                         videoProgress = uiState.videoProgress[message.id],
                         onCancelVideo = { viewModel.cancelVideo(message.id) },
+                        onRetryVideo = { viewModel.retryVideo(message.id) },
+                        pendingKind = if (isLastMessage && message.role == "assistant" &&
+                            message.content.isBlank() && message.imagePath == null &&
+                            message.imageMimeType == null && (uiState.isLoading || uiState.isStreaming)
+                        ) uiState.pendingKind else null,
+                        pendingSince = uiState.pendingSince,
                         onSaveImage = {
                             generatedImage?.let { bytes ->
                                 pendingSaveBytes = bytes
@@ -846,6 +855,10 @@ private fun MessageBubble(
     generatedImage: ByteArray? = null,
     videoProgress: VideoProgress? = null,
     onCancelVideo: () -> Unit = {},
+    onRetryVideo: () -> Unit = {},
+    /** "image" / "edit" while this bubble is the silent placeholder of a blocking request. */
+    pendingKind: String? = null,
+    pendingSince: Long = 0L,
     onSaveImage: () -> Unit = {},
     onShareImage: () -> Unit = {}
 ) {
@@ -892,8 +905,19 @@ private fun MessageBubble(
                                 VideoPlayerDialog(bytes = generatedImage, onDismiss = { showPlayer = false })
                             }
                         } else {
-                            VideoStatus(message = message, progress = videoProgress, onCancel = onCancelVideo)
+                            VideoStatus(
+                                message = message,
+                                progress = videoProgress,
+                                onCancel = onCancelVideo,
+                                onRetry = onRetryVideo
+                            )
                         }
+                    }
+                    if (pendingKind != null) {
+                        // A drawing or an edit is a single blocking request of a few minutes with
+                        // nothing to stream. Say what is happening and for how long, so the empty
+                        // bubble is never mistaken for a hang.
+                        PendingRequestLine(kind = pendingKind, since = pendingSince)
                     }
                     if (!isVideo) generatedImage?.let { bytes ->
                         // Animated WebP/GIF play through ImageDecoder; anything else, or an
@@ -939,7 +963,7 @@ private fun MessageBubble(
                             )
                         }
                     }
-                    if (message.content.isNotBlank()) {
+                    if (message.content.isNotBlank() && !isVideo) {
                         SelectionContainer {
                             if (!isUser && !isStreaming) {
                                 MarkdownText(text = message.content)
@@ -1346,10 +1370,35 @@ private fun shareImageBytes(context: Context, bytes: ByteArray, mimeType: String
  * neither a job nor a file is a failed render and its content carries the reason.
  */
 @Composable
+private fun PendingRequestLine(kind: String, since: Long) {
+    var elapsed by remember(since) { mutableStateOf(0L) }
+    LaunchedEffect(since) {
+        while (true) {
+            elapsed = (System.currentTimeMillis() - since) / 1000L
+            kotlinx.coroutines.delay(1000L)
+        }
+    }
+    Column {
+        Text(
+            text = stringResource(if (kind == "edit") R.string.editing_photo else R.string.drawing_image),
+            style = MaterialTheme.typography.bodyMedium
+        )
+        LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+        Text(
+            text = stringResource(R.string.elapsed_seconds_fmt, elapsed),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+    }
+}
+
+@Composable
 private fun VideoStatus(
     message: MessageEntity,
     progress: VideoProgress?,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
+    onRetry: () -> Unit = {}
 ) {
     when {
         // Only reached when the stored file could not be read back (the bubble draws the
@@ -1362,7 +1411,15 @@ private fun VideoStatus(
         }
         message.videoJobId != null -> {
             val state = progress ?: VideoProgress.WAITING
-            val rendering = state.phase == "rendering" || state.phase == "done"
+            var elapsed by remember(message.id) { mutableStateOf(0L) }
+            LaunchedEffect(message.id) {
+                while (true) {
+                    elapsed = (System.currentTimeMillis() - message.timestamp) / 1000L
+                    kotlinx.coroutines.delay(1000L)
+                }
+            }
+            // A cloud provider reports no percentage: the bar stays indeterminate there.
+            val rendering = (state.phase == "rendering" || state.phase == "done") && state.progress > 0
             Column(modifier = Modifier.widthIn(min = 220.dp)) {
                 Text(
                     text = stringResource(
@@ -1382,18 +1439,21 @@ private fun VideoStatus(
                 } else {
                     LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
                 }
-                state.etaSeconds?.let { eta ->
-                    Text(
-                        text = stringResource(R.string.video_eta_minutes, maxOf(1, (eta + 59) / 60)),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
+                Text(
+                    text = state.etaSeconds?.let { eta ->
+                        stringResource(R.string.video_eta_minutes, maxOf(1, (eta + 59) / 60))
+                    } ?: stringResource(R.string.elapsed_seconds_fmt, elapsed),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
                 state.promptExpanded?.let { expanded ->
+                    // The server writes the scene in English whatever the user typed. In an
+                    // Arabic UI the paragraph must still flow left-to-right, or its final full
+                    // stop jumps to the far side of the line.
                     Text(
                         text = expanded,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodySmall.copy(textDirection = TextDirection.Content),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 8.dp)
                     )
@@ -1407,12 +1467,27 @@ private fun VideoStatus(
             }
         }
         else -> {
-            Text(
-                text = stringResource(R.string.video_failed),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(bottom = if (message.content.isNotBlank()) 6.dp else 0.dp)
-            )
+            Column {
+                Text(
+                    text = stringResource(R.string.video_failed),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error
+                )
+                if (message.content.isNotBlank()) {
+                    Text(
+                        text = message.content,
+                        style = MaterialTheme.typography.bodySmall.copy(textDirection = TextDirection.Content),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+                TextButton(onClick = onRetry, modifier = Modifier.padding(top = 2.dp)) {
+                    Text(
+                        text = stringResource(R.string.video_retry),
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+            }
         }
     }
 }

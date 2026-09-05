@@ -120,6 +120,25 @@ object ModelFilter {
      * alongside its text family. Matching is loose because the OpenAI-compatible id and the tag
      * name can differ by a ":latest" suffix.
      */
+    /** Ids whose architecture.output_modalities contains "video" (OpenRouter's catalogue). */
+    fun videoIdsFrom(element: JsonElement): List<String> {
+        val array = when (element) {
+            is JsonArray -> element
+            is JsonObject -> (element["data"] ?: element["models"]) as? JsonArray
+            else -> null
+        } ?: return emptyList()
+        return array.mapNotNull { item ->
+            val obj = item as? JsonObject ?: return@mapNotNull null
+            val id = (obj["id"] as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null
+            val outputsVideo = (obj["architecture"] as? JsonObject)
+                ?.get("output_modalities")
+                ?.let { it as? JsonArray }
+                ?.any { (it as? JsonPrimitive)?.contentOrNull == "video" }
+                ?: false
+            if (outputsVideo) id else null
+        }.distinct().sorted()
+    }
+
     /**
      * The model in an image list that EDITS a photo rather than drawing a new one, by name -
      * "flux2-edit", "qwen-image-edit", "...-edit". Null when the server has none, which is

@@ -63,7 +63,7 @@ class VideoRenderWorker(
                 return Result.failure()
             }
         val apiKey = app.keyRepository.getApiKey(providerId) ?: ""
-        val client = app.videoJobClient
+        val client = app.videoBackendFor(providerId)
         val jobs = app.videoJobs
 
         var last = VideoProgress.WAITING

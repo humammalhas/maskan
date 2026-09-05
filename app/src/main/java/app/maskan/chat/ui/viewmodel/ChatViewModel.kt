@@ -60,6 +60,13 @@ data class ChatUiState(
     val videoMode: Boolean = false,
     /** Armed to EDIT the attached photo with the next message as the instruction. */
     val editMode: Boolean = false,
+    /**
+     * What the empty assistant placeholder is waiting for while a BLOCKING request runs -
+     * "image" or "edit" - and since when. A chat reply streams words into that bubble so it
+     * needs nothing; a drawing or an edit sits silent for minutes and needs a sentence.
+     */
+    val pendingKind: String? = null,
+    val pendingSince: Long = 0L,
     /** The composer's shape/length choices - remembered across sessions, see VideoOptions. */
     val videoSize: String = VideoOptions.DEFAULT_SIZE,
     val videoSeconds: Int = VideoOptions.DEFAULT_SECONDS,
@@ -117,9 +124,6 @@ class ChatViewModel(
             selectedProviderId = _uiState.value.selectedProviderId,
             selectedModel = _uiState.value.selectedModel,
             isLoading = true,
-            videoSize = preferenceRepository.getVideoSize() ?: VideoOptions.DEFAULT_SIZE,
-            videoSeconds = preferenceRepository.getVideoSeconds().takeIf { it in VideoOptions.LENGTHS }
-                ?: VideoOptions.DEFAULT_SECONDS,
             imageSize = preferenceRepository.getImageSize() ?: VideoOptions.DEFAULT_IMAGE_SIZE
         )
 
@@ -143,7 +147,10 @@ class ChatViewModel(
                 selectedProviderId = providerId,
                 selectedModel = model,
                 currentPreset = preset,
-                presetSelected = conversation?.systemPromptId != null
+                presetSelected = conversation?.systemPromptId != null,
+                // A remembered "576x1024" means nothing to Veo and "16:9" nothing to Wan.
+                videoSize = VideoOptions.validSize(providerId, preferenceRepository.getVideoSize()),
+                videoSeconds = VideoOptions.validSeconds(providerId, preferenceRepository.getVideoSeconds())
             )
 
             chatRepository.getMessagesForConversation(conversationId).collect { messages ->
@@ -350,7 +357,9 @@ class ChatViewModel(
                 isLoading = true,
                 isStreaming = false,
                 error = null,
-                editMode = false
+                editMode = false,
+                pendingKind = "edit",
+                pendingSince = System.currentTimeMillis()
             )
             chatRepository.editImage(currentConversationId, prompt, model, bytes, mime)
                 .catch { error -> handleSendFailure(error) }
@@ -393,6 +402,9 @@ class ChatViewModel(
     fun setVideoMode(enabled: Boolean) {
         _uiState.value = _uiState.value.copy(videoMode = enabled, imageMode = false, editMode = false)
     }
+
+    fun selectedVideoModel(): String =
+        keyRepository.getSelectedVideoModel(_uiState.value.selectedProviderId).orEmpty()
 
     fun generateVideo(prompt: String) {
         if (prompt.isBlank()) return
@@ -455,7 +467,9 @@ class ChatViewModel(
                 isLoading = true,
                 isStreaming = false,
                 error = null,
-                imageMode = false
+                imageMode = false,
+                pendingKind = "image",
+                pendingSince = System.currentTimeMillis()
             )
             chatRepository.generateImage(currentConversationId, prompt, _uiState.value.imageSize)
                 .catch { error -> handleSendFailure(error) }
@@ -526,7 +540,7 @@ class ChatViewModel(
             }
             is ChatRepository.StreamEvent.ImageReady -> {
                 upsertMessage(event.message)
-                _uiState.value = _uiState.value.copy(isLoading = false, isStreaming = false)
+                _uiState.value = _uiState.value.copy(isLoading = false, isStreaming = false, pendingKind = null)
             }
             is ChatRepository.StreamEvent.VideoQueued -> {
                 // The composer is free again the moment the server has the job; the bubble
@@ -548,7 +562,8 @@ class ChatViewModel(
             isLoading = false,
             isStreaming = false,
             error = ErrorMapper.mapToUserMessage(getApplication(), error),
-            recoverableModel = recoverable
+            recoverableModel = recoverable,
+            pendingKind = null
         )
     }
 
@@ -680,6 +695,35 @@ class ChatViewModel(
         val messages = chatRepository.getMessagesOnce(conversationId)
         if (currentConversationId == conversationId) {
             _uiState.value = _uiState.value.copy(messages = messages)
+        }
+    }
+
+    /**
+     * A failed render (server said failed, or forgot the job after a restart) is retried with
+     * the same words and the same photo: the user's own message sits right above the failed
+     * row, so nothing has to be retyped. The failed row goes; a fresh pending one replaces it.
+     */
+    fun retryVideo(messageId: Long) {
+        val messages = _uiState.value.messages
+        val index = messages.indexOfFirst { it.id == messageId }
+        if (index <= 0) return
+        val request = messages.subList(0, index).lastOrNull { it.role == "user" } ?: return
+        val photo = request.imageBase64?.let { b64 ->
+            try { android.util.Base64.decode(b64, android.util.Base64.NO_WRAP) } catch (_: Exception) { null }
+        }
+        viewModelScope.launch {
+            chatRepository.deleteMessage(messageId)
+            _uiState.value = _uiState.value.copy(
+                messages = _uiState.value.messages.filterNot { it.id == messageId },
+                isLoading = true,
+                error = null
+            )
+            chatRepository.generateVideo(
+                currentConversationId, request.content, photo, request.imageMimeType,
+                _uiState.value.videoSize, _uiState.value.videoSeconds, saveUserMessage = false
+            )
+                .catch { error -> handleSendFailure(error) }
+                .collect { event -> handleStreamEvent(event) }
         }
     }
 

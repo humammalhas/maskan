@@ -11,6 +11,7 @@ import app.maskan.chat.data.local.Presets
 import app.maskan.chat.data.model.Dialect
 import app.maskan.chat.data.remote.ChatCompletionResponse
 import app.maskan.chat.data.remote.Message
+import app.maskan.chat.data.remote.VideoBackend
 import app.maskan.chat.data.remote.VideoJobClient
 import app.maskan.chat.data.remote.providers.ProviderRegistry
 import app.maskan.chat.util.ImageStore
@@ -33,6 +34,7 @@ class ChatRepository(
     private val localeRepository: LocaleRepository,
     private val imageStore: ImageStore,
     private val videoJobClient: VideoJobClient,
+    private val videoBackendFor: (String) -> VideoBackend,
     private val videoJobs: VideoJobs
 ) {
 
@@ -506,30 +508,33 @@ class ChatRepository(
         /** An attached photo makes it photo-to-video: the photo is what moves. */
         image: Pair<ByteArray, String>?,
         size: String,
-        seconds: Int
+        seconds: Int,
+        saveUserMessage: Boolean = true
     ) {
         val conversationId = conversation.id
-        val userEntity = MessageEntity(
-            conversationId = conversationId,
-            role = "user",
-            content = prompt,
-            imageBase64 = image?.let { Base64.encodeToString(it.first, Base64.NO_WRAP) },
-            imageMimeType = image?.second
-        )
-        val userMessageId = messageDao.insertMessage(userEntity)
-        emit(StreamEvent.UserSaved(userEntity.copy(id = userMessageId)))
+        if (saveUserMessage) {
+            val userEntity = MessageEntity(
+                conversationId = conversationId,
+                role = "user",
+                content = prompt,
+                imageBase64 = image?.let { Base64.encodeToString(it.first, Base64.NO_WRAP) },
+                imageMimeType = image?.second
+            )
+            val userMessageId = messageDao.insertMessage(userEntity)
+            emit(StreamEvent.UserSaved(userEntity.copy(id = userMessageId)))
+        }
 
         // Submit BEFORE creating the assistant row: a refused request then fails like a failed
         // chat turn (the user's message stays, nothing else appears) with no placeholder to undo.
         val jobId = withContext(Dispatchers.IO) {
-            videoJobClient.submit(
+            videoBackendFor(providerId).submit(
                 baseUrl = baseUrl,
                 apiKey = apiKey,
                 model = model,
                 prompt = prompt,
                 seconds = seconds,
                 size = size,
-                enhance = true,
+                enhance = !VideoOptions.isCloud(providerId),
                 imageDataUri = image?.let { (bytes, mime) ->
                     "data:$mime;base64," + Base64.encodeToString(bytes, Base64.NO_WRAP)
                 }
@@ -636,7 +641,9 @@ class ChatRepository(
         imageBytes: ByteArray?,
         imageMimeType: String?,
         size: String,
-        seconds: Int
+        seconds: Int,
+        /** False on a retry: the user's message is already in the chat. */
+        saveUserMessage: Boolean = true
     ): Flow<StreamEvent> = flow {
         val conversation = conversationDao.getConversationById(conversationId)
             ?: throw Exception("Conversation not found")
@@ -654,7 +661,7 @@ class ChatRepository(
             ?: throw Exception("no video model selected")
 
         val image = if (imageBytes != null && imageMimeType != null) imageBytes to imageMimeType else null
-        submitVideo(conversation, providerId, apiKey, baseUrl, model, prompt, image, size, seconds)
+        submitVideo(conversation, providerId, apiKey, baseUrl, model, prompt, image, size, seconds, saveUserMessage)
     }
 
     /**
@@ -671,10 +678,14 @@ class ChatRepository(
             if (providerId != null && !baseUrl.isNullOrBlank()) {
                 val apiKey = keyRepository.getApiKey(providerId) ?: ""
                 withContext(Dispatchers.IO) {
-                    runCatching { videoJobClient.cancel(baseUrl, apiKey, jobId) }
+                    runCatching { videoBackendFor(providerId).cancel(baseUrl, apiKey, jobId) }
                 }
             }
         }
+        messageDao.deleteMessageById(messageId)
+    }
+
+    suspend fun deleteMessage(messageId: Long) {
         messageDao.deleteMessageById(messageId)
     }
 

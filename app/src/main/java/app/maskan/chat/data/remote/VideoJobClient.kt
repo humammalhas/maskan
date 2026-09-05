@@ -38,7 +38,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
  * [root] strips a trailing "/v1" because the service paths carry it: a user who enters
  * "http://host:8189/v1" as the Custom URL must not end up posting to /v1/v1/videos.
  */
-class VideoJobClient(baseClient: OkHttpClient, private val json: Json) {
+class VideoJobClient(baseClient: OkHttpClient, private val json: Json) : VideoBackend {
 
     /** The server no longer knows this job - it cannot be resumed, only re-requested. */
     class JobGone(id: String) : IOException("video job $id is unknown to the server")
@@ -129,7 +129,7 @@ class VideoJobClient(baseClient: OkHttpClient, private val json: Json) {
      * Create the job. Returns its id at once; nothing has been rendered yet.
      * [imageDataUri] is the conditioning photo for photo-to-video, as a data: URI.
      */
-    fun submit(
+    override fun submit(
         baseUrl: String,
         apiKey: String,
         model: String,
@@ -137,13 +137,17 @@ class VideoJobClient(baseClient: OkHttpClient, private val json: Json) {
         seconds: Int,
         size: String,
         enhance: Boolean,
-        imageDataUri: String? = null
+        imageDataUri: String?
     ): String {
         val body = buildJsonObject {
             put("model", model)
             put("prompt", prompt)
+            // Two spellings of the same two facts: the local proxy reads seconds/size (and
+            // tolerates the rest), OpenRouter reads duration and aspect_ratio or size. A size
+            // written as "16:9" is an aspect ratio; "1024x576" is a size.
             put("seconds", seconds)
-            put("size", size)
+            put("duration", seconds)
+            if (size.contains(':')) put("aspect_ratio", size) else put("size", size)
             put("enhance", enhance)
             if (imageDataUri != null) put("image", imageDataUri)
         }
@@ -163,7 +167,7 @@ class VideoJobClient(baseClient: OkHttpClient, private val json: Json) {
     }
 
     /** One poll. Throws IOException on the wire, [JobGone] on 404, [ServerError] otherwise. */
-    fun status(baseUrl: String, apiKey: String, jobId: String): JobStatus {
+    override fun status(baseUrl: String, apiKey: String, jobId: String): JobStatus {
         val request = Request.Builder()
             .url("${root(baseUrl)}/v1/videos/$jobId")
             .get()
@@ -180,7 +184,7 @@ class VideoJobClient(baseClient: OkHttpClient, private val json: Json) {
     }
 
     /** The finished MP4. 409 means "not finished yet" and surfaces as [ServerError]. */
-    fun download(baseUrl: String, apiKey: String, jobId: String): ByteArray {
+    override fun download(baseUrl: String, apiKey: String, jobId: String): ByteArray {
         val request = Request.Builder()
             .url("${root(baseUrl)}/v1/videos/$jobId/content")
             .get()
@@ -196,7 +200,7 @@ class VideoJobClient(baseClient: OkHttpClient, private val json: Json) {
     }
 
     /** Best effort: a cancel that fails on the wire is not worth failing anything else over. */
-    fun cancel(baseUrl: String, apiKey: String, jobId: String) {
+    override fun cancel(baseUrl: String, apiKey: String, jobId: String) {
         val request = Request.Builder()
             .url("${root(baseUrl)}/v1/videos/$jobId")
             .delete()

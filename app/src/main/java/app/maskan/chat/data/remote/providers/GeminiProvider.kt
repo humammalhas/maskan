@@ -29,6 +29,9 @@ class GeminiProvider(
     override val supportsCustomBaseUrl: Boolean = false
     override val supportsVision: Boolean = config.supportsVision
     override val supportsImageGeneration: Boolean = true
+
+    /** Veo, through the same key - see VeoVideoClient. Billed per second of video. */
+    override val supportsVideoGeneration: Boolean = true
     override val isLocal: Boolean = config.isLocal
     override val availableModels: List<String> = config.models
     override val defaultModel: String = config.defaultModel
@@ -86,6 +89,13 @@ class GeminiProvider(
      */
     override suspend fun fetchModels(apiKey: String, baseUrl: String?): FetchedModels {
         val response = apiService.listModels(apiKey = apiKey)
+        // Veo models do not advertise generateContent (they are predictLongRunning), so they
+        // are picked out of the UNFILTERED catalogue by name. Only ids this key can see are
+        // listed - a key without Veo access simply gets no video picker entries.
+        val videoIds = response.models
+            .map { it.name.removePrefix("models/") }
+            .filter { it.lowercase().contains("veo") }
+            .sorted()
         val ids = response.models
             .filter { it.supportedGenerationMethods.contains("generateContent") }
             .map { it.name.removePrefix("models/") }
@@ -95,7 +105,7 @@ class GeminiProvider(
         // conversation. Pick them back out of the UNFILTERED ids for the image bucket.
         val imageIds = ModelFilter.imageIdsFromNames(ids)
         // The generateContent models in the Gemini lineup are all multimodal on input.
-        return FetchedModels(ids = chatIds, visionIds = chatIds.toSet(), imageIds = imageIds)
+        return FetchedModels(ids = chatIds, visionIds = chatIds.toSet(), imageIds = imageIds, videoIds = videoIds)
     }
 
     /**

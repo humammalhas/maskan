@@ -15,36 +15,49 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.maskan.chat.R
 import app.maskan.chat.video.VideoOptions
+import java.util.Locale
 
 /**
  * The size and length choices for a video, each carrying its cost. A user who picks 15 s at
  * the sharp size without being told it is half an hour will think the app hung, so every chip
- * says how long THIS combination takes - the size chips re-cost when the length changes and
- * the length chips re-cost when the size changes.
+ * says what THIS combination costs - minutes on the user's own server, dollars on a cloud
+ * provider - and the size chips re-cost when the length changes and vice versa.
  *
  * Two short rows rather than one long one; each scrolls sideways if the language runs long.
  */
 @Composable
 internal fun VideoOptionChips(
+    providerId: String,
+    model: String,
     size: String,
     seconds: Int,
     onSize: (String) -> Unit,
     onSeconds: (Int) -> Unit
 ) {
+    val cloud = VideoOptions.isCloud(providerId)
+
+    @Composable
+    fun cost(forSize: String, forSeconds: Int): String =
+        if (cloud) {
+            VideoOptions.dollarsFor(providerId, model, forSeconds)?.let { dollars ->
+                " · " + stringResource(R.string.video_cost_usd_fmt, String.format(Locale.US, "%.2f", dollars))
+            } ?: ""
+        } else {
+            " · " + stringResource(R.string.video_cost_minutes_fmt, VideoOptions.minutesFor(forSize, forSeconds))
+        }
+
     Column(modifier = Modifier.padding(horizontal = 12.dp)) {
         Row(
             modifier = Modifier.horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            VideoOptions.SIZES.forEach { option ->
-                val minutes = VideoOptions.minutesFor(option.id, seconds)
+            VideoOptions.sizesFor(providerId).forEach { option ->
                 FilterChip(
                     selected = option.id == size,
                     onClick = { onSize(option.id) },
                     label = {
                         Text(
-                            text = stringResource(option.labelRes) + " · " +
-                                stringResource(R.string.video_cost_minutes_fmt, minutes),
+                            text = stringResource(option.labelRes) + cost(option.id, seconds),
                             style = MaterialTheme.typography.labelMedium
                         )
                     }
@@ -55,15 +68,13 @@ internal fun VideoOptionChips(
             modifier = Modifier.horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            VideoOptions.LENGTHS.forEach { length ->
-                val minutes = VideoOptions.minutesFor(size, length)
+            VideoOptions.lengthsFor(providerId).forEach { length ->
                 FilterChip(
                     selected = length == seconds,
                     onClick = { onSeconds(length) },
                     label = {
                         Text(
-                            text = stringResource(R.string.video_length_seconds_fmt, length) + " · " +
-                                stringResource(R.string.video_cost_minutes_fmt, minutes),
+                            text = stringResource(R.string.video_length_seconds_fmt, length) + cost(size, length),
                             style = MaterialTheme.typography.labelMedium
                         )
                     }

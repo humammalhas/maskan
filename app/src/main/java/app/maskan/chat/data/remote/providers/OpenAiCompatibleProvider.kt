@@ -42,6 +42,12 @@ class OpenAiCompatibleProvider(
     // through its own path - see generateImage.
     override val supportsImageGeneration: Boolean get() = id in IMAGE_CAPABLE_IDS
 
+    /**
+     * OpenRouter serves video jobs in (nearly) the same shape as the local proxy - POST
+     * /api/v1/videos, poll, /content - so it rides the same client. Billed per second.
+     */
+    override val supportsVideoGeneration: Boolean get() = id == "openrouter"
+
     private fun buildMessages(
         messages: List<Message>,
         imageData: ByteArray?,
@@ -129,7 +135,8 @@ class OpenAiCompatibleProvider(
             freeIds = ModelFilter.freeIdsFrom(raw).intersect(ids.toSet()),
             // NOT intersected with ids: chatModelsOnly deliberately strips image models out of
             // the chat list, so an image model is never in ids by construction.
-            imageIds = ModelFilter.imageIdsFrom(imageSource)
+            imageIds = ModelFilter.imageIdsFrom(imageSource),
+            videoIds = if (supportsVideoGeneration) ModelFilter.videoIdsFrom(raw) else emptyList()
         )
     }
 

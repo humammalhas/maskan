@@ -342,4 +342,9 @@
     <string name="image_size_square">1:1</string>
     <string name="image_size_wide">16:9</string>
     <string name="image_size_tall">9:16</string>
+    <string name="drawing_image">يرسم الصورة…</string>
+    <string name="editing_photo">يعدّل الصورة…</string>
+    <string name="elapsed_seconds_fmt">مضت %1$d ث</string>
+    <string name="video_retry">إعادة المحاولة</string>
+    <string name="video_cost_usd_fmt">~%1$s $</string>
 </resources>
