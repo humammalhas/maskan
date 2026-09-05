@@ -307,4 +307,17 @@
     <string name="key_report_local_free">خادمك الخاص — كل ما عليه مجاني.</string>
     <string name="model_group_unavailable">غير متاح لمفتاحك</string>
     <string name="key_report_error_fmt">تعذّر فحص المفتاح — %1$s</string>
+
+    <!-- Video messages (2.5) -->
+    <string name="video_making">جارٍ إنشاء الفيديو…</string>
+    <string name="video_writing_scene">يكتب وصف المشهد…</string>
+    <string name="video_waiting_server">في انتظار الخادم…</string>
+    <string name="video_ready">الفيديو جاهز</string>
+    <string name="video_failed">تعذّر إنشاء الفيديو</string>
+    <string name="video_job_lost">لم يعد هذا الفيديو موجودًا على الخادم. أرسل الطلب مرة أخرى.</string>
+    <string name="video_no_server">لم يُضبط رابط الخادم لهذا الفيديو.</string>
+    <string name="video_cancel">إلغاء</string>
+    <string name="video_notification_channel">إنشاء الفيديو</string>
+    <string name="video_notification_title">مسكن يُنشئ الفيديو</string>
+    <string name="video_eta_minutes">يتبقّى نحو %1$d د</string>
 </resources>

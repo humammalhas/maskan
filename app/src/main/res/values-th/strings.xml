@@ -307,4 +307,17 @@
     <string name="key_report_local_free">เซิร์ฟเวอร์ของคุณเอง — ทุกอย่างฟรี</string>
     <string name="model_group_unavailable">ใช้กับคีย์ของคุณไม่ได้</string>
     <string name="key_report_error_fmt">ตรวจสอบคีย์ไม่ได้ — %1$s</string>
+
+    <!-- Video messages (2.5) -->
+    <string name="video_making">กำลังสร้างวิดีโอ…</string>
+    <string name="video_writing_scene">กำลังเขียนฉาก…</string>
+    <string name="video_waiting_server">กำลังรอเซิร์ฟเวอร์…</string>
+    <string name="video_ready">วิดีโอพร้อมแล้ว</string>
+    <string name="video_failed">สร้างวิดีโอไม่สำเร็จ</string>
+    <string name="video_job_lost">เซิร์ฟเวอร์ไม่มีวิดีโอนี้แล้ว โปรดส่งคำขออีกครั้ง</string>
+    <string name="video_no_server">ยังไม่ได้ตั้งค่า URL ของเซิร์ฟเวอร์สำหรับวิดีโอนี้</string>
+    <string name="video_cancel">ยกเลิก</string>
+    <string name="video_notification_channel">การสร้างวิดีโอ</string>
+    <string name="video_notification_title">Maskan กำลังสร้างวิดีโอ</string>
+    <string name="video_eta_minutes">เหลืออีกประมาณ %1$d นาที</string>
 </resources>

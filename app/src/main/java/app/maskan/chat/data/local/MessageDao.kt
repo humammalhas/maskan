@@ -35,6 +35,21 @@ interface MessageDao {
     @Query("SELECT imagePath FROM messages WHERE conversationId = :conversationId AND imagePath IS NOT NULL")
     suspend fun getImagePathsForConversation(conversationId: Long): List<String>
 
+    @Query("SELECT * FROM messages WHERE id = :messageId")
+    suspend fun getMessageById(messageId: Long): MessageEntity?
+
+    /** Rows still waiting on a video: a job id but no file. Resumed on every app start. */
+    @Query("SELECT * FROM messages WHERE videoJobId IS NOT NULL AND imagePath IS NULL")
+    suspend fun getPendingVideoMessages(): List<MessageEntity>
+
+    /** The clip landed: file in, job id out, in one statement so no state in between is visible. */
+    @Query("UPDATE messages SET imagePath = :imagePath, imageMimeType = :mimeType, videoJobId = NULL WHERE id = :messageId")
+    suspend fun updateVideoDone(messageId: Long, imagePath: String, mimeType: String)
+
+    /** The render failed: keep the row (video mime, no path) and let content carry the reason. */
+    @Query("UPDATE messages SET videoJobId = NULL, content = :reason WHERE id = :messageId")
+    suspend fun markVideoFailed(messageId: Long, reason: String)
+
     @Query("DELETE FROM messages WHERE id = :messageId")
     suspend fun deleteMessageById(messageId: Long)
 

@@ -152,6 +152,10 @@ dependencies {
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
 
+    // WorkManager (AndroidX, no Google Play Services) - a video render is minutes long and is
+    // waited on by a worker that outlives the screen, the activity and the process.
+    implementation(libs.androidx.work.runtime.ktx)
+
     // Retrofit + OkHttp
     implementation(libs.retrofit)
     implementation(libs.retrofit.kotlinx.serialization)

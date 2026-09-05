@@ -307,4 +307,17 @@
     <string name="key_report_local_free">Your own server — everything on it is free.</string>
     <string name="model_group_unavailable">Not available for your key</string>
     <string name="key_report_error_fmt">Could not check the key — %1$s</string>
+
+    <!-- Video messages (2.5) -->
+    <string name="video_making">Making your video…</string>
+    <string name="video_writing_scene">Writing the scene…</string>
+    <string name="video_waiting_server">Waiting for the server…</string>
+    <string name="video_ready">Video ready</string>
+    <string name="video_failed">The video could not be made</string>
+    <string name="video_job_lost">The server no longer has this video. Send the request again.</string>
+    <string name="video_no_server">No server URL is set for this video.</string>
+    <string name="video_cancel">Cancel</string>
+    <string name="video_notification_channel">Video renders</string>
+    <string name="video_notification_title">Maskan is making your video</string>
+    <string name="video_eta_minutes">about %1$d min left</string>
 </resources>

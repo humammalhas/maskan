@@ -11,8 +11,13 @@ import app.maskan.chat.data.local.Presets
 import app.maskan.chat.data.model.Dialect
 import app.maskan.chat.data.remote.ChatCompletionResponse
 import app.maskan.chat.data.remote.Message
+import app.maskan.chat.data.remote.VideoJobClient
 import app.maskan.chat.data.remote.providers.ProviderRegistry
 import app.maskan.chat.util.ImageStore
+import app.maskan.chat.video.VideoJobs
+import app.maskan.chat.video.VideoRenderWorker
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.flow
@@ -25,7 +30,9 @@ class ChatRepository(
     private val folderDao: FolderDao,
     private val keyRepository: KeyRepository,
     private val localeRepository: LocaleRepository,
-    private val imageStore: ImageStore
+    private val imageStore: ImageStore,
+    private val videoJobClient: VideoJobClient,
+    private val videoJobs: VideoJobs
 ) {
 
     // ── Conversations ──────────────────────────────────────────────────
@@ -416,6 +423,18 @@ class ChatRepository(
             ?.trim()?.takeIf { it.isNotBlank() }
             ?: throw Exception("no image model selected")
 
+        // A model the user's own server lists as a VIDEO model takes the async job path instead
+        // of the blocking image request. The server says which ids those are (GET /health) so
+        // nothing is hardcoded here; a server without /health is simply an image server.
+        val baseUrl = keyRepository.getBaseUrl(providerId)
+        if (isLocalProvider && !baseUrl.isNullOrBlank()) {
+            val capabilities = withContext(Dispatchers.IO) { videoJobClient.probe(baseUrl, apiKey) }
+            if (capabilities != null && model in capabilities.videoModels) {
+                submitVideo(conversation, providerId, apiKey, baseUrl, model, prompt)
+                return@flow
+            }
+        }
+
         val userEntity = MessageEntity(
             conversationId = conversationId,
             role = "user",
@@ -462,6 +481,91 @@ class ChatRepository(
 
         emit(StreamEvent.Done)
     }
+
+    /**
+     * Start a video and return at once. Nothing here waits for the render: the job is
+     * submitted, its id is written into the assistant row, and a WorkManager worker takes over
+     * (VideoRenderWorker) - that worker, not this flow, survives the screen locking. The bubble
+     * shows progress from the worker until the clip replaces it.
+     *
+     * The prompt goes to the server AS TYPED, in any language: a server that serves the job
+     * API expands and translates it itself (prompt_expanded), and expanding an already
+     * translated prompt would only lose the user's own words.
+     */
+    private suspend fun FlowCollector<StreamEvent>.submitVideo(
+        conversation: ConversationEntity,
+        providerId: String,
+        apiKey: String,
+        baseUrl: String,
+        model: String,
+        prompt: String
+    ) {
+        val conversationId = conversation.id
+        val userEntity = MessageEntity(
+            conversationId = conversationId,
+            role = "user",
+            content = prompt
+        )
+        val userMessageId = messageDao.insertMessage(userEntity)
+        emit(StreamEvent.UserSaved(userEntity.copy(id = userMessageId)))
+
+        // Submit BEFORE creating the assistant row: a refused request then fails like a failed
+        // chat turn (the user's message stays, nothing else appears) with no placeholder to undo.
+        val jobId = withContext(Dispatchers.IO) {
+            videoJobClient.submit(
+                baseUrl = baseUrl,
+                apiKey = apiKey,
+                model = model,
+                prompt = prompt,
+                seconds = DEFAULT_VIDEO_SECONDS,
+                size = DEFAULT_VIDEO_SIZE,
+                enhance = true
+            )
+        }
+
+        val assistantEntity = MessageEntity(
+            conversationId = conversationId,
+            role = "assistant",
+            content = "",
+            imageMimeType = VideoRenderWorker.VIDEO_MIME,
+            videoJobId = jobId
+        )
+        val assistantMessageId = messageDao.insertMessage(assistantEntity)
+        videoJobs.enqueue(assistantMessageId, conversationId, providerId)
+        emit(StreamEvent.VideoQueued(assistantEntity.copy(id = assistantMessageId)))
+
+        if (conversation.title == "New Chat") {
+            val title = prompt.take(50).let { if (it.length == 50) "$it..." else it }
+            conversationDao.updateConversationTitle(conversationId, title)
+        }
+
+        emit(StreamEvent.Done)
+    }
+
+    /**
+     * Stop waiting for a video and drop its bubble. The server is told to cancel (best effort -
+     * it forgets the job on its own if unreachable) and the worker is stopped.
+     */
+    suspend fun cancelVideo(messageId: Long) {
+        val row = messageDao.getMessageById(messageId) ?: return
+        videoJobs.cancel(messageId)
+        val jobId = row.videoJobId
+        if (jobId != null) {
+            val providerId = conversationDao.getConversationById(row.conversationId)?.providerId
+            val baseUrl = providerId?.let { keyRepository.getBaseUrl(it) }
+            if (providerId != null && !baseUrl.isNullOrBlank()) {
+                val apiKey = keyRepository.getApiKey(providerId) ?: ""
+                withContext(Dispatchers.IO) {
+                    runCatching { videoJobClient.cancel(baseUrl, apiKey, jobId) }
+                }
+            }
+        }
+        messageDao.deleteMessageById(messageId)
+    }
+
+    /** One-shot read, for refreshing the open chat after a background worker changed a row. */
+    suspend fun getMessagesOnce(conversationId: Long): List<MessageEntity> =
+        messageDao.getMessagesForConversationOnce(conversationId)
 
     /**
      * The shared tail of both paths: build the context window, insert the assistant
@@ -531,6 +635,12 @@ class ChatRepository(
 
         /** A generated image finished and was written to disk; the entity carries its path. */
         data class ImageReady(val message: MessageEntity) : StreamEvent()
+
+        /**
+         * A video job was accepted by the server; the entity carries its job id and no file yet.
+         * The flow ends here - a WorkManager worker delivers the clip minutes later.
+         */
+        data class VideoQueued(val message: MessageEntity) : StreamEvent()
         data object Done : StreamEvent()
     }
 
@@ -654,6 +764,10 @@ class ChatRepository(
     }
 
     companion object {
+        // Step 2 defaults - the fast size and the shortest clip, because the first thing anyone
+        // does is experiment. The size/length chips (plan section 3.8) replace these constants.
+        const val DEFAULT_VIDEO_SECONDS = 5
+        const val DEFAULT_VIDEO_SIZE = "576x1024"
         const val MAX_CONTEXT_MESSAGES = 50
     }
 }

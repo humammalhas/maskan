@@ -1,10 +1,13 @@
 package app.maskan.chat.ui.screens
 
+import android.Manifest
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
+import android.os.Build
 import android.speech.RecognizerIntent
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
@@ -52,6 +55,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -89,6 +93,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import app.maskan.chat.video.VideoProgress
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
@@ -181,6 +187,12 @@ fun ChatScreen(
             viewModel.attachFile(uri)
         }
     }
+
+    // Android 13+: the render notification needs this; asked the first time a video is armed.
+    // Declining costs only the notification - the render itself is unaffected.
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { }
 
     var showAttachTypeDialog by remember { mutableStateOf(false) }
     var showComposeSheet by remember { mutableStateOf(false) }
@@ -462,6 +474,12 @@ fun ChatScreen(
                         onTextChange = { inputText = it },
                         onSend = {
                             if (inputText.isNotBlank() || uiState.pendingImageBytes != null || uiState.pendingFileText != null) {
+                                if (uiState.imageMode && Build.VERSION.SDK_INT >= 33 &&
+                                    ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+                                    PackageManager.PERMISSION_GRANTED
+                                ) {
+                                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                }
                                 viewModel.sendMessage(inputText)
                                 inputText = ""
                             }
@@ -547,6 +565,8 @@ fun ChatScreen(
                         isStreaming = isActivelyStreaming,
                         isSpeaking = speakingMessageId == message.id,
                         generatedImage = generatedImage,
+                        videoProgress = uiState.videoProgress[message.id],
+                        onCancelVideo = { viewModel.cancelVideo(message.id) },
                         onSaveImage = {
                             generatedImage?.let { bytes ->
                                 pendingSaveBytes = bytes
@@ -816,6 +836,8 @@ private fun MessageBubble(
     // Decrypted by the caller: a generated image lives as an encrypted file, and decrypting it
     // inside the bubble would redo the work on every recomposition.
     generatedImage: ByteArray? = null,
+    videoProgress: VideoProgress? = null,
+    onCancelVideo: () -> Unit = {},
     onSaveImage: () -> Unit = {},
     onShareImage: () -> Unit = {}
 ) {
@@ -845,7 +867,13 @@ private fun MessageBubble(
                 colors = CardDefaults.cardColors(containerColor = backgroundColor)
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    generatedImage?.let { bytes ->
+                    // A video row is the same row as an image, told apart by its mime. Its
+                    // bytes are an MP4, so BitmapFactory has nothing to say about them.
+                    val isVideo = message.imageMimeType?.startsWith("video/") == true
+                    if (isVideo) {
+                        VideoStatus(message = message, progress = videoProgress, onCancel = onCancelVideo)
+                    }
+                    if (!isVideo) generatedImage?.let { bytes ->
                         val bitmap = remember(bytes) {
                             try {
                                 BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
@@ -1240,8 +1268,85 @@ private fun shareImageBytes(context: Context, bytes: ByteArray, mimeType: String
     }
 }
 
+/**
+ * What a video bubble shows before the clip exists: waiting, writing the scene, rendering with
+ * a bar and an ETA, the server's expanded prompt as it appears, and a Cancel. Once the clip
+ * has landed a plain "ready" line stands in until playback (step 3) replaces it; a row with
+ * neither a job nor a file is a failed render and its content carries the reason.
+ */
+@Composable
+private fun VideoStatus(
+    message: MessageEntity,
+    progress: VideoProgress?,
+    onCancel: () -> Unit
+) {
+    when {
+        message.imagePath != null -> {
+            Text(
+                text = "\uD83C\uDFAC " + stringResource(R.string.video_ready),
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+        message.videoJobId != null -> {
+            val state = progress ?: VideoProgress.WAITING
+            val rendering = state.phase == "rendering" || state.phase == "done"
+            Column(modifier = Modifier.widthIn(min = 220.dp)) {
+                Text(
+                    text = stringResource(
+                        when (state.phase) {
+                            "expanding" -> R.string.video_writing_scene
+                            "rendering", "done" -> R.string.video_making
+                            else -> R.string.video_waiting_server
+                        }
+                    ),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                if (rendering) {
+                    LinearProgressIndicator(
+                        progress = { state.progress.coerceIn(0, 100) / 100f },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                    )
+                } else {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+                }
+                state.etaSeconds?.let { eta ->
+                    Text(
+                        text = stringResource(R.string.video_eta_minutes, maxOf(1, (eta + 59) / 60)),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+                state.promptExpanded?.let { expanded ->
+                    Text(
+                        text = expanded,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+                TextButton(onClick = onCancel, modifier = Modifier.padding(top = 4.dp)) {
+                    Text(
+                        text = stringResource(R.string.video_cancel),
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+            }
+        }
+        else -> {
+            Text(
+                text = stringResource(R.string.video_failed),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(bottom = if (message.content.isNotBlank()) 6.dp else 0.dp)
+            )
+        }
+    }
+}
+
 /** File extension for a stored image mime - the mime was sniffed from the actual bytes. */
 private fun extensionFor(mimeType: String): String = when (mimeType) {
+    "video/mp4" -> "mp4"
     "image/webp" -> "webp"
     "image/jpeg" -> "jpg"
     "image/gif" -> "gif"

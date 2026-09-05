@@ -5,6 +5,8 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
 import app.maskan.chat.data.local.MessageEntity
 import app.maskan.chat.data.local.Presets
 import app.maskan.chat.data.local.SystemPromptPreset
@@ -19,6 +21,8 @@ import app.maskan.chat.data.repository.PreferenceRepository
 import app.maskan.chat.util.ErrorMapper
 import app.maskan.chat.util.ImageStore
 import app.maskan.chat.util.ImageUtils
+import app.maskan.chat.video.VideoJobs
+import app.maskan.chat.video.VideoProgress
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -57,7 +61,13 @@ data class ChatUiState(
      * The rewritten prompt, waiting for the user to accept or edit it. Held here rather than
      * pushed straight into the composer so the user always sees what changed before it is drawn.
      */
-    val improvedPrompt: String? = null
+    val improvedPrompt: String? = null,
+    /**
+     * Live render state per pending video message, fed by the WorkManager worker's progress
+     * data. Absent for a message whose worker has not reported yet (the bubble shows
+     * "waiting"), and never persisted - the database holds only the job id.
+     */
+    val videoProgress: Map<Long, VideoProgress> = emptyMap()
 )
 
 class ChatViewModel(
@@ -74,6 +84,14 @@ class ChatViewModel(
     private var currentConversationId: Long = -1
     private var messageCollectionJob: kotlinx.coroutines.Job? = null
     private var streamingJob: Job? = null
+    private var videoWatchJob: Job? = null
+
+    /**
+     * Work ids whose finish has already been folded into the message list. WorkManager keeps
+     * reporting finished work for a while, and without this every later progress tick of some
+     * OTHER video would re-read the whole conversation.
+     */
+    private val settledVideoWork = HashSet<java.util.UUID>()
 
     /**
      * Whether the model this chat is pinned to is actually GONE (as opposed to merely
@@ -85,6 +103,7 @@ class ChatViewModel(
     fun loadConversation(conversationId: Long) {
         messageCollectionJob?.cancel()
         currentConversationId = conversationId
+        watchVideoJobs(conversationId)
         _uiState.value = ChatUiState(
             selectedProviderId = _uiState.value.selectedProviderId,
             selectedModel = _uiState.value.selectedModel,
@@ -397,6 +416,12 @@ class ChatViewModel(
                 upsertMessage(event.message)
                 _uiState.value = _uiState.value.copy(isLoading = false, isStreaming = false)
             }
+            is ChatRepository.StreamEvent.VideoQueued -> {
+                // The composer is free again the moment the server has the job; the bubble
+                // itself reports progress from here on.
+                upsertMessage(event.message)
+                _uiState.value = _uiState.value.copy(isLoading = false, isStreaming = false)
+            }
             is ChatRepository.StreamEvent.Done -> {
                 _uiState.value = _uiState.value.copy(isStreaming = false)
             }
@@ -498,6 +523,60 @@ class ChatViewModel(
                 it[index] = it[index].copy(content = content)
             }
             _uiState.value = _uiState.value.copy(messages = updated)
+        }
+    }
+
+    // ── Video ───────────────────────────────────────────────────────────
+
+    /**
+     * Mirror the video workers of this conversation into the UI state. Progress comes from the
+     * worker's progress data; when a worker FINISHES (clip landed, failed, cancelled) the
+     * message list is re-read from the database once, because Room's invalidation Flow is not
+     * relied on under SQLCipher and the change was made by another process context anyway.
+     */
+    private fun watchVideoJobs(conversationId: Long) {
+        videoWatchJob?.cancel()
+        settledVideoWork.clear()
+        videoWatchJob = viewModelScope.launch {
+            WorkManager.getInstance(getApplication())
+                .getWorkInfosByTagFlow(VideoJobs.tagForConversation(conversationId))
+                .collect { infos ->
+                    val progress = HashMap<Long, VideoProgress>()
+                    var settled = false
+                    for (info in infos) {
+                        val messageId = VideoJobs.messageIdFromTags(info.tags) ?: continue
+                        when {
+                            info.state == WorkInfo.State.RUNNING ->
+                                progress[messageId] = VideoProgress.fromData(info.progress)
+                                    ?: VideoProgress.WAITING
+                            info.state.isFinished ->
+                                if (settledVideoWork.add(info.id)) settled = true
+                            else -> progress[messageId] = VideoProgress.WAITING
+                        }
+                    }
+                    _uiState.value = _uiState.value.copy(videoProgress = progress)
+                    // Not while a reply is streaming: the DB holds only periodic snapshots of
+                    // that text and a refresh would visibly rewind it.
+                    if (settled && !_uiState.value.isStreaming) refreshMessages()
+                }
+        }
+    }
+
+    private suspend fun refreshMessages() {
+        val conversationId = currentConversationId
+        if (conversationId < 0) return
+        val messages = chatRepository.getMessagesOnce(conversationId)
+        if (currentConversationId == conversationId) {
+            _uiState.value = _uiState.value.copy(messages = messages)
+        }
+    }
+
+    fun cancelVideo(messageId: Long) {
+        viewModelScope.launch {
+            chatRepository.cancelVideo(messageId)
+            _uiState.value = _uiState.value.copy(
+                messages = _uiState.value.messages.filterNot { it.id == messageId }
+            )
         }
     }
 

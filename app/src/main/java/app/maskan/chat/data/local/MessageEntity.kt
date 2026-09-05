@@ -34,5 +34,12 @@ data class MessageEntity(
      * those would bloat the SQLCipher database badly. The file itself is AES-256-GCM encrypted,
      * so it gets the same protection as the prompt that produced it. See ImageStore.
      */
-    val imagePath: String? = null
+    val imagePath: String? = null,
+    /**
+     * Server-side job id of a video that is still rendering. Non-null with a null imagePath is
+     * the "pending" state everywhere: it is what the bubble shows progress for, what the app
+     * resumes polling on restart, and what a Cancel deletes. Cleared when the clip lands (or
+     * the job fails - then the row keeps its video mime and no path, which is "failed").
+     */
+    val videoJobId: String? = null
 )
