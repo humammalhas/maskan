@@ -76,6 +76,23 @@ interface OpenAiCompatibleService {
     // endpoint with modalities: ["image","text"] and the picture comes back as a data: URL inside
     // choices[0].message.images. Raw JSON both ways - the request needs a field no chat DTO has,
     // and the response shape fits none of them either.
+    // OpenAI's photo edit: multipart (the image as a file part), JSON with b64_json out.
+    @retrofit2.http.Multipart
+    @POST("v1/images/edits")
+    suspend fun openAiEditImage(
+        @Header("Authorization") authorization: String,
+        @retrofit2.http.Part("model") model: okhttp3.RequestBody,
+        @retrofit2.http.Part("prompt") prompt: okhttp3.RequestBody,
+        @retrofit2.http.Part image: okhttp3.MultipartBody.Part
+    ): JsonElement
+
+    // Venice's photo edit: JSON in ({prompt, image: base64}), raw image bytes out.
+    @POST("v1/image/edit")
+    suspend fun veniceEditImage(
+        @Header("Authorization") authorization: String,
+        @Body request: JsonElement
+    ): ResponseBody
+
     @POST("v1/chat/completions")
     suspend fun createChatCompletionRaw(
         @Header("Authorization") authorization: String,

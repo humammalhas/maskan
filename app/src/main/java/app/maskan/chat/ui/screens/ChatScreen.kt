@@ -491,7 +491,10 @@ fun ChatScreen(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                             )
                         },
-                        supportsVision = viewModel.currentProviderSupportsVision(),
+                        // A photo can be attached for chat (vision), for editing, or as the first
+                        // frame of a video - any one of those earns the entry.
+                        supportsVision = viewModel.currentProviderSupportsVision() ||
+                            viewModel.editModel() != null || viewModel.canGenerateVideos(),
                         hasAttachment = uiState.pendingImageBytes != null || uiState.pendingFileText != null,
                         imageFeatureAvailable = viewModel.imageFeatureAvailable(),
                         canGenerateImages = viewModel.canGenerateImages(),
@@ -1106,6 +1109,7 @@ private fun MessageInputBar(
             val chooseImageModelFirst = stringResource(R.string.error_no_image_model)
             val chooseVideoModelFirst = stringResource(R.string.error_no_video_model)
             val attachPhotoFirst = stringResource(R.string.error_no_photo_to_edit)
+            val modelCannotSee = stringResource(R.string.model_cannot_see_images)
             Box {
                 IconButton(
                     onClick = { menuOpen = true },
@@ -1129,13 +1133,19 @@ private fun MessageInputBar(
                         },
                         onClick = { menuOpen = false; onAttachFile() }
                     )
-                    if (supportsVision) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.attach_choose_image)) },
-                            leadingIcon = { Text("\uD83D\uDDBC\uFE0F", fontSize = 18.sp) },
-                            onClick = { menuOpen = false; onAttachPhoto() }
-                        )
-                    }
+                    // Always listed: a hidden entry reads as a broken app. Dimmed, and it says
+                    // why, when the current model cannot take a photo and nothing else here
+                    // (editing, video) could use one either.
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.attach_choose_image)) },
+                        leadingIcon = { Text("\uD83D\uDDBC\uFE0F", fontSize = 18.sp) },
+                        modifier = Modifier.alpha(if (supportsVision) 1f else 0.4f),
+                        onClick = {
+                            menuOpen = false
+                            if (supportsVision) onAttachPhoto()
+                            else Toast.makeText(context, modelCannotSee, Toast.LENGTH_LONG).show()
+                        }
+                    )
                     if (imageFeatureAvailable) {
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.attach_generate_image)) },

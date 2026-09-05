@@ -67,11 +67,11 @@ class VeoVideoClient(baseClient: OkHttpClient, private val json: Json) : VideoBa
                         val comma = imageDataUri.indexOf(',')
                         val header = imageDataUri.substring(0, maxOf(comma, 0))
                         val mime = header.removePrefix("data:").substringBefore(';').ifBlank { "image/jpeg" }
+                        // Veo's own spelling - it answers 400 "inlineData isn't supported by
+                        // this model" to the generateContent shape (device-tested 2026-09-05).
                         put("image", buildJsonObject {
-                            put("inlineData", buildJsonObject {
-                                put("mimeType", mime)
-                                put("data", imageDataUri.substring(comma + 1))
-                            })
+                            put("bytesBase64Encoded", imageDataUri.substring(comma + 1))
+                            put("mimeType", mime)
                         })
                     }
                 })

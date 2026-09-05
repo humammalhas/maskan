@@ -1,5 +1,7 @@
 package app.maskan.chat.data.remote
 
+import android.util.Log
+import app.maskan.chat.BuildConfig
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlinx.serialization.json.Json
@@ -71,9 +73,10 @@ class VeniceVideoClient(baseClient: OkHttpClient, private val json: Json) : Vide
             put("model", model)
             put("prompt", prompt)
             put("duration", "${seconds}s")
-            put("aspect_ratio", size)
             put("resolution", "720p")
-            if (imageDataUri != null) put("image_url", imageDataUri)
+            // Image-to-video takes its shape from the photo; Venice rejects aspect_ratio there
+            // ("This model does not support aspect_ratio", device-tested 2026-09-05).
+            if (imageDataUri != null) put("image_url", imageDataUri) else put("aspect_ratio", size)
         }
         val request = Request.Builder()
             .url("${root(baseUrl)}/v1/video/queue")
@@ -82,7 +85,10 @@ class VeniceVideoClient(baseClient: OkHttpClient, private val json: Json) : Vide
             .build()
         client.newCall(request).execute().use { response ->
             val text = response.body?.string().orEmpty()
-            if (!response.isSuccessful) throw VideoJobClient.ServerError(response.code, errorMessage(text, response.code))
+            if (!response.isSuccessful) {
+                if (BuildConfig.DEBUG) Log.w("Maskan", "venice video queue ${response.code}: ${text.take(600)}")
+                throw VideoJobClient.ServerError(response.code, errorMessage(text, response.code))
+            }
             val obj = json.parseToJsonElement(text) as? JsonObject
                 ?: throw VideoJobClient.ServerError(response.code, "unexpected reply from Venice")
             val queueId = (obj["queue_id"] as? JsonPrimitive)?.contentOrNull

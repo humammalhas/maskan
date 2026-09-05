@@ -348,4 +348,5 @@
     <string name="video_retry">إعادة المحاولة</string>
     <string name="video_cost_usd_fmt">~%1$s $</string>
     <string name="video_quote_fmt">سعر المزوّد لهذا المقطع: %1$s $</string>
+    <string name="model_cannot_see_images">نموذج المحادثة هذا لا يقبل الصور. اختر نموذجًا يحمل علامة 📷 من الإعدادات، أو مزوّدًا يعدّل الصور أو يحرّكها.</string>
 </resources>

@@ -9,6 +9,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
@@ -157,7 +158,19 @@ class VideoJobClient(baseClient: OkHttpClient, private val json: Json) : VideoBa
             put("duration", seconds)
             if (size.contains(':')) put("aspect_ratio", size) else put("size", size)
             put("enhance", enhance)
-            if (imageDataUri != null) put("image", imageDataUri)
+            if (imageDataUri != null) {
+                // The proxy reads image; OpenRouter reads frame_images[0] as the first frame.
+                put("image", imageDataUri)
+                // Shape from OpenRouter's own validation error (device-tested 2026-09-05):
+                // {type:"image_url", image_url:{url}, frame_type}.
+                put("frame_images", buildJsonArray {
+                    add(buildJsonObject {
+                        put("type", "image_url")
+                        put("image_url", buildJsonObject { put("url", imageDataUri) })
+                        put("frame_type", "first_frame")
+                    })
+                })
+            }
         }
         val request = Request.Builder()
             .url("${root(baseUrl)}/v1/videos")

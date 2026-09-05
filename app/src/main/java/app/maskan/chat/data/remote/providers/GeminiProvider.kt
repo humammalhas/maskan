@@ -32,6 +32,9 @@ class GeminiProvider(
 
     /** Veo, through the same key - see VeoVideoClient. Billed per second of video. */
     override val supportsVideoGeneration: Boolean = true
+
+    /** Gemini's image models take a photo in the same generateContent call that draws. */
+    override val supportsImageEditing: Boolean = true
     override val isLocal: Boolean = config.isLocal
     override val availableModels: List<String> = config.models
     override val defaultModel: String = config.defaultModel
@@ -145,6 +148,47 @@ class GeminiProvider(
             request = request
         )
 
+        return GeminiImageExtractor.extract(response)
+            ?: throw Exception(
+                "Gemini API error: " + (GeminiImageExtractor.failureReason(response)
+                    ?: "no image in response")
+            )
+    }
+
+    override suspend fun editImage(
+        apiKey: String,
+        model: String,
+        prompt: String,
+        imageDataUri: String,
+        baseUrl: String?
+    ): GeneratedImage {
+        val comma = imageDataUri.indexOf(',')
+        val mime = imageDataUri.substring(0, maxOf(comma, 0)).removePrefix("data:").substringBefore(';')
+            .ifBlank { "image/jpeg" }
+        val data = imageDataUri.substring(comma + 1)
+        val request = buildJsonObject {
+            put("contents", buildJsonArray {
+                add(buildJsonObject {
+                    put("role", JsonPrimitive("user"))
+                    put("parts", buildJsonArray {
+                        add(buildJsonObject {
+                            put("inlineData", buildJsonObject {
+                                put("mimeType", JsonPrimitive(mime))
+                                put("data", JsonPrimitive(data))
+                            })
+                        })
+                        add(buildJsonObject { put("text", JsonPrimitive(prompt)) })
+                    })
+                })
+            })
+            put("generationConfig", buildJsonObject {
+                put("responseModalities", buildJsonArray {
+                    add(JsonPrimitive("TEXT"))
+                    add(JsonPrimitive("IMAGE"))
+                })
+            })
+        }
+        val response = apiService.generateContentRaw(model = model, apiKey = apiKey, request = request)
         return GeminiImageExtractor.extract(response)
             ?: throw Exception(
                 "Gemini API error: " + (GeminiImageExtractor.failureReason(response)

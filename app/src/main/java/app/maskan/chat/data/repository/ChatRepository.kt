@@ -656,11 +656,19 @@ class ChatRepository(
         val baseUrl = keyRepository.getBaseUrl(providerId)?.takeIf { it.isNotBlank() }
             ?: provider.defaultBaseUrl.takeIf { it.isNotBlank() }
             ?: throw Exception("No server URL configured. Please enter your ${provider.displayName} server URL in Settings.")
-        val model = keyRepository.getSelectedVideoModel(providerId)
+        val chosen = keyRepository.getSelectedVideoModel(providerId)
             ?.trim()?.takeIf { it.isNotBlank() }
             ?: throw Exception("no video model selected")
 
         val image = if (imageBytes != null && imageMimeType != null) imageBytes to imageMimeType else null
+        // Venice names the two jobs separately - "wan-2-7-text-to-video" refuses a photo and
+        // "wan-2-7-image-to-video" needs one - so the chosen family follows what was sent
+        // rather than making the user re-pick a model per message.
+        val model = when {
+            providerId != "venice" -> chosen
+            image != null -> chosen.replace("text-to-video", "image-to-video")
+            else -> chosen.replace("image-to-video", "text-to-video")
+        }
         submitVideo(conversation, providerId, apiKey, baseUrl, model, prompt, image, size, seconds, saveUserMessage)
     }
 

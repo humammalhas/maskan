@@ -339,6 +339,10 @@ class ChatViewModel(
         val providerId = _uiState.value.selectedProviderId
         val provider = ProviderRegistry.getProvider(providerId) ?: return null
         if (!provider.supportsImageGeneration) return null
+        // Cloud: the chosen image model edits too. Local: a dedicated edit model, by name.
+        if (provider.supportsImageEditing) {
+            return keyRepository.getSelectedImageModel(providerId)?.trim()?.takeIf { it.isNotBlank() }
+        }
         return app.maskan.chat.data.remote.providers.ModelFilter.editModelIn(
             preferenceRepository.getImageModels(providerId)
         )

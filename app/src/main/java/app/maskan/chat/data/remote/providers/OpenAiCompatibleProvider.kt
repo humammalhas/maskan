@@ -11,6 +11,8 @@ import app.maskan.chat.data.remote.OpenAiCompatibleService
 import app.maskan.chat.data.remote.parseSSEStream
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -47,6 +49,9 @@ class OpenAiCompatibleProvider(
      * /api/v1/videos, poll, /content - so it rides the same client. Billed per second.
      */
     override val supportsVideoGeneration: Boolean get() = id == "openrouter" || id == "venice"
+
+    /** OpenRouter edits through the chat endpoint with the photo attached; Venice has /image/edit. */
+    override val supportsImageEditing: Boolean get() = id == "openrouter" || id == "venice" || id == "openai"
 
     private fun buildMessages(
         messages: List<Message>,
@@ -212,6 +217,89 @@ class OpenAiCompatibleProvider(
      * back as a data: URL in choices[0].message.images, which is exactly one of the shapes
      * ImageResponseParser already reads - so the message object is handed to it as-is.
      */
+    override suspend fun editImage(
+        apiKey: String,
+        model: String,
+        prompt: String,
+        imageDataUri: String,
+        baseUrl: String?
+    ): GeneratedImage {
+        val auth = if (apiKey.isNotBlank()) "Bearer $apiKey" else ""
+        return when (id) {
+            "openrouter" -> {
+                // Same call that draws, with the photo as an image part before the words.
+                val request = buildJsonObject {
+                    put("model", JsonPrimitive(model))
+                    put("messages", buildJsonArray {
+                        add(buildJsonObject {
+                            put("role", JsonPrimitive("user"))
+                            put("content", buildJsonArray {
+                                add(buildJsonObject {
+                                    put("type", JsonPrimitive("image_url"))
+                                    put("image_url", buildJsonObject { put("url", JsonPrimitive(imageDataUri)) })
+                                })
+                                add(buildJsonObject {
+                                    put("type", JsonPrimitive("text"))
+                                    put("text", JsonPrimitive(prompt))
+                                })
+                            })
+                        })
+                    })
+                    put("modalities", buildJsonArray {
+                        add(JsonPrimitive("image"))
+                        add(JsonPrimitive("text"))
+                    })
+                }
+                val response = apiService.createChatCompletionRaw(auth, request)
+                val message = ((response as? JsonObject)?.get("choices") as? JsonArray)
+                    ?.firstOrNull()?.let { it as? JsonObject }
+                    ?.get("message") as? JsonObject
+                    ?: throw Exception("Provider returned no image")
+                ImageResponseParser.parse(message) { url -> apiService.downloadUrl(url).bytes() }
+            }
+            "venice" -> {
+                val comma = imageDataUri.indexOf(',')
+                // No model field: Venice's drawing models do not edit, and its default here is
+                // the dedicated edit model (firered-image-edit per its docs).
+                val request = buildJsonObject {
+                    put("prompt", JsonPrimitive(prompt))
+                    put("image", JsonPrimitive(imageDataUri.substring(comma + 1)))
+                }
+                val body = try {
+                    apiService.veniceEditImage(auth, request)
+                } catch (e: retrofit2.HttpException) {
+                    val errBody = runCatching { e.response()?.errorBody()?.string() }.getOrNull()
+                    if (app.maskan.chat.BuildConfig.DEBUG) android.util.Log.w("Maskan", "venice edit ${e.code()}: ${errBody?.take(600)}")
+                    throw app.maskan.chat.data.remote.ApiHttpException(
+                        code = e.code(),
+                        providerMessage = errBody?.let { app.maskan.chat.data.remote.extractProviderMessage(it) ?: it.take(300) }
+                    )
+                }
+                val mime = body.contentType()?.let { "${it.type}/${it.subtype}" } ?: "image/png"
+                GeneratedImage(body.bytes(), mime)
+            }
+            "openai" -> {
+                // /v1/images/edits is multipart: the photo travels as a file part.
+                val comma = imageDataUri.indexOf(',')
+                val mime = imageDataUri.substring(0, maxOf(comma, 0)).removePrefix("data:").substringBefore(';')
+                    .ifBlank { "image/png" }
+                val bytes = Base64.decode(imageDataUri.substring(comma + 1), Base64.NO_WRAP)
+                val ext = when (mime) { "image/jpeg" -> "jpg"; "image/webp" -> "webp"; else -> "png" }
+                val text = "text/plain".toMediaType()
+                val response = apiService.openAiEditImage(
+                    authorization = auth,
+                    model = model.toRequestBody(text),
+                    prompt = prompt.toRequestBody(text),
+                    image = okhttp3.MultipartBody.Part.createFormData(
+                        "image", "photo.$ext", bytes.toRequestBody(mime.toMediaType())
+                    )
+                )
+                ImageResponseParser.parse(response) { url -> apiService.downloadUrl(url).bytes() }
+            }
+            else -> throw Exception("image generation unsupported")
+        }
+    }
+
     private suspend fun generateImageViaChat(
         auth: String,
         model: String,

@@ -23,6 +23,13 @@ interface AiProvider {
      * friends). Gates the "Video model" setting and the composer entry.
      */
     val supportsVideoGeneration: Boolean get() = false
+
+    /**
+     * Whether the SELECTED image model can also change an existing photo (editImage). Cloud
+     * image models that take an image in do; a local server needs a dedicated edit model,
+     * which ModelFilter.editModelIn finds by name instead.
+     */
+    val supportsImageEditing: Boolean get() = false
     val isLocal: Boolean get() = false
     val availableModels: List<String>
     val defaultModel: String

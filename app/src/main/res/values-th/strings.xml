@@ -348,4 +348,5 @@
     <string name="video_retry">ลองอีกครั้ง</string>
     <string name="video_cost_usd_fmt">~$%1$s</string>
     <string name="video_quote_fmt">ราคาจากผู้ให้บริการสำหรับคลิปนี้: $%1$s</string>
+    <string name="model_cannot_see_images">โมเดลแชทนี้รับรูปไม่ได้ เลือกโมเดลที่มีเครื่องหมาย 📷 ในการตั้งค่า หรือผู้ให้บริการที่แก้ไขหรือทำให้รูปเคลื่อนไหวได้</string>
 </resources>
