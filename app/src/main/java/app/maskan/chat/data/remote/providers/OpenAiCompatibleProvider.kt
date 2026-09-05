@@ -97,6 +97,14 @@ class OpenAiCompatibleProvider(
 
         val response = apiService.listModels(auth)
 
+        // OpenRouter keeps its video models behind ?output_modalities=video - none of them is in
+        // the default catalogue. Failing that call must not break the chat list either.
+        if (id == "openrouter") {
+            val videoJson = runCatching { apiService.listModels(auth, outputModalities = "video") }.getOrNull()
+            val base = buildResult(ModelFilter.chatModelsOnly(ModelFilter.idsFrom(response)), response)
+            return if (videoJson != null) base.copy(videoIds = ModelFilter.videoIdsFrom(videoJson)) else base
+        }
+
         // Venice keeps its image models behind ?type=image; the default list is chat only, which
         // is why 38 of them were invisible. Failing that call must not break the chat list.
         if (id == "venice") {

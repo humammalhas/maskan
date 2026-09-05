@@ -1,5 +1,7 @@
 package app.maskan.chat.data.remote
 
+import android.util.Log
+import app.maskan.chat.BuildConfig
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlinx.serialization.json.Json
@@ -43,8 +45,14 @@ class VideoJobClient(baseClient: OkHttpClient, private val json: Json) : VideoBa
     /** The server no longer knows this job - it cannot be resumed, only re-requested. */
     class JobGone(id: String) : IOException("video job $id is unknown to the server")
 
-    /** A non-2xx answer with the server's own words, so the bubble can show them. */
-    class ServerError(val code: Int, message: String) : IOException(message)
+    /**
+     * A non-2xx answer with the server's own words. An ApiHttpException, NOT an IOException:
+     * ErrorMapper reads any IOException as "no internet", which is exactly wrong for a 404
+     * from a server that clearly answered. The worker keeps polling on 5xx and gives up on 4xx.
+     */
+    class ServerError(code: Int, message: String) : ApiHttpException(code, message) {
+        val isTransient: Boolean get() = code >= 500 || code == 429
+    }
 
     /** What GET /health said about video, or null when the server has no such endpoint. */
     data class Capabilities(
@@ -158,7 +166,10 @@ class VideoJobClient(baseClient: OkHttpClient, private val json: Json) : VideoBa
             .build()
         client.newCall(request).execute().use { response ->
             val text = response.body?.string().orEmpty()
-            if (!response.isSuccessful) throw ServerError(response.code, errorMessage(text, response.code))
+            if (!response.isSuccessful) {
+                if (BuildConfig.DEBUG) Log.w("Maskan", "video submit ${response.code}: ${text.take(600)}")
+                throw ServerError(response.code, errorMessage(text, response.code))
+            }
             val obj = json.parseToJsonElement(text) as? JsonObject
                 ?: throw ServerError(response.code, "unexpected reply from the video server")
             return (obj["id"] as? JsonPrimitive)?.contentOrNull

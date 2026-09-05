@@ -26,7 +26,11 @@ interface OpenAiCompatibleService {
         @Query("dedicated") dedicated: Boolean? = null,
         // Venice-only: its default list is chat models ONLY - the 38 image models are
         // invisible unless asked for by type. Null for every other provider.
-        @Query("type") type: String? = null
+        @Query("type") type: String? = null,
+        // OpenRouter-only: video models are absent from the default catalogue and appear
+        // only when asked for by output modality (verified 2026-09-05: 0 of 431 default
+        // entries output video; ?output_modalities=video returns 28).
+        @Query("output_modalities") outputModalities: String? = null
     ): JsonElement
 
     // Ollama-only. Its OpenAI-compatible /v1/models says nothing about capabilities, but the

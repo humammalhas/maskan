@@ -22,7 +22,7 @@ import java.io.BufferedReader
  * provider's own message: both are needed to tell "this model is gone" apart from
  * "your key is bad" or "you are out of credit".
  */
-class ApiHttpException(
+open class ApiHttpException(
     val code: Int,
     val providerMessage: String?,
     val rawBody: String? = null

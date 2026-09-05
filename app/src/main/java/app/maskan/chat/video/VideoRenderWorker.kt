@@ -88,6 +88,14 @@ class VideoRenderWorker(
                     markFailed(dao, messageId, applicationContext.getString(R.string.video_job_lost))
                     jobs.showFinished(messageId, success = false, detail = null)
                     return Result.failure()
+                } catch (e: VideoJobClient.ServerError) {
+                    if (e.isTransient) {
+                        delay(POLL_MS)
+                        continue
+                    }
+                    markFailed(dao, messageId, e.providerMessage ?: e.message ?: "HTTP ${e.code}")
+                    jobs.showFinished(messageId, success = false, detail = e.providerMessage)
+                    return Result.failure()
                 } catch (e: IOException) {
                     // Wire trouble - a stalled link, a server mid-restart. Keep the last known
                     // state on screen and simply ask again.
@@ -112,6 +120,10 @@ class VideoRenderWorker(
                             markFailed(dao, messageId, applicationContext.getString(R.string.video_job_lost))
                             jobs.showFinished(messageId, success = false, detail = null)
                             return Result.failure()
+                        } catch (e: VideoJobClient.ServerError) {
+                            // 409 = not ready after all; anything transient = ask again.
+                            delay(POLL_MS)
+                            continue
                         } catch (e: IOException) {
                             delay(POLL_MS)
                             continue
