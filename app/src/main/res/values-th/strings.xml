@@ -322,4 +322,12 @@
     <string name="video_eta_minutes">เหลืออีกประมาณ %1$d นาที</string>
     <string name="generated_video">วิดีโอที่สร้างขึ้น</string>
     <string name="play_video">เล่นวิดีโอ</string>
+    <string name="attach_generate_video">สร้างวิดีโอ</string>
+    <string name="video_mode_chip">ข้อความถัดไปจะกลายเป็นวิดีโอ</string>
+    <string name="video_mode_chip_photo">รูปที่แนบจะถูกทำให้เคลื่อนไหว</string>
+    <string name="error_no_video_model">กรุณาเลือกโมเดลวิดีโอในการตั้งค่าก่อน</string>
+    <string name="video_model_section">โมเดลวิดีโอ</string>
+    <string name="video_model_label">โมเดลวิดีโอ</string>
+    <string name="video_model_hint">ใช้สำหรับสร้างวิดีโอเท่านั้น การสร้างในเครื่องใช้เวลาสองสามนาที ระหว่างนั้นล็อกหน้าจอได้</string>
+    <string name="video_models_none_found">ยังไม่มีโมเดลวิดีโอ — แตะ \"รีเฟรชโมเดล\" หรือพิมพ์ชื่อโมเดลในรายการ</string>
 </resources>

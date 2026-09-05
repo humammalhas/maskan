@@ -322,4 +322,12 @@
     <string name="video_eta_minutes">يتبقّى نحو %1$d د</string>
     <string name="generated_video">فيديو مُولّد</string>
     <string name="play_video">تشغيل الفيديو</string>
+    <string name="attach_generate_video">توليد فيديو</string>
+    <string name="video_mode_chip">الرسالة التالية ستصبح فيديو</string>
+    <string name="video_mode_chip_photo">الصورة المرفقة ستتحرّك</string>
+    <string name="error_no_video_model">اختر نموذج فيديو من الإعدادات أوّلًا.</string>
+    <string name="video_model_section">نموذج الفيديو</string>
+    <string name="video_model_label">نموذج الفيديو</string>
+    <string name="video_model_hint">يُستخدم لتوليد الفيديو فقط. يستغرق الإنشاء المحلي بضع دقائق، ويمكنك قفل الهاتف في أثناء ذلك.</string>
+    <string name="video_models_none_found">لا توجد نماذج فيديو محمَّلة بعد — اضغط \"تحديث النماذج\" أو اكتب معرّف نموذج في القائمة.</string>
 </resources>

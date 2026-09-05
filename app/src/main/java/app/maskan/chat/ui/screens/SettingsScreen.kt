@@ -527,6 +527,7 @@ fun SettingsScreen(
             // from the 200-400 model catalogues the gateways return.
             var showModelPicker by remember { mutableStateOf(false) }
     var showImageModelPicker by remember { mutableStateOf(false) }
+    var showVideoModelPicker by remember { mutableStateOf(false) }
 
             Box(modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(
@@ -797,7 +798,74 @@ fun SettingsScreen(
                         allowNone = true
                     )
                 }
-            } else {
+            }
+
+            // Video model: the third preference. Only where the provider serves the async video
+            // job API; elsewhere the section is simply absent - unlike images, no provider is
+            // expected to have video, so there is nothing to explain.
+            if (selectedProvider.supportsVideoGeneration) {
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(
+                    text = stringResource(R.string.video_model_section),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Box {
+                    OutlinedTextField(
+                        value = state.selectedVideoModel.ifBlank {
+                            stringResource(R.string.image_model_none)
+                        },
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text(stringResource(R.string.video_model_label)) },
+                        trailingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = null
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clickable { showVideoModelPicker = true }
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.video_model_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (state.videoModels.isEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.video_models_none_found),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (showVideoModelPicker) {
+                    ModelPickerDialog(
+                        models = state.videoModels,
+                        visionModels = emptySet(),
+                        verifiedModels = emptySet(),
+                        freeModels = viewModel.freeModels(),
+                        selectedModel = state.selectedVideoModel,
+                        onSelect = { model ->
+                            if (model.isBlank()) viewModel.clearVideoModel()
+                            else viewModel.selectVideoModel(model)
+                            showVideoModelPicker = false
+                        },
+                        onDismiss = { showVideoModelPicker = false },
+                        allowCustom = true,
+                        allowNone = true
+                    )
+                }
+            }
+
+            if (!selectedProvider.supportsImageGeneration) {
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(
                     text = stringResource(R.string.image_model_section),

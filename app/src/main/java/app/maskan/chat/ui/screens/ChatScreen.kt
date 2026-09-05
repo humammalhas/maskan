@@ -53,6 +53,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -194,7 +196,6 @@ fun ChatScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) { }
 
-    var showAttachTypeDialog by remember { mutableStateOf(false) }
     var showComposeSheet by remember { mutableStateOf(false) }
 
     // Held between arming the Save picker and the picker returning: the SAF contract hands back
@@ -281,40 +282,6 @@ fun ChatScreen(
                 viewModel.setCustomPrompt(prompt)
             },
             onDismiss = { showCustomPromptDialog = false }
-        )
-    }
-
-    if (showAttachTypeDialog) {
-        AlertDialog(
-            onDismissRequest = { showAttachTypeDialog = false },
-            title = { Text(stringResource(R.string.attach_type_title)) },
-            text = {
-                Column {
-                    if (viewModel.currentProviderSupportsVision()) {
-                        TextButton(onClick = {
-                            showAttachTypeDialog = false
-                            photoPickerLauncher.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                            )
-                        }) {
-                            Text(stringResource(R.string.attach_choose_image))
-                        }
-                    }
-                    TextButton(onClick = {
-                        showAttachTypeDialog = false
-                        filePickerLauncher.launch(arrayOf("text/plain", "text/html"))
-                    }) {
-                        Text(stringResource(R.string.attach_choose_file))
-                    }
-
-                }
-            },
-            confirmButton = {},
-            dismissButton = {
-                TextButton(onClick = { showAttachTypeDialog = false }) {
-                    Text(stringResource(R.string.cancel_button))
-                }
-            }
         )
     }
 
@@ -431,6 +398,15 @@ fun ChatScreen(
                             onRemove = { viewModel.clearPendingFile() }
                         )
                     }
+                    if (uiState.videoMode) {
+                        FileAttachmentChip(
+                            fileName = stringResource(
+                                if (uiState.pendingImageBytes != null) R.string.video_mode_chip_photo
+                                else R.string.video_mode_chip
+                            ),
+                            onRemove = { viewModel.setVideoMode(false) }
+                        )
+                    }
                     if (uiState.imageMode) {
                         FileAttachmentChip(
                             fileName = stringResource(R.string.image_mode_chip),
@@ -474,24 +450,37 @@ fun ChatScreen(
                         onTextChange = { inputText = it },
                         onSend = {
                             if (inputText.isNotBlank() || uiState.pendingImageBytes != null || uiState.pendingFileText != null) {
-                                if (uiState.imageMode && Build.VERSION.SDK_INT >= 33 &&
-                                    ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
-                                    PackageManager.PERMISSION_GRANTED
-                                ) {
-                                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                }
                                 viewModel.sendMessage(inputText)
                                 inputText = ""
                             }
                         },
                         onStop = { viewModel.cancelGeneration() },
                         isLoading = uiState.isLoading || uiState.isStreaming,
-                        onAttach = { showAttachTypeDialog = true },
+                        onAttachFile = { filePickerLauncher.launch(arrayOf("text/plain", "text/html")) },
+                        onAttachPhoto = {
+                            photoPickerLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        },
+                        supportsVision = viewModel.currentProviderSupportsVision(),
                         hasAttachment = uiState.pendingImageBytes != null || uiState.pendingFileText != null,
                         imageFeatureAvailable = viewModel.imageFeatureAvailable(),
                         canGenerateImages = viewModel.canGenerateImages(),
                         imageMode = uiState.imageMode,
                         onToggleImageMode = { viewModel.setImageMode(!uiState.imageMode) },
+                        videoFeatureAvailable = viewModel.videoFeatureAvailable(),
+                        canGenerateVideos = viewModel.canGenerateVideos(),
+                        videoMode = uiState.videoMode,
+                        onToggleVideoMode = {
+                            val arming = !uiState.videoMode
+                            if (arming && Build.VERSION.SDK_INT >= 33 &&
+                                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+                                PackageManager.PERMISSION_GRANTED
+                            ) {
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            }
+                            viewModel.setVideoMode(arming)
+                        },
                         onExpandCompose = { showComposeSheet = true },
                         preferenceRepository = preferenceRepository
                     )
@@ -999,12 +988,18 @@ private fun MessageInputBar(
     onSend: () -> Unit,
     onStop: () -> Unit,
     isLoading: Boolean,
-    onAttach: () -> Unit = {},
+    onAttachFile: () -> Unit = {},
+    onAttachPhoto: () -> Unit = {},
+    supportsVision: Boolean = false,
     hasAttachment: Boolean = false,
     imageFeatureAvailable: Boolean = false,
     canGenerateImages: Boolean = false,
     imageMode: Boolean = false,
     onToggleImageMode: () -> Unit = {},
+    videoFeatureAvailable: Boolean = false,
+    canGenerateVideos: Boolean = false,
+    videoMode: Boolean = false,
+    onToggleVideoMode: () -> Unit = {},
     onExpandCompose: () -> Unit = {},
     preferenceRepository: PreferenceRepository? = null
 ) {
@@ -1044,50 +1039,68 @@ private fun MessageInputBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (!isLoading) {
-            IconButton(
-                onClick = onAttach,
-                modifier = Modifier.size(48.dp)
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_attach_clip),
-                    contentDescription = stringResource(R.string.attach_file),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-            // Drawing gets its own button rather than hiding one level down in the attach sheet:
-            // it is a different kind of action from attaching a file. It exists whenever the
-            // provider CAN draw - hiding it until an image model was chosen made the feature
-            // invisible on a fresh install. Without a chosen model it is dimmed, and tapping it
-            // says where to choose one instead of dead-ending.
-            if (imageFeatureAvailable) {
-                val drawLabel = stringResource(R.string.attach_generate_image)
-                val chooseModelFirst = stringResource(R.string.error_no_image_model)
+            // ONE + button for everything the next message can carry or become: a text file, a
+            // photo, a drawing, a video. Two separate buttons (paperclip + palette) squeezed the
+            // field and a third would not have fitted at all. Entries the provider cannot serve
+            // are absent, not greyed; a generate entry without a chosen model is dimmed and says
+            // where to choose one instead of dead-ending.
+            var menuOpen by remember { mutableStateOf(false) }
+            val chooseImageModelFirst = stringResource(R.string.error_no_image_model)
+            val chooseVideoModelFirst = stringResource(R.string.error_no_video_model)
+            Box {
                 IconButton(
-                    onClick = {
-                        if (canGenerateImages) {
-                            onToggleImageMode()
-                        } else {
-                            Toast.makeText(context, chooseModelFirst, Toast.LENGTH_LONG).show()
-                        }
-                    },
-                    modifier = Modifier
-                        .size(44.dp)
-                        .semantics { contentDescription = drawLabel }
+                    onClick = { menuOpen = true },
+                    modifier = Modifier.size(48.dp)
                 ) {
-                    // Dimmed when idle, full strength when armed, faint when no model is chosen
-                    // yet. An emoji rather than a vector because the base Material icon set has
-                    // no palette and the preset menu already reads this way.
-                    Text(
-                        text = "\uD83C\uDFA8",
-                        fontSize = 20.sp,
-                        modifier = Modifier.alpha(
-                            when {
-                                imageMode -> 1f
-                                canGenerateImages -> 0.45f
-                                else -> 0.25f
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = stringResource(R.string.attach_type_title),
+                        tint = if (imageMode || videoMode) MaterialTheme.colorScheme.tertiary
+                        else MaterialTheme.colorScheme.primary
+                    )
+                }
+                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.attach_choose_file)) },
+                        leadingIcon = {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_attach_clip),
+                                contentDescription = null
+                            )
+                        },
+                        onClick = { menuOpen = false; onAttachFile() }
+                    )
+                    if (supportsVision) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.attach_choose_image)) },
+                            leadingIcon = { Text("\uD83D\uDDBC\uFE0F", fontSize = 18.sp) },
+                            onClick = { menuOpen = false; onAttachPhoto() }
+                        )
+                    }
+                    if (imageFeatureAvailable) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.attach_generate_image)) },
+                            leadingIcon = { Text("\uD83C\uDFA8", fontSize = 18.sp) },
+                            modifier = Modifier.alpha(if (canGenerateImages) 1f else 0.4f),
+                            onClick = {
+                                menuOpen = false
+                                if (canGenerateImages) onToggleImageMode()
+                                else Toast.makeText(context, chooseImageModelFirst, Toast.LENGTH_LONG).show()
                             }
                         )
-                    )
+                    }
+                    if (videoFeatureAvailable) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.attach_generate_video)) },
+                            leadingIcon = { Text("\uD83C\uDFAC", fontSize = 18.sp) },
+                            modifier = Modifier.alpha(if (canGenerateVideos) 1f else 0.4f),
+                            onClick = {
+                                menuOpen = false
+                                if (canGenerateVideos) onToggleVideoMode()
+                                else Toast.makeText(context, chooseVideoModelFirst, Toast.LENGTH_LONG).show()
+                            }
+                        )
+                    }
                 }
             }
         }

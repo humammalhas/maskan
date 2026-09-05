@@ -17,6 +17,12 @@ interface AiProvider {
      * image models but whose request path is not implemented yet never offers a broken button.
      */
     val supportsImageGeneration: Boolean get() = false
+
+    /**
+     * Whether this provider can make VIDEO through the async job API (POST /v1/videos and
+     * friends). Gates the "Video model" setting and the composer entry.
+     */
+    val supportsVideoGeneration: Boolean get() = false
     val isLocal: Boolean get() = false
     val availableModels: List<String>
     val defaultModel: String

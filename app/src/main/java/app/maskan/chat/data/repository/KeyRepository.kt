@@ -79,6 +79,15 @@ class KeyRepository(context: Context) {
         sharedPreferences.edit().putString(providerImageModelName(providerId), model).apply()
     }
 
+    /** The model that makes VIDEO - its own preference beside the image one, same reasoning. */
+    fun getSelectedVideoModel(providerId: String): String? {
+        return sharedPreferences.getString(providerVideoModelName(providerId), null)
+    }
+
+    fun saveSelectedVideoModel(providerId: String, model: String) {
+        sharedPreferences.edit().putString(providerVideoModelName(providerId), model).apply()
+    }
+
     fun saveBaseUrl(providerId: String, url: String) {
         sharedPreferences.edit().putString(providerBaseUrlName(providerId), url).apply()
     }
@@ -110,6 +119,9 @@ class KeyRepository(context: Context) {
 
         private fun providerImageModelName(providerId: String) =
             "${PROVIDER_KEY_PREFIX}${providerId}_image_model"
+
+        private fun providerVideoModelName(providerId: String) =
+            "${PROVIDER_KEY_PREFIX}${providerId}_video_model"
 
         private fun providerBaseUrlName(providerId: String) =
             "${PROVIDER_KEY_PREFIX}${providerId}_base_url"

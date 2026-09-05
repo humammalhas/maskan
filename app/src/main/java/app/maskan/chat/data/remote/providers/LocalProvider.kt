@@ -12,6 +12,10 @@ import app.maskan.chat.data.remote.parseSSEStream
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -40,6 +44,9 @@ class LocalProvider(
      * this is not a feature, it is the argument.
      */
     override val supportsImageGeneration: Boolean = config.id == "custom"
+
+    /** Video rides on the same server as images: the Custom URL provider, and only it. */
+    override val supportsVideoGeneration: Boolean = config.id == "custom"
     override val availableModels: List<String> = config.models
     override val defaultModel: String = config.defaultModel
     override val keyAcquisitionUrl: String = config.keyAcquisitionUrl
@@ -164,18 +171,47 @@ class LocalProvider(
         )
         // Local servers are the loosest of the lot (Ollama, LM Studio, llama.cpp forks all differ),
         // so go through the same tolerant parser as the cloud providers.
-        val ids = ModelFilter.chatModelsOnly(ModelFilter.idsFrom(response))
+        val allIds = ModelFilter.idsFrom(response)
 
-        // Best-effort: ask Ollama which of those can see images. Anything else 404s here, which
-        // just means "no capability data" - the provider flag decides in that case.
-        val visionIds = try {
-            ModelFilter.ollamaVisionIds(service.listOllamaTags(), ids)
+        // Best-effort: Ollama's native tag list. It says which models see images, and its
+        // names are the chat models - anything the server lists that Ollama does not know is
+        // something else. Any other server 404s here and both uses fall back.
+        val ollamaTags = try { service.listOllamaTags() } catch (e: Exception) { null }
+
+        // The server's own account of itself (see health() in the service): the image and video
+        // buckets come from there when it exists, so nothing here guesses from names. A user
+        // typed "wan-mp4" into the image model field once because the app could not tell.
+        val health = try {
+            service.health(if (apiKey.isNotBlank()) "Bearer $apiKey" else "") as? JsonObject
         } catch (e: Exception) {
-            emptySet()
+            null
         }
+        fun healthList(key: String): List<String>? =
+            (health?.get(key) as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
+
+        val videoIds = healthList("video_models") ?: emptyList()
+        val imageIds = healthList("image_models") ?: run {
+            val ollamaNames = ModelFilter.ollamaModelNames(ollamaTags)
+            if (health != null && ollamaNames.isNotEmpty()) {
+                // A proxy that has /health but no image_models yet: the ids it serves that are
+                // neither Ollama chat models nor video models are its image models.
+                allIds.filter { it !in ollamaNames && it !in videoIds }
+            } else {
+                ModelFilter.imageIdsFromNames(allIds)
+            }
+        }
+        val ids = ModelFilter.chatModelsOnly(allIds).filter { it !in imageIds && it !in videoIds }
+
+        val visionIds = if (ollamaTags != null) ModelFilter.ollamaVisionIds(ollamaTags, ids) else emptySet()
         // Everything on the user's own machine is free by construction - tag it so the picker
         // can say so, the same way OpenRouter's published zero prices do.
-        return FetchedModels(ids = ids, visionIds = visionIds, freeIds = ids.toSet())
+        return FetchedModels(
+            ids = ids,
+            visionIds = visionIds,
+            freeIds = (ids + imageIds + videoIds).toSet(),
+            imageIds = imageIds.sorted(),
+            videoIds = videoIds.sorted()
+        )
     }
 
     override suspend fun sendMessage(

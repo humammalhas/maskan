@@ -71,6 +71,8 @@ data class SettingsUiState(
     /** Models this provider can DRAW with, and the one chosen. Separate from the chat model. */
     val imageModels: List<String> = emptyList(),
     val selectedImageModel: String = "",
+    val videoModels: List<String> = emptyList(),
+    val selectedVideoModel: String = "",
     val keyReportState: KeyReportState = KeyReportState.Idle
 )
 
@@ -106,7 +108,9 @@ class SettingsViewModel(
             modelsFetchedAt = preferenceRepository.getModelsFetchedAt(provider.id),
             unavailableModels = preferenceRepository.getUnavailableModels(provider.id),
             imageModels = preferenceRepository.getImageModels(provider.id),
-            selectedImageModel = keyRepository.getSelectedImageModel(provider.id) ?: ""
+            selectedImageModel = keyRepository.getSelectedImageModel(provider.id) ?: "",
+            videoModels = preferenceRepository.getVideoModels(provider.id),
+            selectedVideoModel = keyRepository.getSelectedVideoModel(provider.id) ?: ""
         )
 
         maybeAutoRefreshModels()
@@ -128,6 +132,8 @@ class SettingsViewModel(
             fetchModelsState = FetchModelsState.Idle,
             imageModels = preferenceRepository.getImageModels(provider.id),
             selectedImageModel = keyRepository.getSelectedImageModel(provider.id) ?: "",
+            videoModels = preferenceRepository.getVideoModels(provider.id),
+            selectedVideoModel = keyRepository.getSelectedVideoModel(provider.id) ?: "",
             keyReportState = KeyReportState.Idle
         )
         keyRepository.setDefaultProviderId(provider.id)
@@ -169,12 +175,13 @@ class SettingsViewModel(
                         }
                         // Cache it so the next Settings visit (or an offline one) still has a
                         // current list without hitting the network.
-                        preferenceRepository.saveCachedModels(providerId, models, fetched.visionIds, fetched.freeIds, fetched.imageIds)
+                        preferenceRepository.saveCachedModels(providerId, models, fetched.visionIds, fetched.freeIds, fetched.imageIds, fetched.videoIds)
                         _uiState.value.copy(
                             fetchedModels = models,
                             selectedModel = newSelected,
                             modelsFetchedAt = preferenceRepository.getModelsFetchedAt(providerId),
                             imageModels = fetched.imageIds,
+                            videoModels = fetched.videoIds,
                             fetchModelsState = FetchModelsState.Success(models.size)
                         )
                     }
@@ -446,6 +453,19 @@ class SettingsViewModel(
         val providerId = _uiState.value.selectedProvider.id
         keyRepository.saveSelectedImageModel(providerId, "")
         _uiState.value = _uiState.value.copy(selectedImageModel = "")
+    }
+
+    /** Same contract as [selectImageModel]: not verified, because a check would render a clip. */
+    fun selectVideoModel(model: String) {
+        val providerId = _uiState.value.selectedProvider.id
+        keyRepository.saveSelectedVideoModel(providerId, model)
+        _uiState.value = _uiState.value.copy(selectedVideoModel = model)
+    }
+
+    fun clearVideoModel() {
+        val providerId = _uiState.value.selectedProvider.id
+        keyRepository.saveSelectedVideoModel(providerId, "")
+        _uiState.value = _uiState.value.copy(selectedVideoModel = "")
     }
 
     /** Rejected models and the provider's words for why - drives the greyed picker section. */

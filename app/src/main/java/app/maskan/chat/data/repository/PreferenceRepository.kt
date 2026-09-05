@@ -89,13 +89,15 @@ class PreferenceRepository(context: Context) {
         models: List<String>,
         visionModels: Set<String> = emptySet(),
         freeModels: Set<String> = emptySet(),
-        imageModels: List<String> = emptyList()
+        imageModels: List<String> = emptyList(),
+        videoModels: List<String> = emptyList()
     ) {
         plainPreferences.edit()
             .putString(KEY_MODELS_PREFIX + providerId, models.joinToString("\n"))
             .putStringSet(KEY_VISION_MODELS_PREFIX + providerId, visionModels)
             .putStringSet(KEY_FREE_MODELS_PREFIX + providerId, freeModels)
             .putString(KEY_IMAGE_MODELS_PREFIX + providerId, imageModels.joinToString("\n"))
+            .putString(KEY_VIDEO_MODELS_PREFIX + providerId, videoModels.joinToString("\n"))
             .putLong(KEY_MODELS_FETCHED_AT_PREFIX + providerId, System.currentTimeMillis())
             .apply()
     }
@@ -108,6 +110,13 @@ class PreferenceRepository(context: Context) {
      */
     fun getImageModels(providerId: String): List<String> =
         plainPreferences.getString(KEY_IMAGE_MODELS_PREFIX + providerId, null)
+            ?.split("\n")
+            ?.filter { it.isNotBlank() }
+            ?: emptyList()
+
+    /** Models this provider can make VIDEO with. Same shape and caveats as [getImageModels]. */
+    fun getVideoModels(providerId: String): List<String> =
+        plainPreferences.getString(KEY_VIDEO_MODELS_PREFIX + providerId, null)
             ?.split("\n")
             ?.filter { it.isNotBlank() }
             ?: emptyList()
@@ -188,6 +197,7 @@ class PreferenceRepository(context: Context) {
 
     companion object {
         private const val KEY_IMAGE_MODELS_PREFIX = "image_models_"
+        private const val KEY_VIDEO_MODELS_PREFIX = "video_models_"
         private const val KEY_GENERATED_IMAGE_NOTE = "generated_image_note_seen"
 
         // Must differ from KeyRepository.PREFS_NAME to avoid sharing the same encrypted file.

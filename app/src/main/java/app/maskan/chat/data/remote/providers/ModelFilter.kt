@@ -23,7 +23,9 @@ data class FetchedModels(
      * what the image-generation feature needs. This is the opposite of [visionIds], which take
      * images IN.
      */
-    val imageIds: List<String> = emptyList()
+    val imageIds: List<String> = emptyList(),
+    /** Models that produce VIDEO. Their own bucket for the same reason as [imageIds]. */
+    val videoIds: List<String> = emptyList()
 )
 
 /**
@@ -118,6 +120,14 @@ object ModelFilter {
      * alongside its text family. Matching is loose because the OpenAI-compatible id and the tag
      * name can differ by a ":latest" suffix.
      */
+    /** Every model name in an Ollama /api/tags answer; empty for anything that is not one. */
+    fun ollamaModelNames(element: JsonElement?): Set<String> {
+        val models = (element as? JsonObject)?.get("models") as? JsonArray ?: return emptySet()
+        return models.mapNotNull { item ->
+            ((item as? JsonObject)?.get("name") as? JsonPrimitive)?.contentOrNull
+        }.toSet()
+    }
+
     fun ollamaVisionIds(element: JsonElement, knownIds: List<String>): Set<String> {
         val models = (element as? JsonObject)?.get("models") as? JsonArray ?: return emptySet()
         val visionNames = models.mapNotNull { item ->

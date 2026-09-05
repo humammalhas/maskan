@@ -55,6 +55,8 @@ data class ChatUiState(
      * a separate screen so the picture lands in the same conversation as the talk around it.
      */
     val imageMode: Boolean = false,
+    /** Armed to make a VIDEO of the next message (with the attached photo, if any). */
+    val videoMode: Boolean = false,
     /** True while the chat model is rewriting the user's description into an image prompt. */
     val improvingPrompt: Boolean = false,
     /**
@@ -308,7 +310,42 @@ class ChatViewModel(
     }
 
     fun setImageMode(enabled: Boolean) {
-        _uiState.value = _uiState.value.copy(imageMode = enabled)
+        _uiState.value = _uiState.value.copy(imageMode = enabled, videoMode = false)
+    }
+
+    fun videoFeatureAvailable(): Boolean {
+        val provider = ProviderRegistry.getProvider(_uiState.value.selectedProviderId)
+        return provider?.supportsVideoGeneration == true
+    }
+
+    /** Armed only with a CHOSEN video model, for the same reason as [canGenerateImages]. */
+    fun canGenerateVideos(): Boolean {
+        val providerId = _uiState.value.selectedProviderId
+        val provider = ProviderRegistry.getProvider(providerId) ?: return false
+        if (!provider.supportsVideoGeneration) return false
+        return !keyRepository.getSelectedVideoModel(providerId).isNullOrBlank()
+    }
+
+    fun setVideoMode(enabled: Boolean) {
+        _uiState.value = _uiState.value.copy(videoMode = enabled, imageMode = false)
+    }
+
+    fun generateVideo(prompt: String) {
+        if (prompt.isBlank()) return
+        val imageData = _uiState.value.pendingImageBytes
+        val imageMimeType = _uiState.value.pendingImageMimeType
+        clearPendingImage()
+        streamingJob = viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isLoading = true,
+                isStreaming = false,
+                error = null,
+                videoMode = false
+            )
+            chatRepository.generateVideo(currentConversationId, prompt, imageData, imageMimeType)
+                .catch { error -> handleSendFailure(error) }
+                .collect { event -> handleStreamEvent(event) }
+        }
     }
 
     /** Decrypted bytes for a stored image, or null if the file is missing. Never throws. */
@@ -363,6 +400,10 @@ class ChatViewModel(
         // Armed to draw: the same Send button, a different request path.
         if (_uiState.value.imageMode) {
             generateImage(content)
+            return
+        }
+        if (_uiState.value.videoMode) {
+            generateVideo(content)
             return
         }
         if (content.isBlank() && _uiState.value.pendingImageBytes == null && _uiState.value.pendingFileText == null) return

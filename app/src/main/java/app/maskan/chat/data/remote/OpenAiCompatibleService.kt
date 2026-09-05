@@ -35,6 +35,14 @@ interface OpenAiCompatibleService {
     @GET("api/tags")
     suspend fun listOllamaTags(): JsonElement
 
+    // Maskan's own local proxy (and any server that copies it) describes itself here: which
+    // ids are image models, which are video models, whether it expands prompts. /v1/models
+    // cannot say any of that. Every other server answers 404 and the caller falls back.
+    @GET("health")
+    suspend fun health(
+        @Header("Authorization") authorization: String
+    ): JsonElement
+
     // Balance endpoints. Only two of the twelve providers expose one; both are read-only.
     // OpenRouter: {"data":{"total_credits":..,"total_usage":..}} relative to its /api/ base.
     @GET("v1/credits")

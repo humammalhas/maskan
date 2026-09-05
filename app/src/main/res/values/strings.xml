@@ -322,4 +322,12 @@
     <string name="video_eta_minutes">about %1$d min left</string>
     <string name="generated_video">Generated video</string>
     <string name="play_video">Play video</string>
+    <string name="attach_generate_video">Generate a video</string>
+    <string name="video_mode_chip">The next message will become a video</string>
+    <string name="video_mode_chip_photo">The attached photo will be animated</string>
+    <string name="error_no_video_model">Choose a video model in Settings first.</string>
+    <string name="video_model_section">Video model</string>
+    <string name="video_model_label">Video model</string>
+    <string name="video_model_hint">Used only for generating videos. A local render takes a few minutes; the phone can be locked meanwhile.</string>
+    <string name="video_models_none_found">No video models loaded yet — tap \"Refresh models\", or type a model ID in the list.</string>
 </resources>

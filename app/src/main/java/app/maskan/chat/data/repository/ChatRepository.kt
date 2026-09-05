@@ -430,7 +430,7 @@ class ChatRepository(
         if (isLocalProvider && !baseUrl.isNullOrBlank()) {
             val capabilities = withContext(Dispatchers.IO) { videoJobClient.probe(baseUrl, apiKey) }
             if (capabilities != null && model in capabilities.videoModels) {
-                submitVideo(conversation, providerId, apiKey, baseUrl, model, prompt)
+                submitVideo(conversation, providerId, apiKey, baseUrl, model, prompt, null)
                 return@flow
             }
         }
@@ -498,13 +498,17 @@ class ChatRepository(
         apiKey: String,
         baseUrl: String,
         model: String,
-        prompt: String
+        prompt: String,
+        /** An attached photo makes it photo-to-video: the photo is what moves. */
+        image: Pair<ByteArray, String>?
     ) {
         val conversationId = conversation.id
         val userEntity = MessageEntity(
             conversationId = conversationId,
             role = "user",
-            content = prompt
+            content = prompt,
+            imageBase64 = image?.let { Base64.encodeToString(it.first, Base64.NO_WRAP) },
+            imageMimeType = image?.second
         )
         val userMessageId = messageDao.insertMessage(userEntity)
         emit(StreamEvent.UserSaved(userEntity.copy(id = userMessageId)))
@@ -519,7 +523,10 @@ class ChatRepository(
                 prompt = prompt,
                 seconds = DEFAULT_VIDEO_SECONDS,
                 size = DEFAULT_VIDEO_SIZE,
-                enhance = true
+                enhance = true,
+                imageDataUri = image?.let { (bytes, mime) ->
+                    "data:$mime;base64," + Base64.encodeToString(bytes, Base64.NO_WRAP)
+                }
             )
         }
 
@@ -540,6 +547,36 @@ class ChatRepository(
         }
 
         emit(StreamEvent.Done)
+    }
+
+    /**
+     * Make a video from the composer's dedicated video entry: the chosen VIDEO model, the
+     * prompt as typed, and the attached photo if there is one. Same flow shape as
+     * [generateImage]; the render itself happens in the worker.
+     */
+    fun generateVideo(
+        conversationId: Long,
+        prompt: String,
+        imageBytes: ByteArray?,
+        imageMimeType: String?
+    ): Flow<StreamEvent> = flow {
+        val conversation = conversationDao.getConversationById(conversationId)
+            ?: throw Exception("Conversation not found")
+        val providerId = conversation.providerId
+        val provider = ProviderRegistry.getProvider(providerId)
+            ?: throw Exception("Unknown provider: $providerId")
+        if (!provider.supportsVideoGeneration) throw Exception("no video model selected")
+
+        val apiKey = keyRepository.getApiKey(providerId) ?: ""
+        val baseUrl = keyRepository.getBaseUrl(providerId)?.takeIf { it.isNotBlank() }
+            ?: provider.defaultBaseUrl.takeIf { it.isNotBlank() }
+            ?: throw Exception("No server URL configured. Please enter your ${provider.displayName} server URL in Settings.")
+        val model = keyRepository.getSelectedVideoModel(providerId)
+            ?.trim()?.takeIf { it.isNotBlank() }
+            ?: throw Exception("no video model selected")
+
+        val image = if (imageBytes != null && imageMimeType != null) imageBytes to imageMimeType else null
+        submitVideo(conversation, providerId, apiKey, baseUrl, model, prompt, image)
     }
 
     /**
