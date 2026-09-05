@@ -320,4 +320,6 @@
     <string name="video_notification_channel">Video renders</string>
     <string name="video_notification_title">Maskan is making your video</string>
     <string name="video_eta_minutes">about %1$d min left</string>
+    <string name="generated_video">Generated video</string>
+    <string name="play_video">Play video</string>
 </resources>

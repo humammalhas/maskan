@@ -871,15 +871,36 @@ private fun MessageBubble(
                     // bytes are an MP4, so BitmapFactory has nothing to say about them.
                     val isVideo = message.imageMimeType?.startsWith("video/") == true
                     if (isVideo) {
-                        VideoStatus(message = message, progress = videoProgress, onCancel = onCancelVideo)
+                        val clipPath = message.imagePath
+                        if (clipPath != null && generatedImage != null) {
+                            var showPlayer by remember { mutableStateOf(false) }
+                            VideoThumbnail(
+                                cacheKey = clipPath,
+                                bytes = generatedImage,
+                                onPlay = { showPlayer = true },
+                                modifier = Modifier.padding(bottom = if (message.content.isNotBlank()) 8.dp else 0.dp)
+                            )
+                            if (showPlayer) {
+                                VideoPlayerDialog(bytes = generatedImage, onDismiss = { showPlayer = false })
+                            }
+                        } else {
+                            VideoStatus(message = message, progress = videoProgress, onCancel = onCancelVideo)
+                        }
                     }
                     if (!isVideo) generatedImage?.let { bytes ->
+                        // Animated WebP/GIF play through ImageDecoder; anything else, or an
+                        // older device, falls through to the one-frame bitmap below.
+                        val animated = AnimatedImage(
+                            bytes = bytes,
+                            mimeType = message.imageMimeType ?: "image/png",
+                            modifier = Modifier.padding(bottom = if (message.content.isNotBlank()) 8.dp else 0.dp)
+                        )
                         val bitmap = remember(bytes) {
                             try {
                                 BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
                             } catch (_: Exception) { null }
                         }
-                        bitmap?.let {
+                        if (!animated) bitmap?.let {
                             Image(
                                 bitmap = it.asImageBitmap(),
                                 contentDescription = stringResource(R.string.generated_image),
@@ -1246,7 +1267,8 @@ private fun shareImageBytes(context: Context, bytes: ByteArray, mimeType: String
     try {
         val dir = java.io.File(context.cacheDir, "shared_images").apply { mkdirs() }
         dir.listFiles()?.forEach { it.delete() }
-        val file = java.io.File(dir, "maskan-image.${extensionFor(mimeType)}")
+        val stem = if (mimeType.startsWith("video/")) "maskan-video" else "maskan-image"
+        val file = java.io.File(dir, "$stem.${extensionFor(mimeType)}")
         file.writeBytes(bytes)
 
         val uri = androidx.core.content.FileProvider.getUriForFile(
@@ -1281,9 +1303,11 @@ private fun VideoStatus(
     onCancel: () -> Unit
 ) {
     when {
+        // Only reached when the stored file could not be read back (the bubble draws the
+        // thumbnail itself whenever the bytes are there).
         message.imagePath != null -> {
             Text(
-                text = "\uD83C\uDFAC " + stringResource(R.string.video_ready),
+                text = stringResource(R.string.video_ready),
                 style = MaterialTheme.typography.bodyMedium
             )
         }

@@ -320,4 +320,6 @@
     <string name="video_notification_channel">การสร้างวิดีโอ</string>
     <string name="video_notification_title">Maskan กำลังสร้างวิดีโอ</string>
     <string name="video_eta_minutes">เหลืออีกประมาณ %1$d นาที</string>
+    <string name="generated_video">วิดีโอที่สร้างขึ้น</string>
+    <string name="play_video">เล่นวิดีโอ</string>
 </resources>

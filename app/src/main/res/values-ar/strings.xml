@@ -320,4 +320,6 @@
     <string name="video_notification_channel">إنشاء الفيديو</string>
     <string name="video_notification_title">مسكن يُنشئ الفيديو</string>
     <string name="video_eta_minutes">يتبقّى نحو %1$d د</string>
+    <string name="generated_video">فيديو مُولّد</string>
+    <string name="play_video">تشغيل الفيديو</string>
 </resources>
