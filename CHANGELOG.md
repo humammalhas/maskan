@@ -2,9 +2,21 @@
 
 All notable changes to Maskan are documented here.
 
-## [Unreleased]
+## [2.5.0] — 2026-09-05
 
 ### Added
+- **Video messages** — tap **+** then 🎬 and the next message becomes a short clip. A local render on your own server takes minutes, so the app hands the job to a background worker: lock the phone, put it away, and the clip is in the chat when you come back, with a quiet progress notification and a Cancel. Progress, the time left and the server's expanded description of the scene show in the bubble
+- **Video on cloud providers** — Google Gemini (Veo 3.1), OpenRouter, Venice and Together AI, each through its own API behind the same background worker. Every provider has its own video model, chosen in Settings
+- **Photo to video** — attach a photo, then 🎬, and it animates; works on the local server and every cloud provider that offers it
+- **Edit the attached photo** — attach a photo, tap **+** then ✏️, type what to change. Works on your local server (flux2-edit), Gemini, OpenAI (gpt-image-1), OpenRouter, Venice and Together (FLUX.1 Kontext)
+- **Size and length chips** with their cost — before a clip is made you see how long it will take on your own server, or roughly what it costs on a cloud provider; Venice shows its own live quote
+- **Image shape chips** (1:1, 16:9, 9:16) when drawing on your own server
+- **One + menu** replaces the paperclip and palette: text file, photo, generate image, edit photo, generate video. Entries a provider cannot serve are absent; entries that need a model first are dimmed and say so
+- **Try again** on any refused request — a drawing, an edit, a video or a chat reply — resends the same request with the same photo and choices
+- Video playback in the chat: a thumbnail with a play badge, a full-screen looping player, Save (a real .mp4) and Share
+- Animated WebP now animates in the chat instead of showing its first frame
+- **Custom URL image generation** — draw on your own server (LocalAI, or ComfyUI behind an OpenAI-compatible proxy) exactly like a cloud provider; the picture never leaves your network. Image and video models are read from the server itself
+- Drawings and edits show what they are doing and for how long instead of an empty bubble
 - **"What can my key do?"** — one button in Settings that answers in plain language: whether chat actually works with your key (and the provider's own reason when it doesn't), how many models you can choose from, which are free where the provider really publishes that, whether it can draw, and your live account balance on OpenRouter and DeepSeek
 - **Image generation with OpenRouter** — one key now draws with Gemini, GPT-Image and more through OpenRouter; verified end-to-end
 - A one-line description under each provider saying what it is — everyone knows ChatGPT, nobody knows Groq or Venice
@@ -12,6 +24,9 @@ All notable changes to Maskan are documented here.
 - Models on your own local server are tagged free
 
 ### Changed
+- Provider errors from cloud video and image services are shown in the provider's own words instead of "no internet"
+- The Image (attach a photo) entry is always listed and explains itself when the current chat model cannot take a photo
+- Save and Share honour the real file format (PNG, JPEG, WebP, MP4) instead of always naming the file .png
 - The 🎨 draw button is always visible when a provider can generate images — dimmed with a hint to choose an image model, instead of invisible on a fresh install
 - Providers that cannot generate images now say so plainly in Settings instead of showing nothing
 - Together AI's image error now explains the two account settings that unblock its image models

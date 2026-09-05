@@ -30,7 +30,8 @@ All of the following data is stored locally on your device and is never transmit
 When you send a chat message, Maskan transmits the following to the AI provider you have configured:
 
 - Your message text (and attached images or text-file contents, if applicable)
-- The description you write when generating an image, sent to the provider that draws it
+- The description you write when generating an image or a video, sent to the provider that makes it; a photo you attach for editing or for animating is sent to that provider as well
+- When a clip is made on a cloud provider, the app asks that provider for the job's status until the clip is ready, then downloads it; the job identifier is kept on your device only until the clip has arrived
 - If you use the AI prompt helper, the description is first sent to your selected chat model at the same provider, which rewrites it before you approve it
 - Recent conversation history (up to 50 messages for context)
 - Your system prompt, if one is selected
@@ -46,10 +47,12 @@ The app's network access is restricted via Android's network security configurat
 
 ## Permissions
 
-Maskan requests two Android permissions:
+Maskan requests these Android permissions:
 
 - **INTERNET** — Required to communicate with the AI provider APIs you configure.
 - **RECORD_AUDIO** — Used for optional voice-to-text input. Maskan launches the Android system's built-in speech recognizer; it does not record, store, or transmit audio itself. You can use the app without granting this permission.
+- **FOREGROUND_SERVICE** and **FOREGROUND_SERVICE_DATA_SYNC** — A video clip takes minutes to make. While one is being made, the app runs a foreground service so that Android lets it keep checking on the clip with the screen off. It does nothing else and stops when the clip has arrived, failed, or been cancelled.
+- **POST_NOTIFICATIONS** — Shows a quiet progress notification for a video that is being made, with a Cancel button. Notifications are generated on your device only and contain no message content. You can decline this permission; the video is still made.
 
 Voice narration (text-to-speech) uses whichever text-to-speech engine you have set as your device's default; Maskan sends it only the on-screen reply text to be spoken aloud, locally on your device.
 

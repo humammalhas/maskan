@@ -1,0 +1,9 @@
+Video, photo editing, and one + menu.
+
+- Generate short video clips: tap + then the clapperboard. On your own server the clip renders in the background - lock the phone and it is there when you return
+- Video on Google Gemini (Veo), OpenRouter, Venice and Together AI too, each with its own video model
+- Attach a photo and animate it, or tap the pencil to edit it - on your own server, Gemini, OpenAI, OpenRouter, Venice and Together
+- Size and length chips show the time or cost before you start
+- Draw on your own server (LocalAI or a ComfyUI proxy); image shape chips
+- Try again on any refused request
+- Animated WebP now animates
