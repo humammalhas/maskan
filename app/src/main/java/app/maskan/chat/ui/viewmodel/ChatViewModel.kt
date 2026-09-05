@@ -71,6 +71,8 @@ data class ChatUiState(
     val videoSize: String = VideoOptions.DEFAULT_SIZE,
     val videoSeconds: Int = VideoOptions.DEFAULT_SECONDS,
     val imageSize: String = VideoOptions.DEFAULT_IMAGE_SIZE,
+    /** The server's own price for the armed video choice (Venice quotes; others do not). */
+    val videoQuote: Double? = null,
     /** True while the chat model is rewriting the user's description into an image prompt. */
     val improvingPrompt: Boolean = false,
     /**
@@ -383,11 +385,29 @@ class ChatViewModel(
     fun setVideoSize(size: String) {
         preferenceRepository.setVideoSize(size)
         _uiState.value = _uiState.value.copy(videoSize = size)
+        refreshVideoQuote()
     }
 
     fun setVideoSeconds(seconds: Int) {
         preferenceRepository.setVideoSeconds(seconds)
         _uiState.value = _uiState.value.copy(videoSeconds = seconds)
+        refreshVideoQuote()
+    }
+
+    private var quoteJob: Job? = null
+
+    /** One small request per change of choice; the answer is the provider's, not ours. */
+    private fun refreshVideoQuote() {
+        quoteJob?.cancel()
+        _uiState.value = _uiState.value.copy(videoQuote = null)
+        if (!_uiState.value.videoMode) return
+        val state = _uiState.value
+        quoteJob = viewModelScope.launch {
+            val quote = chatRepository.quoteVideo(
+                state.selectedProviderId, selectedVideoModel(), state.videoSeconds, state.videoSize
+            )
+            if (_uiState.value.videoMode) _uiState.value = _uiState.value.copy(videoQuote = quote)
+        }
     }
 
     fun setImageSize(size: String) {
@@ -401,6 +421,7 @@ class ChatViewModel(
 
     fun setVideoMode(enabled: Boolean) {
         _uiState.value = _uiState.value.copy(videoMode = enabled, imageMode = false, editMode = false)
+        refreshVideoQuote()
     }
 
     fun selectedVideoModel(): String =

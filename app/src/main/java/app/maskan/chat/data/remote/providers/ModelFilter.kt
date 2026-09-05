@@ -120,6 +120,22 @@ object ModelFilter {
      * alongside its text family. Matching is loose because the OpenAI-compatible id and the tag
      * name can differ by a ":latest" suffix.
      */
+    /**
+     * Venice's ?type=video catalogue: every entry is typed "video", which idsFrom rightly drops
+     * from a chat list, so read the ids here - and only the kinds the app can feed: a prompt, or
+     * a prompt plus one photo. Reference- and video-to-video variants need inputs it has not got.
+     */
+    fun veniceVideoIdsFrom(element: JsonElement): List<String> {
+        val array = (element as? JsonObject)?.get("data") as? JsonArray ?: return emptyList()
+        return array.mapNotNull { item ->
+            val obj = item as? JsonObject ?: return@mapNotNull null
+            val id = (obj["id"] as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null
+            val kind = ((obj["model_spec"] as? JsonObject)?.get("constraints") as? JsonObject)
+                ?.get("model_type")?.let { (it as? JsonPrimitive)?.contentOrNull }
+            if (kind == "text-to-video" || kind == "image-to-video") id else null
+        }.distinct().sorted()
+    }
+
     /** Ids whose architecture.output_modalities contains "video" (OpenRouter's catalogue). */
     fun videoIdsFrom(element: JsonElement): List<String> {
         val array = when (element) {

@@ -34,15 +34,21 @@ object VideoOptions {
 
     private val LOCAL_LENGTHS = listOf(5, 10, 15)
     private val VEO_LENGTHS = listOf(4, 6, 8)
+    private val VENICE_LENGTHS = listOf(5, 10)
 
     const val DEFAULT_SIZE = "576x1024"
     const val DEFAULT_SECONDS = 5
 
     /** Providers whose video is billed per second rather than rendered on the user's own GPU. */
-    fun isCloud(providerId: String): Boolean = providerId == "gemini" || providerId == "openrouter"
+    fun isCloud(providerId: String): Boolean =
+        providerId == "gemini" || providerId == "openrouter" || providerId == "venice"
 
     fun sizesFor(providerId: String): List<SizeOption> = if (isCloud(providerId)) VEO_SIZES else LOCAL_SIZES
-    fun lengthsFor(providerId: String): List<Int> = if (isCloud(providerId)) VEO_LENGTHS else LOCAL_LENGTHS
+    fun lengthsFor(providerId: String): List<Int> = when {
+        providerId == "venice" -> VENICE_LENGTHS
+        isCloud(providerId) -> VEO_LENGTHS
+        else -> LOCAL_LENGTHS
+    }
     fun defaultSize(providerId: String): String = sizesFor(providerId).first().id
     fun defaultSeconds(providerId: String): Int = lengthsFor(providerId).first()
 

@@ -689,6 +689,18 @@ class ChatRepository(
         messageDao.deleteMessageById(messageId)
     }
 
+    /** The provider's own price for a clip, when it will quote one (Venice); null otherwise. */
+    suspend fun quoteVideo(providerId: String, model: String, seconds: Int, size: String): Double? {
+        if (model.isBlank()) return null
+        val quoter = videoBackendFor(providerId) as? app.maskan.chat.data.remote.VideoQuoter ?: return null
+        val provider = ProviderRegistry.getProvider(providerId) ?: return null
+        val baseUrl = keyRepository.getBaseUrl(providerId)?.takeIf { it.isNotBlank() } ?: provider.defaultBaseUrl
+        val apiKey = keyRepository.getApiKey(providerId) ?: ""
+        return withContext(Dispatchers.IO) {
+            runCatching { quoter.quote(baseUrl, apiKey, model, seconds, size) }.getOrNull()
+        }
+    }
+
     /** One-shot read, for refreshing the open chat after a background worker changed a row. */
     suspend fun getMessagesOnce(conversationId: Long): List<MessageEntity> =
         messageDao.getMessagesForConversationOnce(conversationId)

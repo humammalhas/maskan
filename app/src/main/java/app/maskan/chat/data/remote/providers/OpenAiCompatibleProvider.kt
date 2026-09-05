@@ -46,7 +46,7 @@ class OpenAiCompatibleProvider(
      * OpenRouter serves video jobs in (nearly) the same shape as the local proxy - POST
      * /api/v1/videos, poll, /content - so it rides the same client. Billed per second.
      */
-    override val supportsVideoGeneration: Boolean get() = id == "openrouter"
+    override val supportsVideoGeneration: Boolean get() = id == "openrouter" || id == "venice"
 
     private fun buildMessages(
         messages: List<Message>,
@@ -109,13 +109,18 @@ class OpenAiCompatibleProvider(
         // is why 38 of them were invisible. Failing that call must not break the chat list.
         if (id == "venice") {
             val imageJson = runCatching { apiService.listModels(auth, type = "image") }.getOrNull()
+            // Video models live behind ?type=video the same way.
+            val videoJson = runCatching { apiService.listModels(auth, type = "video") }.getOrNull()
+            val videoIds = videoJson?.let { ModelFilter.veniceVideoIdsFrom(it) } ?: emptyList()
             if (imageJson != null) {
                 return buildResult(
                     ModelFilter.chatModelsOnly(ModelFilter.idsFrom(response)),
                     response,
                     imageSource = imageJson
-                )
+                ).copy(videoIds = videoIds)
             }
+            return buildResult(ModelFilter.chatModelsOnly(ModelFilter.idsFrom(response)), response)
+                .copy(videoIds = videoIds)
         }
 
         return buildResult(ModelFilter.chatModelsOnly(ModelFilter.idsFrom(response)), response)

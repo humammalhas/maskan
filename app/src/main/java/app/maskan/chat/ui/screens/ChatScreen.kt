@@ -421,6 +421,17 @@ fun ChatScreen(
                             onSize = { viewModel.setVideoSize(it) },
                             onSeconds = { viewModel.setVideoSeconds(it) }
                         )
+                        uiState.videoQuote?.let { quote ->
+                            Text(
+                                text = stringResource(
+                                    R.string.video_quote_fmt,
+                                    String.format(java.util.Locale.US, "%.2f", quote)
+                                ),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+                            )
+                        }
                     }
                     if (uiState.imageMode) {
                         FileAttachmentChip(

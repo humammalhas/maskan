@@ -25,6 +25,7 @@ import app.maskan.chat.data.local.AppDatabase
 import app.maskan.chat.data.remote.AnthropicService
 import app.maskan.chat.data.remote.GeminiService
 import app.maskan.chat.data.remote.OpenAiCompatibleService
+import app.maskan.chat.data.remote.VeniceVideoClient
 import app.maskan.chat.data.remote.VeoVideoClient
 import app.maskan.chat.data.remote.VideoBackend
 import app.maskan.chat.data.remote.VideoJobClient
@@ -127,8 +128,13 @@ class MaskanApplication : Application() {
     val veoVideoClient by lazy { VeoVideoClient(sharedOkHttpClient, json) }
 
     /** Which wire shape a provider's video jobs use. Gemini is Veo; everything else is Sora-shaped. */
-    fun videoBackendFor(providerId: String): VideoBackend =
-        if (providerId == "gemini") veoVideoClient else videoJobClient
+    val veniceVideoClient by lazy { VeniceVideoClient(sharedOkHttpClient, json) }
+
+    fun videoBackendFor(providerId: String): VideoBackend = when (providerId) {
+        "gemini" -> veoVideoClient
+        "venice" -> veniceVideoClient
+        else -> videoJobClient
+    }
 
     val videoJobs by lazy { VideoJobs(this) }
 

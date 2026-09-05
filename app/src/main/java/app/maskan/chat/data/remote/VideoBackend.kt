@@ -24,3 +24,9 @@ interface VideoBackend {
 
     fun cancel(baseUrl: String, apiKey: String, jobId: String)
 }
+
+/** A backend that can price a clip before making it. Only Venice offers this today. */
+interface VideoQuoter {
+    /** USD for one clip, or null when the server would not say. Blocking. */
+    fun quote(baseUrl: String, apiKey: String, model: String, seconds: Int, size: String): Double?
+}
