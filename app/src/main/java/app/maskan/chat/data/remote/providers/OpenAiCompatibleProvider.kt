@@ -33,7 +33,13 @@ class OpenAiCompatibleProvider(
     override val defaultModel: String,
     override val keyAcquisitionUrl: String,
     override val pricingInfo: String,
-    private val apiService: OpenAiCompatibleService
+    private val apiService: OpenAiCompatibleService,
+    /**
+     * The same service on a client with a long read timeout. A cloud drawing or photo edit is
+     * tens of seconds to minutes (Together's Kontext edit timed out the 60 s chat client on
+     * 2026-09-05); chat keeps its tight timeout, images get their own.
+     */
+    private val imageService: OpenAiCompatibleService = apiService
 ) : AiProvider {
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
@@ -188,7 +194,7 @@ class OpenAiCompatibleProvider(
             else -> "b64_json"
         }
         val response = try {
-            apiService.createImage(
+            imageService.createImage(
                 authorization = auth,
                 request = ImageGenerationRequest(model = model, prompt = prompt, responseFormat = format)
             )
@@ -253,7 +259,7 @@ class OpenAiCompatibleProvider(
                         add(JsonPrimitive("text"))
                     })
                 }
-                val response = apiService.createChatCompletionRaw(auth, request)
+                val response = imageService.createChatCompletionRaw(auth, request)
                 val message = ((response as? JsonObject)?.get("choices") as? JsonArray)
                     ?.firstOrNull()?.let { it as? JsonObject }
                     ?.get("message") as? JsonObject
@@ -269,7 +275,7 @@ class OpenAiCompatibleProvider(
                     put("image", JsonPrimitive(imageDataUri.substring(comma + 1)))
                 }
                 val body = try {
-                    apiService.veniceEditImage(auth, request)
+                    imageService.veniceEditImage(auth, request)
                 } catch (e: retrofit2.HttpException) {
                     val errBody = runCatching { e.response()?.errorBody()?.string() }.getOrNull()
                     if (app.maskan.chat.BuildConfig.DEBUG) android.util.Log.w("Maskan", "venice edit ${e.code()}: ${errBody?.take(600)}")
@@ -284,12 +290,21 @@ class OpenAiCompatibleProvider(
             "together" -> {
                 // The ordinary image endpoint with the photo in image_url; the selected image
                 // model must be one that edits (FLUX.1 Kontext), which Together's 400 will say.
-                val response = apiService.createImage(
-                    authorization = auth,
-                    request = ImageGenerationRequest(
-                        model = model, prompt = prompt, responseFormat = "base64", imageUrl = imageDataUri
+                val response = try {
+                    imageService.createImage(
+                        authorization = auth,
+                        request = ImageGenerationRequest(
+                            model = model, prompt = prompt, responseFormat = "base64", imageUrl = imageDataUri
+                        )
                     )
-                )
+                } catch (e: retrofit2.HttpException) {
+                    val errBody = runCatching { e.response()?.errorBody()?.string() }.getOrNull()
+                    if (app.maskan.chat.BuildConfig.DEBUG) android.util.Log.w("Maskan", "together edit ${e.code()}: ${errBody?.take(600)}")
+                    throw app.maskan.chat.data.remote.ApiHttpException(
+                        code = e.code(),
+                        providerMessage = errBody?.let { app.maskan.chat.data.remote.extractProviderMessage(it) ?: it.take(300) }
+                    )
+                }
                 ImageResponseParser.parse(response) { url -> apiService.downloadUrl(url).bytes() }
             }
             "openai" -> {
@@ -300,7 +315,7 @@ class OpenAiCompatibleProvider(
                 val bytes = Base64.decode(imageDataUri.substring(comma + 1), Base64.NO_WRAP)
                 val ext = when (mime) { "image/jpeg" -> "jpg"; "image/webp" -> "webp"; else -> "png" }
                 val text = "text/plain".toMediaType()
-                val response = apiService.openAiEditImage(
+                val response = imageService.openAiEditImage(
                     authorization = auth,
                     model = model.toRequestBody(text),
                     prompt = prompt.toRequestBody(text),
@@ -332,7 +347,7 @@ class OpenAiCompatibleProvider(
                 add(JsonPrimitive("text"))
             })
         }
-        val response = apiService.createChatCompletionRaw(auth, request)
+        val response = imageService.createChatCompletionRaw(auth, request)
         val message = ((response as? JsonObject)?.get("choices") as? JsonArray)
             ?.firstOrNull()?.let { it as? JsonObject }
             ?.get("message") as? JsonObject

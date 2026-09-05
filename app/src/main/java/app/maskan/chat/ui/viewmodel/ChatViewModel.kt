@@ -339,7 +339,14 @@ class ChatViewModel(
         val providerId = _uiState.value.selectedProviderId
         val provider = ProviderRegistry.getProvider(providerId) ?: return null
         if (!provider.supportsImageGeneration) return null
-        // Cloud: the chosen image model edits too. Local: a dedicated edit model, by name.
+        // Together edits only on FLUX.1 Kontext, so its edit model is found in the list by name
+        // (Together's own words otherwise: "Unsupported use of 'image_url' parameter").
+        // Other cloud providers edit with the chosen image model. Local: a named edit model.
+        if (providerId == "together") {
+            return app.maskan.chat.data.remote.providers.ModelFilter.editModelIn(
+                preferenceRepository.getImageModels(providerId)
+            )
+        }
         if (provider.supportsImageEditing) {
             return keyRepository.getSelectedImageModel(providerId)?.trim()?.takeIf { it.isNotBlank() }
         }
@@ -358,6 +365,11 @@ class ChatViewModel(
         val mime = _uiState.value.pendingImageMimeType ?: "image/jpeg"
         val model = editModel() ?: return
         clearPendingImage()
+        runEdit(prompt, bytes, mime, model)
+    }
+
+    private fun runEdit(prompt: String, bytes: ByteArray, mime: String, model: String) {
+        lastRequest = { runEdit(prompt, bytes, mime, model) }
         streamingJob = viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
                 isLoading = true,
@@ -436,6 +448,11 @@ class ChatViewModel(
         val imageData = _uiState.value.pendingImageBytes
         val imageMimeType = _uiState.value.pendingImageMimeType
         clearPendingImage()
+        runVideo(prompt, imageData, imageMimeType)
+    }
+
+    private fun runVideo(prompt: String, imageData: ByteArray?, imageMimeType: String?) {
+        lastRequest = { runVideo(prompt, imageData, imageMimeType) }
         streamingJob = viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
                 isLoading = true,
@@ -487,6 +504,7 @@ class ChatViewModel(
 
     fun generateImage(prompt: String) {
         if (prompt.isBlank()) return
+        lastRequest = { generateImage(prompt) }
         streamingJob = viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
                 isLoading = true,
@@ -534,6 +552,14 @@ class ChatViewModel(
         clearPendingImage()
         clearPendingFile()
 
+        lastRequest = {
+            streamingJob = viewModelScope.launch {
+                _uiState.value = _uiState.value.copy(isLoading = true, isStreaming = false, error = null)
+                chatRepository.regenerateLastReply(currentConversationId)
+                    .catch { error -> handleSendFailure(error) }
+                    .collect { event -> handleStreamEvent(event) }
+            }
+        }
         streamingJob = viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, isStreaming = false, error = null)
 
@@ -787,6 +813,22 @@ class ChatViewModel(
 
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null, recoverableModel = null)
+    }
+
+    /**
+     * The last thing the user asked for, so a refused request - a provider 4xx, a timeout, a
+     * dead link - is one tap from being asked again. Held as a closure because the four request
+     * kinds carry different state (a photo, a model, the shape chips) that the composer has
+     * already let go of by the time the error shows.
+     */
+    private var lastRequest: (() -> Unit)? = null
+
+    fun canRetry(): Boolean = lastRequest != null
+
+    fun retryLast() {
+        val request = lastRequest ?: return
+        clearError()
+        request()
     }
 
     companion object {

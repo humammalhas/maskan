@@ -175,7 +175,7 @@ object ModelFilter {
      * what hides the edit entry in the composer.
      */
     fun editModelIn(imageModels: List<String>): String? =
-        imageModels.firstOrNull { it.lowercase().contains("edit") }
+        imageModels.firstOrNull { it.lowercase().contains("edit") || it.lowercase().contains("kontext") }
 
     /** Every model name in an Ollama /api/tags answer; empty for anything that is not one. */
     fun ollamaModelNames(element: JsonElement?): Set<String> {

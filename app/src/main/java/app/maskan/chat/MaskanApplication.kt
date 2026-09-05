@@ -96,10 +96,12 @@ class MaskanApplication : Application() {
             .build()
     }
 
-    private fun createOpenAiService(baseUrl: String): OpenAiCompatibleService {
+    private fun createOpenAiService(baseUrl: String, readTimeoutSeconds: Long = 60): OpenAiCompatibleService {
+        val client = if (readTimeoutSeconds == 60L) sharedOkHttpClient
+        else sharedOkHttpClient.newBuilder().readTimeout(readTimeoutSeconds, TimeUnit.SECONDS).build()
         return Retrofit.Builder()
             .baseUrl(baseUrl)
-            .client(sharedOkHttpClient)
+            .client(client)
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
             .create(OpenAiCompatibleService::class.java)
@@ -243,7 +245,8 @@ class MaskanApplication : Application() {
                 defaultModel = config.defaultModel,
                 keyAcquisitionUrl = config.keyAcquisitionUrl,
                 pricingInfo = config.pricingInfo,
-                apiService = service
+                apiService = service,
+                imageService = createOpenAiService(config.baseUrl, readTimeoutSeconds = 300)
             )
             ProviderRegistry.register(provider)
         }

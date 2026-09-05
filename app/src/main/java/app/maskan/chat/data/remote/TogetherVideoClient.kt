@@ -58,16 +58,16 @@ class TogetherVideoClient(baseClient: OkHttpClient, private val json: Json) : Vi
         enhance: Boolean,
         imageDataUri: String?
     ): String {
-        val (w, h) = when {
-            size.contains('x') -> size.substringBefore('x').toInt() to size.substringAfter('x').toInt()
-            size == "9:16" -> 720 to 1280
-            else -> 1280 to 720
-        }
+        // Together's video API is /v2 with resolution + ratio (its Wan 2.7 quickstart, verified
+        // live 2026-09-05: /v1/videos answers an HTML 404, /v2/videos answers the API).
+        val ratio = if (size.contains('x')) {
+            if (size.substringBefore('x').toInt() >= size.substringAfter('x').toInt()) "16:9" else "9:16"
+        } else size
         val body = buildJsonObject {
             put("model", model)
             put("prompt", prompt)
-            put("width", w)
-            put("height", h)
+            put("resolution", "720P")
+            put("ratio", ratio)
             put("seconds", seconds.toString())
             if (imageDataUri != null) {
                 put("media", buildJsonObject {
@@ -81,7 +81,7 @@ class TogetherVideoClient(baseClient: OkHttpClient, private val json: Json) : Vi
             }
         }
         val request = Request.Builder()
-            .url("${root(baseUrl)}/v1/videos")
+            .url("${root(baseUrl)}/v2/videos")
             .post(body.toString().toRequestBody(JSON_MEDIA_TYPE))
             .auth(apiKey)
             .build()
@@ -128,7 +128,7 @@ class TogetherVideoClient(baseClient: OkHttpClient, private val json: Json) : Vi
 
     private fun job(baseUrl: String, apiKey: String, jobId: String): JsonObject {
         val request = Request.Builder()
-            .url("${root(baseUrl)}/v1/videos/$jobId")
+            .url("${root(baseUrl)}/v2/videos/$jobId")
             .get()
             .auth(apiKey)
             .build()

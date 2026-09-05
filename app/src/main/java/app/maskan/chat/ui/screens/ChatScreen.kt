@@ -364,6 +364,12 @@ fun ChatScreen(
                                 Text(stringResource(R.string.switch_model_and_retry, recoverable))
                             }
                         }
+                    } else if (viewModel.canRetry()) {
+                        {
+                            TextButton(onClick = { viewModel.retryLast() }) {
+                                Text(stringResource(R.string.video_retry))
+                            }
+                        }
                     } else null,
                     dismissAction = {
                         TextButton(onClick = { viewModel.clearError() }) {
