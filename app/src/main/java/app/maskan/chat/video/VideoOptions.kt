@@ -41,7 +41,8 @@ object VideoOptions {
 
     /** Providers whose video is billed per second rather than rendered on the user's own GPU. */
     fun isCloud(providerId: String): Boolean =
-        providerId == "gemini" || providerId == "openrouter" || providerId == "venice"
+        providerId == "gemini" || providerId == "openrouter" || providerId == "venice" ||
+            providerId == "together"
 
     fun sizesFor(providerId: String): List<SizeOption> = if (isCloud(providerId)) VEO_SIZES else LOCAL_SIZES
     fun lengthsFor(providerId: String): List<Int> = when {

@@ -194,6 +194,10 @@ data class ImageGenerationRequest(
      */
     @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
     val image: String? = null,
+    /** Together's photo-edit input (FLUX Kontext and friends): a URL or a data: URL. */
+    @SerialName("image_url")
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
+    val imageUrl: String? = null,
     /** "WxH". Only the local path sends it; cloud size vocabularies differ and are left alone. */
     @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
     val size: String? = null

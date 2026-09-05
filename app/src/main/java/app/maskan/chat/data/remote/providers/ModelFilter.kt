@@ -136,6 +136,20 @@ object ModelFilter {
         }.distinct().sorted()
     }
 
+    /** Ids whose entry carries `type == wanted` (Together tags every model with a type). */
+    fun typedIdsFrom(element: JsonElement, wanted: String): List<String> {
+        val array = when (element) {
+            is JsonArray -> element
+            is JsonObject -> (element["data"] ?: element["models"]) as? JsonArray
+            else -> null
+        } ?: return emptyList()
+        return array.mapNotNull { item ->
+            val obj = item as? JsonObject ?: return@mapNotNull null
+            val type = (obj["type"] as? JsonPrimitive)?.contentOrNull?.lowercase()
+            if (type == wanted) (obj["id"] as? JsonPrimitive)?.contentOrNull else null
+        }.distinct().sorted()
+    }
+
     /** Ids whose architecture.output_modalities contains "video" (OpenRouter's catalogue). */
     fun videoIdsFrom(element: JsonElement): List<String> {
         val array = when (element) {

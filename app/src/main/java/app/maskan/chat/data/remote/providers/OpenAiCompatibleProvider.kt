@@ -48,10 +48,12 @@ class OpenAiCompatibleProvider(
      * OpenRouter serves video jobs in (nearly) the same shape as the local proxy - POST
      * /api/v1/videos, poll, /content - so it rides the same client. Billed per second.
      */
-    override val supportsVideoGeneration: Boolean get() = id == "openrouter" || id == "venice"
+    override val supportsVideoGeneration: Boolean get() =
+        id == "openrouter" || id == "venice" || id == "together"
 
     /** OpenRouter edits through the chat endpoint with the photo attached; Venice has /image/edit. */
-    override val supportsImageEditing: Boolean get() = id == "openrouter" || id == "venice" || id == "openai"
+    override val supportsImageEditing: Boolean get() =
+        id == "openrouter" || id == "venice" || id == "openai" || id == "together"
 
     private fun buildMessages(
         messages: List<Message>,
@@ -97,6 +99,7 @@ class OpenAiCompatibleProvider(
                 // Read the image bucket from the FULL catalogue instead.
                 val fullJson = runCatching { apiService.listModels(auth) }.getOrNull()
                 return buildResult(serverless, serverlessJson, imageSource = fullJson ?: serverlessJson)
+                    .copy(videoIds = ModelFilter.typedIdsFrom(fullJson ?: serverlessJson, "video"))
             }
         }
 
@@ -277,6 +280,17 @@ class OpenAiCompatibleProvider(
                 }
                 val mime = body.contentType()?.let { "${it.type}/${it.subtype}" } ?: "image/png"
                 GeneratedImage(body.bytes(), mime)
+            }
+            "together" -> {
+                // The ordinary image endpoint with the photo in image_url; the selected image
+                // model must be one that edits (FLUX.1 Kontext), which Together's 400 will say.
+                val response = apiService.createImage(
+                    authorization = auth,
+                    request = ImageGenerationRequest(
+                        model = model, prompt = prompt, responseFormat = "base64", imageUrl = imageDataUri
+                    )
+                )
+                ImageResponseParser.parse(response) { url -> apiService.downloadUrl(url).bytes() }
             }
             "openai" -> {
                 // /v1/images/edits is multipart: the photo travels as a file part.
