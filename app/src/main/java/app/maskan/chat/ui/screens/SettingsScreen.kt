@@ -57,6 +57,7 @@ import app.maskan.chat.R
 import app.maskan.chat.data.local.isAppArabic
 import app.maskan.chat.data.model.Dialect
 import app.maskan.chat.data.remote.providers.OnDeviceProvider
+import app.maskan.chat.util.EndpointPlace
 import app.maskan.chat.ui.viewmodel.SettingsViewModel
 import app.maskan.chat.ui.viewmodel.TestConnectionState
 import app.maskan.chat.ui.viewmodel.FetchModelsState
@@ -268,24 +269,41 @@ fun SettingsScreen(
             )
 
             Spacer(modifier = Modifier.height(8.dp))
-            val badgeColor = if (selectedProvider.isLocal)
-                MaterialTheme.colorScheme.tertiary
-            else
-                MaterialTheme.colorScheme.outline
-            Text(
-                text = if (selectedProvider.isLocal)
-                    stringResource(R.string.provider_badge_local)
+            // Where the words go, read from the address requests are sent to - never from a flag.
+            // A static "local" on Custom labelled a third-party cloud "stays on device". Three
+            // places, because Ollama on the PC across the room is not "on device" either; the host
+            // is named, because "sent to api.cerebras.ai" is the sentence the user can check.
+            val endpoint = if (selectedProvider.supportsCustomBaseUrl) state.savedBaseUrl
+                else selectedProvider.defaultBaseUrl
+            val place = when {
+                selectedProvider.id == OnDeviceProvider.ID -> EndpointPlace.Place.PHONE
+                selectedProvider.supportsCustomBaseUrl -> EndpointPlace.placeOf(endpoint)
+                else -> EndpointPlace.Place.REMOTE
+            }
+            // No address saved yet (Custom out of the box): nothing goes anywhere, so no badge.
+            if (place != null) {
+                // In a first-strong isolate, so a Latin host keeps its order inside Arabic.
+                val host = "\u2068" + EndpointPlace.host(endpoint) + "\u2069"
+                val badgeColor = if (place == EndpointPlace.Place.REMOTE)
+                    MaterialTheme.colorScheme.outline
                 else
-                    stringResource(R.string.provider_badge_cloud),
-                style = MaterialTheme.typography.labelSmall,
-                color = badgeColor,
-                modifier = Modifier
-                    .background(
-                        color = badgeColor.copy(alpha = 0.12f),
-                        shape = RoundedCornerShape(4.dp)
-                    )
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-            )
+                    MaterialTheme.colorScheme.tertiary
+                Text(
+                    text = when (place) {
+                        EndpointPlace.Place.PHONE -> stringResource(R.string.provider_badge_phone)
+                        EndpointPlace.Place.NETWORK -> stringResource(R.string.provider_badge_network, host)
+                        EndpointPlace.Place.REMOTE -> stringResource(R.string.provider_badge_remote, host)
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = badgeColor,
+                    modifier = Modifier
+                        .background(
+                            color = badgeColor.copy(alpha = 0.12f),
+                            shape = RoundedCornerShape(4.dp)
+                        )
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -565,7 +583,7 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                if (isInsecureRemoteUrl(baseUrl)) {
+                if (EndpointPlace.isInsecureRemote(baseUrl)) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = stringResource(R.string.custom_url_insecure_warning),
@@ -1306,26 +1324,4 @@ fun SettingsScreen(
             }
         }
     }
-}
-
-/**
- * True when [url] would transmit over plaintext HTTP to a non-local host — i.e. the
- * scheme is http (not https) and the host is not localhost/loopback or a private LAN
- * address. Used to warn that a custom provider's API key and messages would be sent in
- * the clear over the internet. Legitimate local/LAN providers do not trigger the warning.
- */
-private fun isInsecureRemoteUrl(url: String): Boolean {
-    val lower = url.trim().lowercase()
-    if (!lower.startsWith("http://")) return false
-    val host = lower.substringAfter("http://").substringBefore('/').substringBefore(':')
-    if (host.isEmpty()) return false
-    if (host == "localhost" || host.endsWith(".local")) return false
-    if (host == "0.0.0.0" || host.startsWith("127.")) return false            // loopback
-    if (host.startsWith("10.") || host.startsWith("192.168.")) return false   // RFC1918
-    if (host.startsWith("169.254.")) return false                             // link-local
-    if (host.startsWith("172.")) {                                            // 172.16–172.31
-        val second = host.removePrefix("172.").substringBefore('.').toIntOrNull()
-        if (second != null && second in 16..31) return false
-    }
-    return true
 }

@@ -207,13 +207,14 @@
     <string name="security_section">Security</string>
     <string name="block_screenshots_label">Block screenshots</string>
     <string name="block_screenshots_hint">Hides app content from screenshots, screen recording, and recent apps</string>
-    <string name="provider_badge_cloud">Cloud — sent to provider</string>
-    <string name="provider_badge_local">Local — stays on device</string>
+    <string name="provider_badge_phone">On this phone — nothing leaves it</string>
+    <string name="provider_badge_network">Your network — sent to %1$s</string>
+    <string name="provider_badge_remote">Leaves your network — sent to %1$s</string>
     <string name="privacy_intro_title">How Maskan handles your data</string>
     <string name="privacy_intro_bullet_encrypted">Your keys, chats and generated images are encrypted on this device. Maskan has no server and never sees your conversations.</string>
     <string name="privacy_intro_bullet_cloud">When you chat with a cloud AI (OpenAI, Google, DeepSeek, etc.), your messages are sent to that provider and their privacy policy applies.</string>
     <string name="privacy_intro_bullet_venice">Prefer a cloud option? Venice is the most privacy-respecting — it doesn\'t store or log your chats.</string>
-    <string name="privacy_intro_bullet_local">For maximum privacy, use a local provider (Ollama or LM Studio): the AI runs on your machine and your messages never leave your network.</string>
+    <string name="privacy_intro_bullet_local">For maximum privacy, use the on-device model, or Ollama or LM Studio on your own machine: when the server is yours, your messages never leave your network.</string>
     <string name="privacy_intro_got_it">Got it</string>
     <string name="privacy_intro_learn_more">Learn more</string>
 

@@ -207,13 +207,14 @@
     <string name="security_section">ความปลอดภัย</string>
     <string name="block_screenshots_label">บล็อกการจับภาพหน้าจอ</string>
     <string name="block_screenshots_hint">ซ่อนเนื้อหาแอปจากการจับภาพหน้าจอ การบันทึกหน้าจอ และแอปล่าสุด</string>
-    <string name="provider_badge_cloud">คลาวด์ — ส่งไปยังผู้ให้บริการ</string>
-    <string name="provider_badge_local">ภายในเครื่อง — อยู่ในอุปกรณ์</string>
+    <string name="provider_badge_phone">บนโทรศัพท์เครื่องนี้ — ไม่มีอะไรออกไป</string>
+    <string name="provider_badge_network">เครือข่ายของคุณ — ส่งไปยัง %1$s</string>
+    <string name="provider_badge_remote">ออกนอกเครือข่ายของคุณ — ส่งไปยัง %1$s</string>
     <string name="privacy_intro_title">มัสกันจัดการข้อมูลของคุณอย่างไร</string>
     <string name="privacy_intro_bullet_encrypted">คีย์และแชทของคุณถูกเข้ารหัสบนอุปกรณ์นี้ มัสกันไม่มีเซิร์ฟเวอร์และไม่เคยเห็นการสนทนาของคุณ</string>
     <string name="privacy_intro_bullet_cloud">เมื่อคุณแชทกับ AI บนคลาวด์ (OpenAI, Google, DeepSeek ฯลฯ) ข้อความของคุณจะถูกส่งไปยังผู้ให้บริการนั้นและนโยบายความเป็นส่วนตัวของเขาจะมีผลบังคับใช้</string>
     <string name="privacy_intro_bullet_venice">ต้องการใช้คลาวด์? Venice เป็นตัวเลือกที่เคารพความเป็นส่วนตัวมากที่สุด — ไม่จัดเก็บหรือบันทึกแชทของคุณ</string>
-    <string name="privacy_intro_bullet_local">เพื่อความเป็นส่วนตัวสูงสุด ใช้ผู้ให้บริการภายในเครื่อง (Ollama หรือ LM Studio): AI ทำงานบนเครื่องของคุณและข้อความไม่ออกจากเครือข่ายของคุณ</string>
+    <string name="privacy_intro_bullet_local">เพื่อความเป็นส่วนตัวสูงสุด ใช้โมเดลบนเครื่อง หรือ Ollama หรือ LM Studio บนเครื่องของคุณเอง: เมื่อเซิร์ฟเวอร์เป็นของคุณ ข้อความจะไม่ออกจากเครือข่ายของคุณ</string>
     <string name="privacy_intro_got_it">เข้าใจแล้ว</string>
     <string name="privacy_intro_learn_more">เรียนรู้เพิ่มเติม</string>
 

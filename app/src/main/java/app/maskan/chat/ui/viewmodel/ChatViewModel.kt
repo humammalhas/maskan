@@ -441,7 +441,7 @@ class ChatViewModel(
         return isolate(providerName) to isolate(modelName)
     }
 
-    private fun isolate(text: String) = "⁨" + text + "⁩"
+    private fun isolate(text: String) = "\u2068" + text + "\u2069"
 
     /**
      * Move this chat onto [providerId] / [model] from the next message on.

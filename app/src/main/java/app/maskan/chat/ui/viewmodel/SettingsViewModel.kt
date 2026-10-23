@@ -58,6 +58,8 @@ data class SettingsUiState(
     val selectedProvider: AiProvider = ProviderRegistry.getDefaultProvider(),
     val apiKey: String = "",
     val baseUrl: String = "",
+    /** The base URL requests go to now - saved, not what is being typed. Drives the badge. */
+    val savedBaseUrl: String = "",
     val selectedModel: String = "",
     val isSaved: Boolean = false,
     /** Just removed with Remove key - shown once, cleared by the next edit or provider. */
@@ -110,6 +112,7 @@ class SettingsViewModel(
             selectedProvider = provider,
             apiKey = keyRepository.getApiKey(provider.id) ?: "",
             baseUrl = keyRepository.getBaseUrl(provider.id) ?: provider.defaultBaseUrl,
+            savedBaseUrl = keyRepository.getBaseUrl(provider.id) ?: provider.defaultBaseUrl,
             selectedModel = model,
             selectedLocale = localeRepository.getLocale(),
             selectedDialect = preferenceRepository.getDefaultDialect(),
@@ -163,6 +166,7 @@ class SettingsViewModel(
             selectedProvider = provider,
             apiKey = keyRepository.getApiKey(provider.id) ?: "",
             baseUrl = keyRepository.getBaseUrl(provider.id) ?: provider.defaultBaseUrl,
+            savedBaseUrl = keyRepository.getBaseUrl(provider.id) ?: provider.defaultBaseUrl,
             selectedModel = model,
             isSaved = false,
             keyRemoved = false,
@@ -308,7 +312,7 @@ class SettingsViewModel(
     fun saveBaseUrl() {
         val state = _uiState.value
         keyRepository.saveBaseUrl(state.selectedProvider.id, state.baseUrl)
-        _uiState.value = state.copy(isSaved = true)
+        _uiState.value = state.copy(isSaved = true, savedBaseUrl = state.baseUrl)
     }
 
     fun selectModel(model: String) {

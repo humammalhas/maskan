@@ -195,8 +195,8 @@ object ProviderConfigs {
 
     val OLLAMA = ProviderConfig(
         id = "ollama",
-        taglineEn = "Runs models on your own computer. Nothing leaves your home.",
-        taglineAr = "يشغّل النماذج على جهازك الخاص. لا يغادر شيء منزلك.",
+        taglineEn = "Runs models on your own computer.",
+        taglineAr = "يشغّل النماذج على جهازك الخاص.",
         displayName = "Ollama (Local)",
         nameAr = "أولاما (محلي)",
         baseUrl = "http://localhost:11434/",

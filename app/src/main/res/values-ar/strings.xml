@@ -207,13 +207,14 @@
     <string name="security_section">الأمان</string>
     <string name="block_screenshots_label">منع لقطات الشاشة</string>
     <string name="block_screenshots_hint">يخفي محتوى التطبيق من لقطات الشاشة وتسجيل الشاشة والتطبيقات الأخيرة</string>
-    <string name="provider_badge_cloud">سحابي — يُرسل إلى المزوّد</string>
-    <string name="provider_badge_local">محلي — يبقى على الجهاز</string>
+    <string name="provider_badge_phone">على هذا الهاتف — لا يغادره شيء</string>
+    <string name="provider_badge_network">شبكتك — يُرسل إلى %1$s</string>
+    <string name="provider_badge_remote">يغادر شبكتك — يُرسل إلى %1$s</string>
     <string name="privacy_intro_title">كيف يتعامل مسكن مع بياناتك</string>
     <string name="privacy_intro_bullet_encrypted">مفاتيحك ومحادثاتك مشفّرة على هذا الجهاز. مسكن ليس لديه خادم ولا يطّلع على محادثاتك أبداً.</string>
     <string name="privacy_intro_bullet_cloud">عندما تتحدث مع ذكاء اصطناعي سحابي (OpenAI، Google، DeepSeek، إلخ)، تُرسل رسائلك إلى ذلك المزوّد وتنطبق سياسة الخصوصية الخاصة به.</string>
     <string name="privacy_intro_bullet_venice">تفضّل خياراً سحابياً؟ Venice هو الأكثر احتراماً للخصوصية — فهو لا يخزّن محادثاتك ولا يسجّلها.</string>
-    <string name="privacy_intro_bullet_local">لأقصى خصوصية، استخدم مزوّداً محلياً (Ollama أو LM Studio): يعمل الذكاء الاصطناعي على جهازك ولا تغادر رسائلك شبكتك.</string>
+    <string name="privacy_intro_bullet_local">لأقصى خصوصية، استخدم النموذج على الجهاز، أو Ollama أو LM Studio على جهازك: حين يكون الخادم لك، لا تغادر رسائلك شبكتك.</string>
     <string name="privacy_intro_got_it">فهمت</string>
     <string name="privacy_intro_learn_more">اعرف المزيد</string>
 
