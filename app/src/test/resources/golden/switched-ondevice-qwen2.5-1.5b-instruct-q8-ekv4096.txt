@@ -1,0 +1,13 @@
+<|im_start|>system
+You are a helpful assistant. Answer briefly.<|im_end|>
+<|im_start|>user
+What is the capital of Jordan?<|im_end|>
+<|im_start|>assistant
+Amman.<|im_end|>
+<|im_start|>user
+ما عاصمة الأردن؟ وما أشهر معالمها؟<|im_end|>
+<|im_start|>assistant
+عمّان. ومن أشهر معالمها جبل القلعة والمدرّج الروماني.<|im_end|>
+<|im_start|>user
+And of Thailand?<|im_end|>
+<|im_start|>assistant

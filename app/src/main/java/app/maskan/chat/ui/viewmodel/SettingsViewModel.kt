@@ -59,6 +59,8 @@ data class SettingsUiState(
     val baseUrl: String = "",
     val selectedModel: String = "",
     val isSaved: Boolean = false,
+    /** Just removed with Remove key - shown once, cleared by the next edit or provider. */
+    val keyRemoved: Boolean = false,
     val testState: TestConnectionState = TestConnectionState.Idle,
     val selectedLocale: String = "",
     val selectedDialect: Dialect = Dialect.MSA,
@@ -134,6 +136,7 @@ class SettingsViewModel(
             baseUrl = keyRepository.getBaseUrl(provider.id) ?: provider.defaultBaseUrl,
             selectedModel = model,
             isSaved = false,
+            keyRemoved = false,
             testState = TestConnectionState.Idle,
             fetchedModels = preferenceRepository.getCachedModels(provider.id),
             modelsFetchedAt = preferenceRepository.getModelsFetchedAt(provider.id),
@@ -234,6 +237,7 @@ class SettingsViewModel(
         _uiState.value = _uiState.value.copy(
             apiKey = key,
             isSaved = false,
+            keyRemoved = false,
             testState = TestConnectionState.Idle
         )
     }
@@ -247,10 +251,29 @@ class SettingsViewModel(
         keyRepository.saveApiKey(state.selectedProvider.id, state.apiKey)
         _uiState.value = state.copy(
             isSaved = true,
+            keyRemoved = false,
             configuredProviderIds = keyRepository.getAllStoredProviderIds().toSet()
         )
         // A newly saved key is the first chance to ask this provider what it actually serves.
         maybeAutoRefreshModels()
+    }
+
+    /**
+     * Delete this provider's key from the phone (2.7, plan item 10). Before this the only way was
+     * to clear the field - and Save is disabled on an empty field, so it could not be done at
+     * all without being told a trick. The model lists and choices stay: they are not secrets,
+     * and a key pasted back in later finds the provider as it was.
+     */
+    fun removeApiKey() {
+        val state = _uiState.value
+        keyRepository.deleteApiKey(state.selectedProvider.id)
+        _uiState.value = state.copy(
+            apiKey = "",
+            isSaved = false,
+            keyRemoved = true,
+            testState = TestConnectionState.Idle,
+            configuredProviderIds = keyRepository.getAllStoredProviderIds().toSet()
+        )
     }
 
     fun saveBaseUrl() {

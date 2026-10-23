@@ -30,6 +30,7 @@ object ErrorMapper {
             // it is a 404 from a server that plainly answered. Without this line it falls through
             // to "No internet", the exact wrong sentence, and the one plan 1.3 is about.
             is VideoJobClient.JobGone -> context.getString(R.string.video_job_lost)
+            is SendRefused -> refusal(context, throwable)
             is java.io.IOException -> context.getString(R.string.error_no_internet)
             else -> mapByMessage(context, throwable)
         }
@@ -67,6 +68,11 @@ object ErrorMapper {
         val (code, detail) = when (throwable) {
             is HttpException -> throwable.code() to providerMessage(throwable)
             is ApiHttpException -> throwable.code to throwable.providerMessage
+            // The app refused the send itself: the model is fine, the request was not made, and
+            // the sentence already says what to change. Its message names the model, which is
+            // all looksLikeMissingModel needs to call it dead - and the offer that follows would
+            // move the chat without the switch notice.
+            is SendRefused -> return ModelRecovery.NONE
             else -> return if (looksLikeMissingModel(throwable.message, modelId)) {
                 ModelRecovery.DEAD
             } else {
@@ -164,6 +170,22 @@ object ErrorMapper {
             in 500..599 -> context.getString(R.string.error_server_error)
             else -> detail ?: context.getString(R.string.error_unknown)
         }
+    }
+
+    private fun refusal(context: Context, refused: SendRefused): String = when (refused.kind) {
+        SendRefused.Kind.NO_KEY -> {
+            val provider = app.maskan.chat.data.remote.providers.ProviderRegistry.getProvider(refused.subject)
+            val arabic = context.resources.configuration.locales[0].language == "ar"
+            val name = when {
+                provider == null -> refused.subject
+                arabic -> provider.nameAr
+                else -> provider.displayName
+            }
+            context.getString(R.string.error_api_key_missing_provider, name)
+        }
+        SendRefused.Kind.PHOTO_UNREADABLE ->
+            context.getString(R.string.error_photo_unreadable, refused.subject)
+        SendRefused.Kind.ONDEVICE_TOO_LONG -> context.getString(R.string.error_ondevice_too_long)
     }
 
     private fun mapByMessage(context: Context, throwable: Throwable): String {

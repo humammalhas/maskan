@@ -16,6 +16,16 @@ import app.maskan.chat.util.TokenEstimate
  */
 internal object RequestAssembly {
 
+    /**
+     * The turns a request carries: never a system row (assembled separately) and never a notice.
+     * A notice row is written FOR the reader and is never sent: it describes what the app did -
+     * dropped the voice, moved the chat to another model - which is not a turn in the
+     * conversation and would read to a model as the user talking about themselves in the third
+     * person. Here, rather than inline in ChatRepository, so a switched chat's request has a golden.
+     */
+    fun conversationTurns(messages: List<Message>): List<Message> =
+        messages.filter { it.role != "system" && it.role != ChatRepository.ROLE_NOTICE }
+
     /** What a conversation's folder contributes to the system role (see ChatRepository.projectText). */
     data class ProjectText(val instructions: String, val memory: String)
 

@@ -138,6 +138,7 @@ import app.maskan.chat.data.repository.PreferenceRepository
 import app.maskan.chat.ui.theme.maskanColors
 import androidx.compose.ui.text.style.TextAlign
 import app.maskan.chat.data.remote.providers.OnDeviceProvider
+import app.maskan.chat.data.local.isAppArabic
 import app.maskan.chat.data.repository.ChatRepository
 import app.maskan.chat.ondevice.LlmEngine
 import app.maskan.chat.data.repository.ExportFormat
@@ -166,7 +167,7 @@ fun ChatScreen(
     onNavigateBack: () -> Unit,
     /** Where a remembered fact was just written: the folder's memory, or the shared file. */
     onOpenProjectMemory: (Long) -> Unit = {},
-    /** Where "Upgrade" on the on-device header line goes. See disclosure 2 of 3. */
+    /** Where the on-device nudge card's "add a key" goes. */
     onNavigateToSettings: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -355,6 +356,9 @@ fun ChatScreen(
     // menu can close before one appears.
     var showImageModelPicker by remember { mutableStateOf(false) }
     var showVideoModelPicker by remember { mutableStateOf(false) }
+    // The header's Change: the provider list first, then that provider's models.
+    var showProviderSwitch by remember { mutableStateOf(false) }
+    var switchProviderId by remember { mutableStateOf<String?>(null) }
 
     // Held between arming the Save picker and the picker returning: the SAF contract hands back
     // only a destination, so the bytes have to wait somewhere.
@@ -494,6 +498,43 @@ fun ChatScreen(
             onDismiss = { showVideoModelPicker = false },
             allowCustom = true,
             allowNone = true
+        )
+    }
+
+    if (showProviderSwitch) {
+        ProviderPickerDialog(
+            choices = viewModel.providerChoices(),
+            currentProviderId = uiState.selectedProviderId,
+            onSelect = { choice ->
+                showProviderSwitch = false
+                val models = viewModel.modelChoices(choice.provider.id)
+                // One model and nothing to choose between (on-device): switch straight away
+                // rather than show a list of one.
+                if (models.size == 1) {
+                    viewModel.switchModel(choice.provider.id, models.first())
+                } else {
+                    switchProviderId = choice.provider.id
+                }
+            },
+            onDismiss = { showProviderSwitch = false }
+        )
+    }
+
+    switchProviderId?.let { providerId ->
+        val isCurrentProvider = providerId == uiState.selectedProviderId
+        ModelPickerDialog(
+            models = viewModel.modelChoices(providerId),
+            visionModels = viewModel.visionModelsFor(providerId),
+            verifiedModels = viewModel.verifiedModelsFor(providerId),
+            freeModels = viewModel.freeModelsFor(providerId),
+            // Ticked only on the provider this chat is on: the same id at another provider is a
+            // different model.
+            selectedModel = if (isCurrentProvider) uiState.selectedModel else "",
+            onSelect = { model ->
+                switchProviderId = null
+                viewModel.switchModel(providerId, model)
+            },
+            onDismiss = { switchProviderId = null }
         )
     }
 
@@ -675,35 +716,44 @@ fun ChatScreen(
                 // It used to appear only for a named preset, which meant a chat with a custom
                 // prompt showed nothing at all - and there was no way to change the prompt of a
                 // chat that had started, only to start a different chat.
-                // Disclosure 2 of 3, and the only one that is always on screen: whoever is
-                // reading an on-device answer can see, without looking anything up, that it
-                // came from a basic model and that there is a better one a tap away.
+                // Which model answers this chat, and the way to change it - on every chat, cloud,
+                // local and on-device alike (2.7, plan item 10). It replaces 2.6's on-device-only
+                // "Basic on-device model · Upgrade", disclosure 2 of 3: the model's own name now
+                // says which model wrote the answer below it, for on-device and everyone else.
                 // The SAME gate as the preset strip below, and for the same two reasons. The
                 // picker is a height-filling grid sized to fit with no scroll (PresetPicker.kt),
                 // so any row added to the header comes straight out of the cards and clips their
                 // Arabic descriptions - which is what the device showed. `presetSelected` covers
                 // the first-run picker, `showPresetPicker` the one raised over an existing chat.
-                if (uiState.selectedProviderId == OnDeviceProvider.ID &&
-                    uiState.presetSelected && !showPresetPicker
-                ) {
+                // No height of its own: "Change" is translated text and the row must grow with it.
+                if (uiState.presetSelected && !showPresetPicker) {
+                    val changeLabel = stringResource(R.string.change_model)
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(MaterialTheme.maskanColors.softLavender)
-                            .padding(horizontal = 16.dp, vertical = 4.dp)
+                            .clickable(onClickLabel = changeLabel) { showProviderSwitch = true }
+                            // Under the title, like the preset name below it. Start-relative.
+                            .padding(start = 60.dp, end = 16.dp, top = 2.dp, bottom = 2.dp)
                     ) {
                         Text(
-                            text = stringResource(R.string.ondevice_header_basic),
+                            text = viewModel.modelLabel(),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.weight(1f)
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
                         )
                         Text(
-                            text = stringResource(R.string.ondevice_header_upgrade),
+                            text = "  ·  ",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.clickable { onNavigateToSettings() }
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = stringResource(R.string.model_header_change),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -1160,7 +1210,9 @@ fun ChatScreen(
                             text = when (message.content) {
                                 ChatRepository.NOTICE_VOICE_DROPPED ->
                                     stringResource(R.string.clamp_voice_dropped)
-                                else -> message.content
+                                else -> viewModel.switchNoticeParts(message.content, isAppArabic())?.let { (provider, model) ->
+                                    stringResource(R.string.notice_model_switched, provider, model)
+                                } ?: message.content
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,

@@ -12,6 +12,8 @@ import app.maskan.chat.data.local.MessageEntity
 import app.maskan.chat.data.local.Presets
 import app.maskan.chat.data.local.SystemPromptPreset
 import app.maskan.chat.data.model.Dialect
+import app.maskan.chat.data.remote.providers.AiProvider
+import app.maskan.chat.data.remote.providers.OnDeviceProvider
 import app.maskan.chat.data.remote.providers.ProviderRegistry
 import app.maskan.chat.BuildConfig
 import app.maskan.chat.MaskanApplication
@@ -258,7 +260,12 @@ class ChatViewModel(
                 else -> Presets.getById(conversation.systemPromptId)
             }
             val providerId = conversation?.providerId ?: "deepseek"
-            val model = keyRepository.getSelectedModel(providerId)
+            // The CHAT's model first. Every request has always used the conversation's own
+            // modelId; this line used to read the provider's Settings choice instead, so the
+            // camera, the search entry and (from 2.7) the header asked about a model that was
+            // not the one answering - the "model is always the same" report, seen from inside.
+            val model = conversation?.modelId?.trim()?.takeIf { it.isNotBlank() }
+                ?: keyRepository.getSelectedModel(providerId)
                 ?: ProviderRegistry.getProvider(providerId)?.defaultModel
                 ?: ProviderRegistry.getDefaultProvider().defaultModel
 
@@ -352,6 +359,109 @@ class ChatViewModel(
         }
     }
 
+    // ── The chat's provider and model ───────────────────────────
+
+    /** One row of the chat's provider list. Nothing is hidden; what is missing is said. */
+    data class ProviderChoice(
+        val provider: AiProvider,
+        /** Needs a key and has none. Still offered: the send then says so (plan item 10). */
+        val missingKey: Boolean,
+        /** On-device, and the model file is not on the phone. */
+        val notDownloaded: Boolean
+    )
+
+    fun providerChoices(): List<ProviderChoice> =
+        ProviderRegistry.getAllProviders().map { provider ->
+            ProviderChoice(
+                provider = provider,
+                missingKey = provider.requiresApiKey && keyRepository.getApiKey(provider.id).isNullOrBlank(),
+                notDownloaded = (provider as? OnDeviceProvider)?.isInstalled == false
+            )
+        }
+
+    /**
+     * The models offered for [providerId] - the same list Settings offers: the fetched catalogue,
+     * or the built-in one before any fetch, minus models this key has been refused. The chat's
+     * current model is never hidden, so the list and the header always agree.
+     */
+    fun modelChoices(providerId: String): List<String> {
+        val provider = ProviderRegistry.getProvider(providerId) ?: return emptyList()
+        val fetched = preferenceRepository.getCachedModels(providerId)
+        val offered = fetched.ifEmpty { provider.availableModels }
+        val refused = preferenceRepository.getUnavailableModels(providerId)
+        val current = _uiState.value.selectedModel.trim()
+        val isCurrentProvider = providerId == _uiState.value.selectedProviderId
+        return offered.filter { it !in refused || (isCurrentProvider && it.trim() == current) }
+    }
+
+    fun visionModelsFor(providerId: String): Set<String> = preferenceRepository.getVisionModels(providerId)
+    fun verifiedModelsFor(providerId: String): Set<String> = preferenceRepository.getVerifiedModels(providerId)
+    fun freeModelsFor(providerId: String): Set<String> = preferenceRepository.getFreeModels(providerId)
+
+    /** What the header calls the model: the on-device file's own name, otherwise the model id. */
+    fun modelLabel(): String {
+        val state = _uiState.value
+        if (state.selectedProviderId == OnDeviceProvider.ID) {
+            (ProviderRegistry.getProvider(OnDeviceProvider.ID) as? OnDeviceProvider)?.let {
+                return it.model.displayName
+            }
+        }
+        return state.selectedModel.trim()
+    }
+
+    /**
+     * The provider and model a switch notice names, ready to show - or null for any other row.
+     * Localized here, at the point it is drawn, so a stored notice follows the app's language.
+     */
+    fun switchNoticeParts(content: String, isArabic: Boolean): Pair<String, String>? {
+        val move = app.maskan.chat.data.repository.ModelSwitch.decode(content) ?: return null
+        val provider = ProviderRegistry.getProvider(move.toProvider)
+        val providerName = when {
+            provider == null -> move.toProvider
+            isArabic -> provider.nameAr
+            else -> provider.displayName
+        }
+        val modelName = (provider as? OnDeviceProvider)?.model?.displayName ?: move.toModel
+        // Each name in a first-strong isolate: a Latin model id inside an Arabic sentence is
+        // otherwise reordered around its '/' and '-' (session 3's "NPR · .1").
+        return isolate(providerName) to isolate(modelName)
+    }
+
+    private fun isolate(text: String) = "⁨" + text + "⁩"
+
+    /**
+     * Move this chat onto [providerId] / [model] from the next message on.
+     *
+     * Only THIS chat: the provider's default in Settings, and so every new chat, stays as it was
+     * (Humam, plan item 10). Everything the composer derives from the provider is re-read here,
+     * and the armed modes are dropped - a search or a drawing armed for the old model is not a
+     * promise the new one has made.
+     */
+    fun switchModel(providerId: String, model: String) {
+        val clean = model.trim()
+        if (clean.isEmpty() || ProviderRegistry.getProvider(providerId) == null) return
+        val state = _uiState.value
+        if (providerId == state.selectedProviderId && clean == state.selectedModel.trim()) return
+        viewModelScope.launch {
+            chatRepository.switchModel(currentConversationId, providerId, clean)
+            _uiState.value = _uiState.value.copy(
+                selectedProviderId = providerId,
+                selectedModel = clean,
+                webSearchMode = false,
+                imageMode = false,
+                videoMode = false,
+                editMode = false,
+                error = null,
+                recoverableModel = null,
+                selectedImageModelName = keyRepository.getSelectedImageModel(providerId).orEmpty(),
+                selectedVideoModelName = keyRepository.getSelectedVideoModel(providerId).orEmpty(),
+                videoSize = VideoOptions.validSize(providerId, preferenceRepository.getVideoSize()),
+                videoSeconds = VideoOptions.validSeconds(providerId, preferenceRepository.getVideoSeconds())
+            )
+            refreshMessages()
+        }
+    }
+
     // ── The chat's name ─────────────────────────────────────────
 
     fun renameConversation(title: String) {
@@ -408,7 +518,10 @@ class ChatViewModel(
      * all - rather than one that has the previous answer in it.
      */
     fun regenerateLast() {
-        val last = _uiState.value.messages.lastOrNull { it.role != "system" } ?: return
+        // Not a notice: a model switch writes one after the last answer, and that answer is
+        // still the one being asked again - now by the new model, under the notice that says so.
+        val last = _uiState.value.messages
+            .lastOrNull { it.role != "system" && it.role != ChatRepository.ROLE_NOTICE } ?: return
         if (last.role != "assistant") return
         streamingJob = viewModelScope.launch {
             chatRepository.deleteMessage(currentConversationId, last.id, alsoAfter = false)
@@ -423,7 +536,8 @@ class ChatViewModel(
      * wants text before it will send, and the text is already in the chat.
      */
     fun generateFromLastUserMessage() {
-        val last = _uiState.value.messages.lastOrNull { it.role != "system" } ?: return
+        val last = _uiState.value.messages
+            .lastOrNull { it.role != "system" && it.role != ChatRepository.ROLE_NOTICE } ?: return
         if (last.role != "user") return
         streamingJob = viewModelScope.launch { runLastTurn() }
     }

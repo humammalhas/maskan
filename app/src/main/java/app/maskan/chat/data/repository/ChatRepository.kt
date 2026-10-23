@@ -28,6 +28,7 @@ import app.maskan.chat.util.DocumentChunks
 import app.maskan.chat.util.DocumentExtract
 import app.maskan.chat.util.ErrorMapper
 import app.maskan.chat.util.ImageStore
+import app.maskan.chat.util.SendRefused
 import app.maskan.chat.util.TokenEstimate
 import app.maskan.chat.video.VideoJobs
 import app.maskan.chat.video.VideoOptions
@@ -106,6 +107,43 @@ class ChatRepository(
      */
     suspend fun updateConversationModel(id: Long, modelId: String?) {
         conversationDao.updateConversationModel(id, modelId)
+    }
+
+    /**
+     * Move a chat onto another provider and model, from its next message on (plan item 10).
+     *
+     * The same path as a changed system prompt: the row keeps the record, the next request reads
+     * the row. History is untouched and nothing is re-sent. Once something has been said, the
+     * transcript gets ONE notice for the move - and a second move before anything is sent
+     * rewrites that notice rather than stacking another, or deletes it when the chat went straight
+     * back to where it was.
+     */
+    suspend fun switchModel(conversationId: Long, providerId: String, modelId: String) {
+        val conversation = conversationDao.getConversationById(conversationId) ?: return
+        val fromModel = conversation.modelId.orEmpty()
+        if (conversation.providerId == providerId && fromModel.trim() == modelId.trim()) return
+        conversationDao.updateProvider(conversationId, providerId, modelId)
+
+        val rows = messageDao.getMessagesForConversationOnce(conversationId)
+        // Nothing said yet: no model has answered, so there is no answer to tell apart.
+        if (rows.none { it.role == "user" || it.role == "assistant" }) return
+
+        val last = rows.lastOrNull { it.role != "system" }
+        val pending = last?.takeIf { it.role == ROLE_NOTICE }?.let { ModelSwitch.decode(it.content) }
+        if (last != null && pending != null) {
+            val move = pending.copy(toProvider = providerId, toModel = modelId)
+            if (move.isNoOp) {
+                messageDao.deleteMessageById(last.id)
+            } else {
+                messageDao.updateMessageContent(last.id, ModelSwitch.encode(move))
+            }
+            return
+        }
+        saveMessage(
+            conversationId,
+            ROLE_NOTICE,
+            ModelSwitch.encode(ModelSwitch.Move(conversation.providerId, fromModel, providerId, modelId))
+        )
     }
 
     suspend fun updateConversationTitle(id: Long, title: String) {
@@ -1106,11 +1144,26 @@ class ChatRepository(
 
         val apiKey = keyRepository.getApiKey(providerId) ?: ""
         if (apiKey.isBlank() && provider.requiresApiKey) {
-            throw Exception("API key not set. Please add your API key in Settings.")
+            // Names the provider: after a mid-chat switch the user may not remember which one
+            // this chat is on now, and "add your key" without a name sends them hunting.
+            throw SendRefused(SendRefused.Kind.NO_KEY, providerId)
         }
 
         val effectiveModel = conversation.modelId ?: model
         val storedBaseUrl = keyRepository.getBaseUrl(providerId)
+
+        // The hard cases of a moved chat (plan item 10) apply ONLY to a moved chat: one still on
+        // the model it was born with sends exactly what it sent before 2.7.
+        val switched = ModelSwitch.isSwitched(
+            messageDao.getMessagesForConversationOnce(conversationId).map { it.role to it.content }
+        )
+        if (switched && photoUnreadable(conversation, effectiveModel, imageData)) {
+            // The name the header shows: "Qwen2.5 1.5B", not the file's id.
+            throw SendRefused(
+                SendRefused.Kind.PHOTO_UNREADABLE,
+                (provider as? OnDeviceProvider)?.model?.displayName ?: effectiveModel
+            )
+        }
 
         val assistantEntity = MessageEntity(
             conversationId = conversationId,
@@ -1138,6 +1191,9 @@ class ChatRepository(
                     apiKey, effectiveModel, messages, storedBaseUrl,
                     imageData, imageMimeType
                 ) { more -> found.updateAndGet { SearchStream.merge(it, more) } }
+            } else if (switched && provider is OnDeviceProvider) {
+                // Moved here from a bigger window: the whole history fits or the send is refused.
+                provider.sendMessageStreamingWhole(messages)
             } else {
                 provider.sendMessageStreaming(
                     apiKey, effectiveModel, messages, storedBaseUrl,
@@ -1659,12 +1715,8 @@ class ChatRepository(
 
         val systemMessages = onDeviceTranslationSystem(conversation)
             ?: messages.filter { it.role == "system" }
-        // A notice row is written FOR the reader and is never sent: it describes what the app
-        // did to their request, which is not a turn in the conversation and would read to a
-        // model as the user talking about themselves in the third person.
-        val nonSystemMessages = messages.filter {
-            it.role != "system" && it.role != ROLE_NOTICE
-        }
+        // Never a notice row: see RequestAssembly.conversationTurns.
+        val nonSystemMessages = RequestAssembly.conversationTurns(messages)
         val recentMessages = withTranslationReminder(
             conversation,
             nonSystemMessages.takeLast(MAX_CONTEXT_MESSAGES)
@@ -1763,7 +1815,14 @@ class ChatRepository(
             )
         }
         if (blind) return emptySet()
+        return photosInWindow(entities, documents)
+    }
 
+    /**
+     * The photos a model that CAN see would be sent - photosToCarry without the blindness test.
+     * Split out so a moved chat can ask whether its new, blind model is missing one.
+     */
+    private fun photosInWindow(entities: List<MessageEntity>, documents: List<DocumentEntity>): Set<Long> {
         // A scanned PDF went as three pictures, and the ordinary rule below would keep the last
         // two of them - dropping page 1, which is the page a letter or an invoice says
         // everything on. So while the newest picture in this chat is one of that document's
@@ -1805,6 +1864,26 @@ class ChatRepository(
      * is a chat switched to a text model, and re-sending an image every turn would turn one
      * failed message into a chat that can no longer be used at all.
      */
+    /**
+     * Whether a MOVED chat's model would miss a picture the chat still relies on (plan item 10).
+     *
+     * Blind means known blind - the same data modelKnownBlind reads - or on-device, whose file is
+     * text only. A model nothing is known about gets the picture, as everywhere else. Asked only
+     * for a moved chat: photosToCarry's quiet text-only fallback stays for every other chat.
+     */
+    private suspend fun photoUnreadable(
+        conversation: ConversationEntity,
+        model: String,
+        imageData: ByteArray?
+    ): Boolean {
+        val blind = conversation.providerId == OnDeviceProvider.ID || modelKnownBlind(conversation, model)
+        if (!blind) return false
+        if (imageData != null) return true
+        val entities = messageDao.getMessagesForConversationOnce(conversation.id)
+        val documents = documentDao.getForConversationOnce(conversation.id)
+        return photosInWindow(entities, documents).isNotEmpty()
+    }
+
     private fun modelKnownBlind(conversation: ConversationEntity, model: String): Boolean {
         val visionModels = preferenceRepository.getVisionModels(conversation.providerId)
         if (visionModels.isEmpty()) return false

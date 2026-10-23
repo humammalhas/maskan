@@ -36,6 +36,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -353,11 +354,60 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Button(
-                    onClick = { viewModel.saveApiKey() },
-                    enabled = apiKey.isNotBlank() || selectedProvider.supportsCustomBaseUrl
-                ) {
-                    Text(stringResource(R.string.save_key_button))
+                // Remove key sits next to Save, named for what it does, wherever a key is stored
+                // (2.7, plan item 10). The old way - empty the field and save - never worked:
+                // Save is disabled on an empty field. Item 1 rebuilds this screen and keeps it.
+                val hasStoredKey = selectedProvider.id in state.configuredProviderIds
+                var confirmRemoveKey by remember { mutableStateOf(false) }
+                val providerName = if (isArabic) selectedProvider.nameAr else selectedProvider.displayName
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Button(
+                        onClick = { viewModel.saveApiKey() },
+                        enabled = apiKey.isNotBlank() || selectedProvider.supportsCustomBaseUrl
+                    ) {
+                        Text(stringResource(R.string.save_key_button))
+                    }
+                    if (hasStoredKey) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        TextButton(onClick = { confirmRemoveKey = true }) {
+                            Text(
+                                text = stringResource(R.string.remove_key_button),
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                }
+                if (confirmRemoveKey) {
+                    AlertDialog(
+                        onDismissRequest = { confirmRemoveKey = false },
+                        title = { Text(stringResource(R.string.remove_key_title, providerName)) },
+                        text = { Text(stringResource(R.string.remove_key_body, providerName)) },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                confirmRemoveKey = false
+                                isKeyVisible = false
+                                viewModel.removeApiKey()
+                            }) {
+                                Text(
+                                    text = stringResource(R.string.remove_key_confirm),
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { confirmRemoveKey = false }) {
+                                Text(stringResource(R.string.cancel_button))
+                            }
+                        }
+                    )
+                }
+                if (state.keyRemoved) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.key_removed_confirmation),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
                 if (isSaved) {
                     Spacer(modifier = Modifier.height(4.dp))

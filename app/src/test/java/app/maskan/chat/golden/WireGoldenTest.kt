@@ -12,6 +12,7 @@ import app.maskan.chat.data.remote.providers.LocalProvider
 import app.maskan.chat.data.remote.providers.OpenAiCompatibleProvider
 import app.maskan.chat.data.remote.providers.ProviderConfig
 import app.maskan.chat.data.remote.providers.ProviderConfigs
+import app.maskan.chat.data.repository.RequestAssembly
 import app.maskan.chat.ondevice.LocalPrompt
 import app.maskan.chat.ondevice.ModelCatalog
 import kotlinx.coroutines.flow.toList
@@ -161,6 +162,34 @@ class WireGoldenTest {
             "ollama" to LocalProvider(ProviderConfigs.OLLAMA, client(), json).searchesWeb("any")
         )
         Golden.check("who-searches", searches.entries.joinToString("\n") { it.key + ": " + it.value } + "\n")
+    }
+
+    /**
+     * A chat moved to another provider mid-conversation (2.7, plan item 10): the stored rows,
+     * notice and all, through the same filter ChatRepository uses, to three wire shapes and the
+     * on-device prompt. The history goes as it is; the notice never goes.
+     */
+    @Test
+    fun switchedChat() {
+        val messages = Fixtures.switchedRows.filter { it.role == "system" } +
+            RequestAssembly.conversationTurns(Fixtures.switchedRows)
+        check(messages.none { it.role == "notice" })
+        val providers: List<Triple<String, String, () -> AiProvider>> = listOf(
+            Triple("groq", "qwen/qwen3.8-27b", { openAiCompatible(ProviderConfigs.GROQ) }),
+            Triple("anthropic", "claude-test", { AnthropicProvider(ProviderConfigs.ANTHROPIC, service(AnthropicService::class.java)) }),
+            Triple("gemini", "gemini-test", { GeminiProvider(ProviderConfigs.GEMINI, service(GeminiService::class.java)) })
+        )
+        for ((name, model, make) in providers) {
+            Golden.check("switched-$name-stream", describe(send(make(), model, messages, stream = true)))
+        }
+        val system = messages.filter { it.role == "system" }
+            .joinToString("\n\n") { it.content.textContent() }.trim().ifEmpty { null }
+        val turns = messages.filter { it.role != "system" }
+            .map { LocalPrompt.Turn(it.role, it.content.textContent()) }
+        Golden.check(
+            "switched-ondevice-" + ModelCatalog.DEFAULT.id,
+            LocalPrompt.build(system, turns, ModelCatalog.DEFAULT.promptShape)
+        )
     }
 
     /** The on-device model has no wire: the prompt string IS the request. */

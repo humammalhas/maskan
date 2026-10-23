@@ -48,6 +48,16 @@ object Fixtures {
         Message("user", "What colour is the number?")
     )
 
+    /**
+     * A chat answered on DeepSeek, then moved to another provider (2.7, plan item 10): the rows
+     * as stored, notice included. What goes out must be [plain]'s turns plus the new question,
+     * with no trace of the notice.
+     */
+    val switchedRows: List<Message> = plain.dropLast(1) + listOf(
+        Message("notice", "model_switched\ndeepseek\ndeepseek-flash\ngroq\nqwen/qwen3.8-27b"),
+        Message("user", "And of Thailand?")
+    )
+
     /** A new photo arrives as raw bytes beside the messages, never inside them. */
     val photoBytes: ByteArray = ByteArray(48) { it.toByte() }
     const val PHOTO_MIME = "image/jpeg"

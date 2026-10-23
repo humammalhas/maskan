@@ -1,0 +1,5 @@
+POST /v1/chat/completions
+authorization: Bearer <key>
+content-type: application/json; charset=utf-8
+
+{"model":"qwen/qwen3.8-27b","messages":[{"role":"system","content":"You are a helpful assistant. Answer briefly."},{"role":"user","content":"What is the capital of Jordan?"},{"role":"assistant","content":"Amman."},{"role":"user","content":"ما عاصمة الأردن؟ وما أشهر معالمها؟"},{"role":"assistant","content":"عمّان. ومن أشهر معالمها جبل القلعة والمدرّج الروماني."},{"role":"user","content":"And of Thailand?"}],"stream":true}

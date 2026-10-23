@@ -106,6 +106,18 @@ class OnDeviceProvider(
     }
 
     /**
+     * As [sendMessageStreaming], but a history too long for the window is refused, never trimmed.
+     * For a chat moved here from another model (2.7, plan item 10): one born here keeps today's
+     * trimming, so it sends exactly what it sent before.
+     */
+    fun sendMessageStreamingWhole(messages: List<Message>): Flow<String> {
+        val entry = this.model
+        if (!store.isInstalled(entry)) throw Exception(ERROR_NO_MODEL)
+        val (system, turns) = split(messages, entry)
+        return engine.generate(entry, system, turns, refuseTrim = true)
+    }
+
+    /**
      * The repository's message list, split into the system text and the turns.
      *
      * The system text is assembled by ChatRepository into `system` rows - there may be more

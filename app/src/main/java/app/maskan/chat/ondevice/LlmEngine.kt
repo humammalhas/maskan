@@ -171,7 +171,13 @@ class LlmEngine(private val context: Context) {
     fun generate(
         model: OnDeviceModel,
         system: String?,
-        turns: List<LocalPrompt.Turn>
+        turns: List<LocalPrompt.Turn>,
+        /**
+         * Refuse rather than trim (2.7, plan item 10): a chat moved here from a cloud model whose
+         * history does not fit fails with SendRefused, because dropping its beginning silently is
+         * answering a different conversation from the one on screen.
+         */
+        refuseTrim: Boolean = false
     ): Flow<String> = callbackFlow {
         idleTimer?.cancel()
         mutex.lock()
@@ -228,6 +234,11 @@ class LlmEngine(private val context: Context) {
                 limit = promptLimit,
                 countTokens = { runCatching { counter.sizeInTokens(it) }.getOrDefault(-1) }
             )
+            // Trimmed means the prompt is no longer the whole history. The catch below closes
+            // the session and hands the refusal to the collector.
+            if (refuseTrim && prompt != LocalPrompt.build(system, turns, model.promptShape)) {
+                throw app.maskan.chat.util.SendRefused(app.maskan.chat.util.SendRefused.Kind.ONDEVICE_TOO_LONG)
+            }
             if (BuildConfig.DEBUG) {
                 Log.d(
                     TAG,
