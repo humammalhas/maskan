@@ -1505,9 +1505,7 @@ class ChatRepository(
      * behave the opposite way - edit the text, and the chat opened last week obeys it on its
      * next message. Nothing here is ever written to the conversation.
      */
-    private data class ProjectText(val instructions: String, val memory: String)
-
-    private suspend fun projectText(conversation: ConversationEntity): ProjectText? {
+    private suspend fun projectText(conversation: ConversationEntity): RequestAssembly.ProjectText? {
         val folder = conversation.folderId?.let { folderDao.getById(it) }
         val instructions = folder?.instructions?.trim().orEmpty()
         val folderMemory = folder?.memory?.trim().orEmpty()
@@ -1529,20 +1527,9 @@ class ChatRepository(
             .filter { it.isNotEmpty() }
             .joinToString("\n")
 
-        return ProjectText(instructions = instructions, memory = memory)
+        return RequestAssembly.ProjectText(instructions = instructions, memory = memory)
     }
 
-    /**
-     * The system message this request will carry, within the ceiling.
-     *
-     * Which half gives way matters, and the device showed why: a folder with 7,795 tokens of
-     * instructions had its memory cut away entirely, because the clamp trims the tail and memory
-     * is assembled last - so the model kept the 40th paragraph of a style guide and lost "our
-     * office is in Jabal Amman". Memory is a handful of short facts the user asked to keep; the
-     * instructions are the part that can run to pages. So the instructions are cut to whatever
-     * the ceiling leaves after the preset and the memory, and the whole is clamped again as a
-     * backstop for the case where the memory alone is enormous.
-     */
     /**
      * Write the "the voice was dropped" line into the transcript, once per conversation.
      *
@@ -1570,47 +1557,7 @@ class ChatRepository(
      */
     private var voiceWasDropped = false
 
-    private fun assembleSystemText(
-        preset: String,
-        voice: String,
-        project: ProjectText,
-        ceiling: Int
-    ): String {
-        voiceWasDropped = false
-        val memoryBlock = if (project.memory.isEmpty()) {
-            ""
-        } else {
-            "### What you know about me\n" + project.memory
-        }
-        // The voice is a global setting, one tap to restore. The instructions are words this
-        // user typed for this folder. When both cannot fit under the ceiling the voice is what
-        // gives way - Humam's call, session D - rather than silently truncating their text.
-        var voiceBlock = voice
-        var keptTokens = TokenEstimate.of(preset) + TokenEstimate.of(memoryBlock) +
-            TokenEstimate.of(voiceBlock)
-        if (project.instructions.isNotEmpty() &&
-            ceiling - keptTokens < MIN_INSTRUCTION_TOKENS &&
-            voiceBlock.isNotEmpty()
-        ) {
-            voiceBlock = ""
-            keptTokens = TokenEstimate.of(preset) + TokenEstimate.of(memoryBlock)
-            // Something the user chose was silently not sent. With the on-device provider back
-            // the ceiling is the window-derived 1,200 again, so this fires on ordinary folders
-            // rather than only on enormous ones, and a dialect that stops working with no
-            // explanation reads as the setting being broken.
-            voiceWasDropped = true
-        }
-        val budget = (ceiling - keptTokens).coerceAtLeast(0)
-        val instructionsBlock = if (project.instructions.isEmpty()) {
-            ""
-        } else {
-            "### Project instructions\n" + TokenEstimate.clamp(project.instructions, budget)
-        }
-        val assembled = listOf(preset, voiceBlock, instructionsBlock, memoryBlock)
-            .filter { it.isNotEmpty() }
-            .joinToString("\n\n")
-        return TokenEstimate.clamp(assembled, ceiling)
-    }
+
 
     /**
      * The voice for this request, from the dialect chosen in Settings.
@@ -1632,14 +1579,8 @@ class ChatRepository(
         return dialectVoice()
     }
 
-    private fun dialectVoice(): String = when (effectiveLanguage()) {
-        "ar" -> DialectVoice.forDialect(preferenceRepository.getDefaultDialect())
-        // Thai has no dialect to choose, so there is nothing in Settings for it: answering in
-        // Thai IS the choice. The guide behind it is about writing Thai that a Thai reader does
-        // not wince at, which is mostly about where the spaces go.
-        "th" -> DialectVoice.forThai()
-        else -> ""
-    }
+    private fun dialectVoice(): String =
+        RequestAssembly.voiceFor(effectiveLanguage(), preferenceRepository.getDefaultDialect())
 
     /**
      * The language this app is actually speaking, which is not the same question as
@@ -1651,7 +1592,7 @@ class ChatRepository(
      * covers both, and covers the per-app language Android 13 offers from system settings.
      */
     private fun effectiveLanguage(): String =
-        localeRepository.getLocale().ifEmpty { java.util.Locale.getDefault().language }
+        RequestAssembly.effectiveLanguage(localeRepository.getLocale(), java.util.Locale.getDefault().language)
 
     private suspend fun buildMessageList(
         conversation: ConversationEntity,
@@ -1699,37 +1640,20 @@ class ChatRepository(
         val budget = budgetFor(conversation.providerId)
         val documentText = documentBlock(documents, question, budget)
 
-        // A chat outside a folder, in a folder with both files empty, and with no document must
-        // send EXACTLY what 2.5.0 sent. Not nearly - exactly: this is the line that keeps the
-        // new features from quietly changing every existing conversation in the app.
-        if (project == null && documentText == null && voice.isEmpty()) {
-            val plain = systemMessages + recentMessages
-            logContext(conversation, plain, "2.5.0-shape")
-            return plain
-        }
+        // The shape decision - 2.5.0 exactly, or one assembled system message - lives in
+        // RequestAssembly, where the golden-request tests can reach it.
+        val outgoing = RequestAssembly.outgoing(
+            systemMessages = systemMessages,
+            recentMessages = recentMessages,
+            project = project,
+            voice = voice,
+            documentText = documentText,
+            systemCeiling = budget.system
+        )
+        outgoing.voiceDropped?.let { voiceWasDropped = it }
+        logContext(conversation, outgoing.messages, outgoing.shape)
+        return outgoing.messages
 
-        // One system message, always. The preset's row stays in the database (it is the user's
-        // record of what this chat was set up as) but it is REPLACED in the outgoing request by
-        // the assembled text: Anthropic and Gemini fold multiple system messages into one field
-        // anyway, and an OpenAI-shaped provider would otherwise receive two, which is the 2.5
-        // trap that rejected calls outright.
-        val preset = systemMessages.joinToString("\n") { it.content.textContent() }.trim()
-        // The document block is appended AFTER the project text and outside its ceiling: the
-        // folder's instructions and the file the user just attached are two different budgets,
-        // and a long style guide must not be able to squeeze out the contract being asked about.
-        val assembled = listOfNotNull(
-            if (project != null) {
-                assembleSystemText(preset, voice, project, budget.system)
-            } else {
-                listOf(preset, voice).filter { it.isNotBlank() }
-                    .joinToString("\n\n").ifBlank { null }
-            },
-            documentText
-        ).joinToString("\n\n")
-
-        val outgoing = listOf(Message(role = "system", text = assembled)) + recentMessages
-        logContext(conversation, outgoing, if (documentText != null) "document" else "assembled")
-        return outgoing
     }
 
     /**

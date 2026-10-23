@@ -1,6 +1,5 @@
 package app.maskan.chat.data.remote.providers
 
-import android.util.Base64
 import app.maskan.chat.data.remote.AnthropicMessage
 import app.maskan.chat.data.remote.AnthropicMessageContent
 import app.maskan.chat.data.remote.AnthropicRequest
@@ -49,7 +48,7 @@ class AnthropicProvider(
             .mapIndexed { index, msg ->
                 val isLastUser = index == messages.filter { it.role != "system" }.indexOfLast { it.role == "user" }
                 if (isLastUser && msg.role == "user" && imageData != null && imageMimeType != null) {
-                    val base64 = Base64.encodeToString(imageData, Base64.NO_WRAP)
+                    val base64 = java.util.Base64.getEncoder().encodeToString(imageData)
                     AnthropicMessage(
                         role = msg.role,
                         content = AnthropicMessageContent.WithImage(

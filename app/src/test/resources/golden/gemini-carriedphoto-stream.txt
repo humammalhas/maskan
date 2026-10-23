@@ -1,0 +1,4 @@
+POST /v1beta/models/gemini-test:streamGenerateContent?key=<key>&alt=sse
+content-type: application/json; charset=utf-8
+
+{"contents":[{"role":"user","parts":[{"text":null,"inlineData":{"mimeType":"image/jpeg","data":"AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="}},{"text":"ما هذا؟","inlineData":null}]},{"role":"model","parts":[{"text":"A blue rectangle with the number 83.","inlineData":null}]},{"role":"user","parts":[{"text":"What colour is the number?","inlineData":null}]}],"system_instruction":{"parts":[{"text":"You are a helpful assistant. Answer briefly.","inlineData":null}]}}

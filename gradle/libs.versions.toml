@@ -5,6 +5,7 @@ compose-bom = "2025.04.01"
 room = "2.7.1"
 retrofit = "2.11.0"
 okhttp = "4.12.0"
+junit = "4.13.2"
 kotlinx-serialization = "1.7.3"
 kotlinx-coroutines = "1.10.1"
 security-crypto = "1.1.0-alpha06"
@@ -58,6 +59,8 @@ retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = 
 retrofit-kotlinx-serialization = { group = "com.squareup.retrofit2", name = "converter-kotlinx-serialization", version.ref = "retrofit" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
+okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "okhttp" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
 
 # Kotlinx Serialization
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }

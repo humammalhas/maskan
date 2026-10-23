@@ -1,0 +1,19 @@
+shape: 2.5.0-shape
+
+[system]
+You are a helpful assistant. Answer briefly.
+
+[user]
+What is the capital of Jordan?
+
+[assistant]
+Amman.
+
+[user]
+ما عاصمة الأردن؟ وما أشهر معالمها؟
+
+[assistant]
+عمّان. ومن أشهر معالمها جبل القلعة والمدرّج الروماني.
+
+[user]
+เมืองหลวงของไทยคืออะไร

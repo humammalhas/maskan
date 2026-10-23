@@ -1,0 +1,9 @@
+<|im_start|>system
+You are a helpful assistant. Answer briefly.<|im_end|>
+<|im_start|>user
+ما هذا؟<|im_end|>
+<|im_start|>assistant
+A blue rectangle with the number 83.<|im_end|>
+<|im_start|>user
+What colour is the number?<|im_end|>
+<|im_start|>assistant

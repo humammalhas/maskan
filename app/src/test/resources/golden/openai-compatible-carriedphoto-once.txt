@@ -1,0 +1,5 @@
+POST /v1/chat/completions
+authorization: Bearer <key>
+content-type: application/json; charset=utf-8
+
+{"model":"deepseek-flash","messages":[{"role":"system","content":"You are a helpful assistant. Answer briefly."},{"role":"user","content":[{"type":"text","text":"ما هذا؟"},{"type":"image_url","image_url":{"url":"data:image/jpeg;base64,AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="}}]},{"role":"assistant","content":"A blue rectangle with the number 83."},{"role":"user","content":"What colour is the number?"}],"stream":false}

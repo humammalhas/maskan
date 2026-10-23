@@ -1,0 +1,6 @@
+POST /v1/messages
+content-type: application/json; charset=utf-8
+anthropic-version: 2023-06-01
+x-api-key: <key>
+
+{"model":"claude-test","max_tokens":4096,"messages":[{"role":"user","content":"What is the capital of Jordan?"},{"role":"assistant","content":"Amman."},{"role":"user","content":"ما عاصمة الأردن؟ وما أشهر معالمها؟"},{"role":"assistant","content":"عمّان. ومن أشهر معالمها جبل القلعة والمدرّج الروماني."},{"role":"user","content":"เมืองหลวงของไทยคืออะไร"}],"stream":false}

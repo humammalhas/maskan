@@ -1,0 +1,6 @@
+POST /v1/messages
+content-type: application/json; charset=utf-8
+anthropic-version: 2023-06-01
+x-api-key: <key>
+
+{"model":"claude-test","max_tokens":4096,"system":[{"type":"text","text":"You are a helpful assistant. Answer briefly."}],"messages":[{"role":"user","content":[{"type":"image","source":{"type":"base64","media_type":"image/jpeg","data":"AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="}},{"type":"text","text":"ما هذا؟"}]},{"role":"assistant","content":"A blue rectangle with the number 83."},{"role":"user","content":"What colour is the number?"}],"stream":true}

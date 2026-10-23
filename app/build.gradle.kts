@@ -77,6 +77,13 @@ android {
         buildConfig = true
     }
 
+    testOptions {
+        // The golden-request tests run on the JVM. android.util.Log (the debug-only logging in
+        // the providers) returns defaults there instead of throwing; nothing the tests compare
+        // depends on an Android stub's return value.
+        unitTests.isReturnDefaultValues = true
+    }
+
     splits {
         abi {
             isEnable = true
@@ -217,6 +224,14 @@ dependencies {
     // Images on Gemma-3n would need com.google.mediapipe:tasks-core as well (MPImage lives
     // there, not here) - another 11 MB native library per ABI. Held for 2.7.
     implementation(libs.mediapipe.genai)
+
+    // Tests only - never in the APK, and not resolved by assembleRelease, so F-Droid's build
+    // never fetches them. JUnit 4.13.2 (EPL-1.0) and OkHttp's MockWebServer (Apache 2.0, the
+    // same version as okhttp above): the golden-request tests point each provider at a server
+    // on localhost and compare the bytes it receives with a file in src/test/resources/golden.
+    testImplementation(libs.junit)
+    testImplementation(libs.okhttp.mockwebserver)
 }
+
 
 

@@ -1,0 +1,4 @@
+POST /v1beta/models/gemini-test:generateContent?key=<key>
+content-type: application/json; charset=utf-8
+
+{"contents":[{"role":"user","parts":[{"text":"What is the capital of Jordan?","inlineData":null}]},{"role":"model","parts":[{"text":"Amman.","inlineData":null}]},{"role":"user","parts":[{"text":"ما عاصمة الأردن؟ وما أشهر معالمها؟","inlineData":null}]},{"role":"model","parts":[{"text":"عمّان. ومن أشهر معالمها جبل القلعة والمدرّج الروماني.","inlineData":null}]},{"role":"user","parts":[{"text":"เมืองหลวงของไทยคืออะไร","inlineData":null}]}],"system_instruction":{"parts":[{"text":"You are a helpful assistant. Answer briefly.","inlineData":null}]}}

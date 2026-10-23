@@ -1,0 +1,4 @@
+POST /v1beta/models/photo-test:streamGenerateContent?key=<key>&alt=sse
+content-type: application/json; charset=utf-8
+
+{"contents":[{"role":"user","parts":[{"text":"What is the capital of Jordan?","inlineData":null}]},{"role":"model","parts":[{"text":"Amman.","inlineData":null}]},{"role":"user","parts":[{"text":"ما عاصمة الأردن؟ وما أشهر معالمها؟","inlineData":null}]},{"role":"model","parts":[{"text":"عمّان. ومن أشهر معالمها جبل القلعة والمدرّج الروماني.","inlineData":null}]},{"role":"user","parts":[{"text":null,"inlineData":{"mimeType":"image/jpeg","data":"AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4v"}},{"text":"ما هذا؟","inlineData":null}]}],"system_instruction":null}

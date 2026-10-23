@@ -13,7 +13,6 @@ package app.maskan.chat
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
-import android.util.Log
 import app.maskan.chat.BuildConfig
 import app.maskan.chat.data.repository.createEncryptedPrefsOrFallback
 import java.io.File
@@ -25,6 +24,7 @@ import android.os.LocaleList
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import app.maskan.chat.data.local.AppDatabase
+import app.maskan.chat.data.remote.ApiClients
 import app.maskan.chat.data.remote.AnthropicService
 import app.maskan.chat.data.remote.GeminiService
 import app.maskan.chat.data.remote.OpenAiCompatibleService
@@ -54,12 +54,6 @@ import app.maskan.chat.ui.viewmodel.ChatViewModel
 import app.maskan.chat.ui.viewmodel.ProjectFilesViewModel
 import app.maskan.chat.ui.viewmodel.ConversationListViewModel
 import app.maskan.chat.ui.viewmodel.SettingsViewModel
-import kotlinx.serialization.json.Json
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Retrofit
-import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.util.concurrent.TimeUnit
 
 class MaskanApplication : Application() {
@@ -70,49 +64,20 @@ class MaskanApplication : Application() {
 
     // ── Network ────────────────────────────────────────────────────────
 
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-        coerceInputValues = true
-        encodeDefaults = true
-    }
+    // The JSON settings and the client live in ApiClients since 2.7, so the golden-request tests
+    // encode with exactly what the app sends.
+    private val json = ApiClients.json
 
     // Not private since session 6: the model download borrows it and widens the timeouts,
     // so one connection pool and one set of TLS settings serve the whole app.
-    val sharedOkHttpClient by lazy {
-        OkHttpClient.Builder()
-            .addInterceptor { chain ->
-                val request = chain.request().newBuilder()
-                    .header("Content-Type", "application/json")
-                    .build()
-                chain.proceed(request)
-            }
-            .apply {
-                if (BuildConfig.DEBUG) {
-                    val loggingInterceptor = HttpLoggingInterceptor { message ->
-                        Log.d("OkHttp", message.replace(Regex("key=[^&\\s]+"), "key=REDACTED"))
-                    }.apply {
-                        level = HttpLoggingInterceptor.Level.BASIC
-                    }
-                    addInterceptor(loggingInterceptor)
-                }
-            }
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
-            .build()
-    }
+    val sharedOkHttpClient by lazy { ApiClients.okHttpClient(debugLogging = BuildConfig.DEBUG) }
 
     private fun createOpenAiService(baseUrl: String, readTimeoutSeconds: Long = 60): OpenAiCompatibleService {
         val client = if (readTimeoutSeconds == 60L) sharedOkHttpClient
         else sharedOkHttpClient.newBuilder().readTimeout(readTimeoutSeconds, TimeUnit.SECONDS).build()
-        return Retrofit.Builder()
-            .baseUrl(baseUrl)
-            .client(client)
-            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
-            .build()
-            .create(OpenAiCompatibleService::class.java)
+        return ApiClients.retrofit(baseUrl, client).create(OpenAiCompatibleService::class.java)
     }
+
 
     // ── Local Database ─────────────────────────────────────────────────
 
@@ -410,11 +375,7 @@ class MaskanApplication : Application() {
     }
 
     private fun registerAnthropicProvider() {
-        val service = Retrofit.Builder()
-            .baseUrl(ProviderConfigs.ANTHROPIC.baseUrl)
-            .client(sharedOkHttpClient)
-            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
-            .build()
+        val service = ApiClients.retrofit(ProviderConfigs.ANTHROPIC.baseUrl, sharedOkHttpClient)
             .create(AnthropicService::class.java)
         val provider = AnthropicProvider(
             config = ProviderConfigs.ANTHROPIC,
@@ -424,11 +385,7 @@ class MaskanApplication : Application() {
     }
 
     private fun registerGeminiProvider() {
-        val service = Retrofit.Builder()
-            .baseUrl(ProviderConfigs.GEMINI.baseUrl)
-            .client(sharedOkHttpClient)
-            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
-            .build()
+        val service = ApiClients.retrofit(ProviderConfigs.GEMINI.baseUrl, sharedOkHttpClient)
             .create(GeminiService::class.java)
         val provider = GeminiProvider(
             config = ProviderConfigs.GEMINI,

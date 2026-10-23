@@ -1,0 +1,22 @@
+shape: document
+
+[system]
+You are a helpful assistant. Answer briefly.
+
+### Attached document: lease.pdf
+The rent is 450 JOD a month, paid quarterly.
+
+[user]
+What is the capital of Jordan?
+
+[assistant]
+Amman.
+
+[user]
+ما عاصمة الأردن؟ وما أشهر معالمها؟
+
+[assistant]
+عمّان. ومن أشهر معالمها جبل القلعة والمدرّج الروماني.
+
+[user]
+เมืองหลวงของไทยคืออะไร

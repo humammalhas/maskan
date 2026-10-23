@@ -1,6 +1,5 @@
 package app.maskan.chat.data.remote.providers
 
-import android.util.Base64
 import app.maskan.chat.data.remote.GeminiContent
 import app.maskan.chat.data.remote.GeminiImageExtractor
 import app.maskan.chat.data.remote.GeminiInlineData
@@ -61,7 +60,7 @@ class GeminiProvider(
         val contents = nonSystemMessages.mapIndexed { index, msg ->
             val role = if (msg.role == "assistant") "model" else msg.role
             if (index == lastUserIndex && msg.role == "user" && imageData != null && imageMimeType != null) {
-                val base64 = Base64.encodeToString(imageData, Base64.NO_WRAP)
+                val base64 = java.util.Base64.getEncoder().encodeToString(imageData)
                 // Drop the text part when the image has no caption: an empty text part is not a
                 // valid content part (Venice rejects the equivalent with a 400).
                 val text = msg.content.textContent()

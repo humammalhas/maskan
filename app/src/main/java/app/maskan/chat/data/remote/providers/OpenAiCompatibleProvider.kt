@@ -69,7 +69,7 @@ class OpenAiCompatibleProvider(
         if (imageData == null || imageMimeType == null) return messages
         val lastUserIndex = messages.indexOfLast { it.role == "user" }
         if (lastUserIndex == -1) return messages
-        val base64 = Base64.encodeToString(imageData, Base64.NO_WRAP)
+        val base64 = java.util.Base64.getEncoder().encodeToString(imageData)
         return messages.toMutableList().apply {
             val original = this[lastUserIndex]
             this[lastUserIndex] = Message(

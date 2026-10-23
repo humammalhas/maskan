@@ -1,0 +1,30 @@
+shape: document
+
+[system]
+You are a helpful assistant. Answer briefly.
+
+جاوب ديما بالعربي مهما كانت لغة السؤال، واحكي شامي محكي مفهوم بالأردن وسوريا ولبنان وفلسطين، مش فصحى. استعمل: هلق، شو، كيفك، بدي، هيك، منيح، كتير، بس، مشان، لسا، هون. النفي ما ومش. المضارع بالباء (بقول، بعمل) والمستقبل رح. جمل قصيرة وطبيعية، بلا نبرة رسمية وبلا تشكيل. ما تكتب حروف لاتينية جوا الجملة. وإذا كتبلك بالإنجليزي، افهم سؤاله وجاوبه بالشامي.
+
+### Project instructions
+Write for a client in Amman. Prices in JOD.
+
+### What you know about me
+Our office is in Jabal Amman.
+
+### Attached document: lease.pdf
+The rent is 450 JOD a month, paid quarterly.
+
+[user]
+What is the capital of Jordan?
+
+[assistant]
+Amman.
+
+[user]
+ما عاصمة الأردن؟ وما أشهر معالمها؟
+
+[assistant]
+عمّان. ومن أشهر معالمها جبل القلعة والمدرّج الروماني.
+
+[user]
+เมืองหลวงของไทยคืออะไร
