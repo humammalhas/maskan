@@ -7,6 +7,13 @@ data class ProviderConfig(
     val baseUrl: String,
     val supportsCustomBaseUrl: Boolean = false,
     val supportsVision: Boolean = false,
+    /**
+     * Models known to take images, added to whatever the last /models fetch published. Covers
+     * the time before a refetch (a cache from an older version marks nothing) and ids the
+     * catalogue no longer lists but the provider still serves. Empty for most providers: an
+     * empty set changes nothing.
+     */
+    val visionModels: Set<String> = emptySet(),
     val isLocal: Boolean = false,
     val models: List<String>,
     val defaultModel: String,
@@ -32,8 +39,13 @@ object ProviderConfigs {
         displayName = "DeepSeek",
         nameAr = "ديب سيك",
         baseUrl = "https://api.deepseek.com/",
-        models = listOf("deepseek-v4-flash", "deepseek-v4-pro", "deepseek-v4-flash-vision-exp"),
-        defaultModel = "deepseek-v4-flash",
+        models = listOf("deepseek-flash", "deepseek-v4-pro"),
+        defaultModel = "deepseek-flash",
+        // supportsVision stays false: deepseek-v4-pro takes the request and silently swaps the
+        // picture for "[Unsupported Image]" (HTTP 200, 2026-10-23), so a provider-wide yes would
+        // arm the camera on a model that answers without seeing. deepseek-v4-flash is the old
+        // name - gone from /v1/models, still served as deepseek-flash, and it saw the test image.
+        visionModels = setOf("deepseek-flash", "deepseek-v4-flash"),
         keyAcquisitionUrl = "https://platform.deepseek.com",
         pricingInfo = "Pay-as-you-go",
         pricingInfoAr = "الدفع حسب الاستخدام",

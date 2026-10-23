@@ -87,8 +87,10 @@ object ModelFilter {
     }
 
     /**
-     * Ids the provider marks as accepting image input. Two publishers give us this honestly:
-     * OpenRouter (architecture.input_modalities) and Venice (model_spec.capabilities.supportsVision).
+     * Ids the provider marks as accepting image input. Four publishers give us this honestly:
+     * OpenRouter (architecture.input_modalities), Venice (model_spec.capabilities.supportsVision),
+     * DeepSeek (input_modalities at the top level of each entry) and Mistral
+     * (capabilities.vision). The last two were read off their live /v1/models on 2026-10-23.
      * Everything else returns nothing here and is decided by the provider-level flag.
      */
     fun visionIdsFrom(element: JsonElement): Set<String> {
@@ -102,18 +104,23 @@ object ModelFilter {
             val obj = item as? JsonObject ?: return@mapNotNull null
             val id = (obj["id"] as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null
 
-            val takesImages = (obj["architecture"] as? JsonObject)
-                ?.get("input_modalities")
-                ?.let { it as? JsonArray }
-                ?.any { (it as? JsonPrimitive)?.contentOrNull == "image" }
+            val takesImages = listsImage((obj["architecture"] as? JsonObject)?.get("input_modalities"))
+                ?: listsImage(obj["input_modalities"])
                 ?: ((obj["model_spec"] as? JsonObject)
                     ?.get("capabilities") as? JsonObject)
                     ?.get("supportsVision")
+                    ?.let { (it as? JsonPrimitive)?.contentOrNull == "true" }
+                ?: (obj["capabilities"] as? JsonObject)
+                    ?.get("vision")
                     ?.let { (it as? JsonPrimitive)?.contentOrNull == "true" }
 
             if (takesImages == true) id else null
         }.toSet()
     }
+
+    /** null when there is no modality list at all, so the next publisher's field gets a say. */
+    private fun listsImage(modalities: JsonElement?): Boolean? =
+        (modalities as? JsonArray)?.any { (it as? JsonPrimitive)?.contentOrNull == "image" }
 
     /**
      * Ollama /api/tags entries carry details.families; a vision model lists "clip" or "mllama"

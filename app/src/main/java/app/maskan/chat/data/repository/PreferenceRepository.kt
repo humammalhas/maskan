@@ -3,6 +3,7 @@ package app.maskan.chat.data.repository
 import android.content.Context
 import android.content.SharedPreferences
 import app.maskan.chat.data.model.Dialect
+import app.maskan.chat.data.remote.providers.ProviderConfigs
 
 class PreferenceRepository(context: Context) {
 
@@ -224,13 +225,17 @@ class PreferenceRepository(context: Context) {
             ?: emptyList()
 
     /**
-     * Models this provider says accept image input. Empty means the provider publishes no
-     * capability data (or was never fetched), NOT that none of them can see images - callers
-     * fall back to the provider-level flag instead of hiding the camera on everything.
+     * Models this provider says accept image input, plus the ones its config knows about
+     * ([ProviderConfig.visionModels]). Empty means the provider publishes no capability data
+     * (or was never fetched), NOT that none of them can see images - callers fall back to the
+     * provider-level flag instead of hiding the camera on everything.
      */
-    fun getVisionModels(providerId: String): Set<String> =
-        plainPreferences.getStringSet(KEY_VISION_MODELS_PREFIX + providerId, emptySet())
+    fun getVisionModels(providerId: String): Set<String> {
+        val cached = plainPreferences.getStringSet(KEY_VISION_MODELS_PREFIX + providerId, emptySet())
             ?.toSet() ?: emptySet()
+        val known = ProviderConfigs.ALL.firstOrNull { it.id == providerId }?.visionModels ?: emptySet()
+        return cached + known
+    }
 
     /** Epoch millis of the last successful fetch, or 0 if this provider was never fetched. */
     fun getModelsFetchedAt(providerId: String): Long =
