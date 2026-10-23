@@ -481,6 +481,15 @@
     <string name="remove_key_body">Maskan deletes the key from this phone. Chats on %1$s stop answering until you add a key again.</string>
     <string name="remove_key_confirm">Remove</string>
     <string name="key_removed_confirmation">Key removed.</string>
+    <string name="manage_providers_button">Manage providers</string>
+    <string name="manage_providers_title">Your providers</string>
+    <string name="manage_providers_hint">Move the ones you use to the top. Hiding a provider takes it off the lists; its chats keep working.</string>
+    <string name="provider_move_up">Move up</string>
+    <string name="provider_move_down">Move down</string>
+    <string name="provider_hide">Hide</string>
+    <string name="provider_unhide">Show</string>
+    <string name="providers_hidden_fmt">Hidden (%1$d)</string>
+    <string name="provider_in_use">In use</string>
     <string name="ondevice_nudge">Liking it? Your own key gives you Gemini, GPT or Claude with the same privacy rules — Maskan still never sees your data.</string>
     <string name="ondevice_nudge_dismiss">Not now</string>
     <string name="ondevice_nudge_add_key">Add a key</string>

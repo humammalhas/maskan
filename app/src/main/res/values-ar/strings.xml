@@ -294,7 +294,7 @@
     <string name="error_together_passthrough_hint">توجيذر يحجب نماذج الصور حتى تفعّل الخيارين \"Store prompts and model responses\" و\"Allow passthrough models\" معًا من إعدادات حسابك في api.together.ai ثم تحفظ. بعدها أعد المحاولة.</string>
     <string name="image_gen_unsupported_fmt">%1$s لا يولّد الصور.</string>
     <string name="image_models_none_found">لا توجد نماذج صور محمَّلة بعد — اضغط \"تحديث النماذج\" أو اكتب معرّف نموذج في القائمة.</string>
-    <string name="key_report_button">ماذا يستطيع مفتاحي؟</string>
+    <string name="key_report_button">ماذا يفعل مفتاحي؟</string>
     <string name="key_report_running">جارٍ فحص مفتاحك…</string>
     <string name="key_report_chat_ok_fmt">المحادثة: تعمل — %1$d من النماذج للاختيار</string>
     <string name="key_report_chat_fail_fmt">المحادثة: لا تعمل — %1$s</string>
@@ -481,6 +481,15 @@
     <string name="remove_key_body">يحذف مسكن المفتاح من هذا الهاتف، فتتوقف محادثات %1$s عن الرد حتى تضيف مفتاحًا من جديد.</string>
     <string name="remove_key_confirm">إزالة</string>
     <string name="key_removed_confirmation">أُزيل المفتاح.</string>
+    <string name="manage_providers_button">إدارة المزوّدين</string>
+    <string name="manage_providers_title">مزوّدوك</string>
+    <string name="manage_providers_hint">انقل ما تستعمله إلى الأعلى. إخفاء المزوّد يُبعده عن القوائم، وتبقى محادثاته تعمل.</string>
+    <string name="provider_move_up">انقل إلى الأعلى</string>
+    <string name="provider_move_down">انقل إلى الأسفل</string>
+    <string name="provider_hide">إخفاء</string>
+    <string name="provider_unhide">إظهار</string>
+    <string name="providers_hidden_fmt">مخفية (%1$d)</string>
+    <string name="provider_in_use">قيد الاستعمال</string>
     <string name="ondevice_nudge">أعجبك؟ مفتاحك الخاص يمنحك Gemini أو GPT أو Claude بقواعد الخصوصية نفسها — ولا يرى مسكن بياناتك أبداً.</string>
     <string name="ondevice_nudge_dismiss">ليس الآن</string>
     <string name="ondevice_nudge_add_key">أضف مفتاحاً</string>

@@ -481,6 +481,15 @@
     <string name="remove_key_body">มัสกันจะลบคีย์ออกจากโทรศัพท์เครื่องนี้ แชทที่ใช้ %1$s จะหยุดตอบจนกว่าคุณจะเพิ่มคีย์ใหม่</string>
     <string name="remove_key_confirm">ลบ</string>
     <string name="key_removed_confirmation">ลบคีย์แล้ว</string>
+    <string name="manage_providers_button">จัดการผู้ให้บริการ</string>
+    <string name="manage_providers_title">ผู้ให้บริการของคุณ</string>
+    <string name="manage_providers_hint">ย้ายตัวที่คุณใช้ขึ้นไปด้านบน การซ่อนผู้ให้บริการจะเอาออกจากรายการ แต่แชทเดิมยังใช้งานได้</string>
+    <string name="provider_move_up">เลื่อนขึ้น</string>
+    <string name="provider_move_down">เลื่อนลง</string>
+    <string name="provider_hide">ซ่อน</string>
+    <string name="provider_unhide">แสดง</string>
+    <string name="providers_hidden_fmt">ซ่อนอยู่ (%1$d)</string>
+    <string name="provider_in_use">ใช้อยู่</string>
     <string name="ondevice_nudge">ชอบไหม คีย์ของคุณเองให้คุณใช้ Gemini, GPT หรือ Claude ด้วยกฎความเป็นส่วนตัวเดียวกัน — Maskan ยังคงไม่เห็นข้อมูลของคุณ</string>
     <string name="ondevice_nudge_dismiss">ยังก่อน</string>
     <string name="ondevice_nudge_add_key">เพิ่มคีย์</string>

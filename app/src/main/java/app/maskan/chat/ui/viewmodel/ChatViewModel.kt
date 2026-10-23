@@ -14,6 +14,7 @@ import app.maskan.chat.data.local.SystemPromptPreset
 import app.maskan.chat.data.model.Dialect
 import app.maskan.chat.data.remote.providers.AiProvider
 import app.maskan.chat.data.remote.providers.OnDeviceProvider
+import app.maskan.chat.data.remote.providers.ProviderOrder
 import app.maskan.chat.data.remote.providers.ProviderRegistry
 import app.maskan.chat.BuildConfig
 import app.maskan.chat.MaskanApplication
@@ -370,14 +371,27 @@ class ChatViewModel(
         val notDownloaded: Boolean
     )
 
-    fun providerChoices(): List<ProviderChoice> =
-        ProviderRegistry.getAllProviders().map { provider ->
+    /**
+     * In the user's order, without the providers they hid in Settings - except the one this chat
+     * is on, which stays listed (ticked) so the list never denies where the chat is.
+     */
+    fun providerChoices(): List<ProviderChoice> {
+        val all = ProviderRegistry.getAllProviders()
+        val arranged = ProviderOrder.arrange(
+            all.map { it.id },
+            preferenceRepository.getProviderOrder(),
+            preferenceRepository.getHiddenProviders()
+        )
+        val current = _uiState.value.selectedProviderId
+        val ids = arranged.visible + arranged.hidden.filter { it == current }
+        return ids.mapNotNull { id -> all.firstOrNull { it.id == id } }.map { provider ->
             ProviderChoice(
                 provider = provider,
                 missingKey = provider.requiresApiKey && keyRepository.getApiKey(provider.id).isNullOrBlank(),
                 notDownloaded = (provider as? OnDeviceProvider)?.isInstalled == false
             )
         }
+    }
 
     /**
      * The models offered for [providerId] - the same list Settings offers: the fetched catalogue,

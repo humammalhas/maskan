@@ -197,37 +197,54 @@ fun SettingsScreen(
                     expanded = providerExpanded,
                     onDismissRequest = { providerExpanded = false }
                 ) {
-                    allProviders.forEach { provider ->
-                        val hasSavedKey = provider.id in state.configuredProviderIds
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    text = if (isArabic) provider.nameAr else provider.displayName,
-                                    fontWeight = if (hasSavedKey)
-                                        androidx.compose.ui.text.font.FontWeight.Bold
-                                    else
-                                        androidx.compose.ui.text.font.FontWeight.Normal
-                                )
-                            },
-                            trailingIcon = if (hasSavedKey) {
-                                {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = stringResource(R.string.provider_configured),
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(18.dp)
+                    // In the user's order, without the ones they hid (ManageProvidersDialog).
+                    state.providerArrangement.visible
+                        .mapNotNull { id -> allProviders.firstOrNull { it.id == id } }
+                        .forEach { provider ->
+                            val hasSavedKey = provider.id in state.configuredProviderIds
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = if (isArabic) provider.nameAr else provider.displayName,
+                                        fontWeight = if (hasSavedKey)
+                                            androidx.compose.ui.text.font.FontWeight.Bold
+                                        else
+                                            androidx.compose.ui.text.font.FontWeight.Normal
                                     )
+                                },
+                                trailingIcon = if (hasSavedKey) {
+                                    {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = stringResource(R.string.provider_configured),
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                } else null,
+                                onClick = {
+                                    viewModel.selectProvider(provider)
+                                    providerExpanded = false
+                                    isKeyVisible = false
+                                    onModelChanged(viewModel.uiState.value.selectedModel)
                                 }
-                            } else null,
-                            onClick = {
-                                viewModel.selectProvider(provider)
-                                providerExpanded = false
-                                isKeyVisible = false
-                                onModelChanged(viewModel.uiState.value.selectedModel)
-                            }
-                        )
-                    }
+                            )
+                        }
                 }
+            }
+
+            var showManageProviders by remember { mutableStateOf(false) }
+            TextButton(onClick = { showManageProviders = true }) {
+                Text(stringResource(R.string.manage_providers_button))
+            }
+            if (showManageProviders) {
+                ManageProvidersDialog(
+                    arrangement = state.providerArrangement,
+                    inUseProviderId = selectedProvider.id,
+                    onMove = { id, delta -> viewModel.moveProvider(id, delta) },
+                    onSetHidden = { id, hidden -> viewModel.setProviderHidden(id, hidden) },
+                    onDismiss = { showManageProviders = false }
+                )
             }
 
             Spacer(modifier = Modifier.height(4.dp))

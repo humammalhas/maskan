@@ -176,6 +176,27 @@ class PreferenceRepository(context: Context) {
         plainPreferences.edit().putBoolean(KEY_SPEAK_BUTTON, shown).apply()
     }
 
+    /**
+     * The user's order and hidden set for the provider list (see ProviderOrder). Plain prefs:
+     * provider ids are not secrets, and the backup carries this file whole.
+     */
+    fun getProviderOrder(): List<String> =
+        plainPreferences.getString(KEY_PROVIDER_ORDER, null)
+            ?.split("\n")
+            ?.filter { it.isNotBlank() }
+            ?: emptyList()
+
+    fun setProviderOrder(ids: List<String>) {
+        plainPreferences.edit().putString(KEY_PROVIDER_ORDER, ids.joinToString("\n")).apply()
+    }
+
+    fun getHiddenProviders(): Set<String> =
+        plainPreferences.getStringSet(KEY_HIDDEN_PROVIDERS, emptySet()) ?: emptySet()
+
+    fun setHiddenProviders(ids: Set<String>) {
+        plainPreferences.edit().putStringSet(KEY_HIDDEN_PROVIDERS, ids).apply()
+    }
+
     // Model lists fetched from a provider's /models endpoint. Cached in the PLAIN prefs on
     // purpose: model ids are public catalogue data, not secrets, and keeping them out of the
     // encrypted file avoids bloating it. The timestamp drives the staleness check that triggers
@@ -346,5 +367,7 @@ class PreferenceRepository(context: Context) {
         private const val KEY_CUSTOM_PROMPT = "custom_system_prompt"
         private const val KEY_AUTO_TITLE = "auto_title_enabled"
         private const val KEY_SPEAK_BUTTON = "speak_button_shown"
+        private const val KEY_PROVIDER_ORDER = "provider_order"
+        private const val KEY_HIDDEN_PROVIDERS = "hidden_providers"
     }
 }

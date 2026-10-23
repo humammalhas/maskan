@@ -7,6 +7,7 @@ import app.maskan.chat.MaskanApplication
 import app.maskan.chat.data.model.Dialect
 import app.maskan.chat.data.remote.providers.AiProvider
 import app.maskan.chat.data.remote.providers.ProviderConfigs
+import app.maskan.chat.data.remote.providers.ProviderOrder
 import app.maskan.chat.data.remote.providers.ProviderRegistry
 import app.maskan.chat.data.repository.ChatRepository
 import app.maskan.chat.data.repository.KeyRepository
@@ -61,6 +62,8 @@ data class SettingsUiState(
     val isSaved: Boolean = false,
     /** Just removed with Remove key - shown once, cleared by the next edit or provider. */
     val keyRemoved: Boolean = false,
+    /** The provider list as the user arranged it: order, and what they hid (ProviderOrder). */
+    val providerArrangement: ProviderOrder.Arranged = ProviderOrder.Arranged(emptyList(), emptyList()),
     val testState: TestConnectionState = TestConnectionState.Idle,
     val selectedLocale: String = "",
     val selectedDialect: Dialect = Dialect.MSA,
@@ -111,6 +114,7 @@ class SettingsViewModel(
             selectedLocale = localeRepository.getLocale(),
             selectedDialect = preferenceRepository.getDefaultDialect(),
             configuredProviderIds = keyRepository.getAllStoredProviderIds().toSet(),
+            providerArrangement = arrangement(),
             blockScreenshots = preferenceRepository.isBlockScreenshots(),
             globalMemoryEnabled = preferenceRepository.isGlobalMemoryEnabled(),
             globalMemoryTokens = TokenEstimate.of(preferenceRepository.getGlobalMemory()),
@@ -126,6 +130,31 @@ class SettingsViewModel(
         )
 
         maybeAutoRefreshModels()
+    }
+
+    private fun arrangement(): ProviderOrder.Arranged = ProviderOrder.arrange(
+        allProviders.map { it.id },
+        preferenceRepository.getProviderOrder(),
+        preferenceRepository.getHiddenProviders()
+    )
+
+    /** Move [providerId] one place up (-1) or down (+1) among the shown providers. */
+    fun moveProvider(providerId: String, delta: Int) {
+        preferenceRepository.setProviderOrder(
+            ProviderOrder.move(_uiState.value.providerArrangement, providerId, delta)
+        )
+        _uiState.value = _uiState.value.copy(providerArrangement = arrangement())
+    }
+
+    /**
+     * Hide or show [providerId]. The provider in use cannot be hidden: new chats open on it, and
+     * a list that hid where they open would be the list lying.
+     */
+    fun setProviderHidden(providerId: String, hidden: Boolean) {
+        if (hidden && providerId == _uiState.value.selectedProvider.id) return
+        val current = preferenceRepository.getHiddenProviders()
+        preferenceRepository.setHiddenProviders(if (hidden) current + providerId else current - providerId)
+        _uiState.value = _uiState.value.copy(providerArrangement = arrangement())
     }
 
     fun selectProvider(provider: AiProvider) {
