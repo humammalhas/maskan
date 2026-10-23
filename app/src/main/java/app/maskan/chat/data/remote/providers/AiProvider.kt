@@ -1,6 +1,7 @@
 package app.maskan.chat.data.remote.providers
 
 import app.maskan.chat.data.remote.Message
+import app.maskan.chat.data.remote.WebSource
 import kotlinx.coroutines.flow.Flow
 
 interface AiProvider {
@@ -153,6 +154,32 @@ interface AiProvider {
         imageData: ByteArray? = null,
         imageMimeType: String? = null
     ): Flow<String>
+
+    /**
+     * Whether this provider can search the web itself when answering with [model]. Tested on
+     * Humam's keys, not taken from documentation (RELEASE_2.7_PLAN.md item 11). Where it is false
+     * the composer greys the entry out and says why.
+     */
+    fun searchesWeb(model: String): Boolean = false
+
+    /**
+     * The same reply with the provider's OWN web search switched on. The pages it read are handed
+     * to [onSources] as they arrive - a provider may search more than once - on the stream's own
+     * thread. A separate entry point rather than a flag on [sendMessageStreaming], so a request
+     * without search cannot change: the golden-request tests pin that.
+     *
+     * The default refuses. Falling back to an ordinary reply would answer from memory while the
+     * user believes it searched - the failure Open WebUI's API showed on 2026-10-23.
+     */
+    fun sendMessageStreamingWithSearch(
+        apiKey: String,
+        model: String,
+        messages: List<Message>,
+        baseUrl: String?,
+        imageData: ByteArray?,
+        imageMimeType: String?,
+        onSources: (List<WebSource>) -> Unit
+    ): Flow<String> = throw UnsupportedOperationException("$id cannot search the web")
 }
 
 /**

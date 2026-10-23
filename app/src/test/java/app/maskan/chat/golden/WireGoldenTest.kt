@@ -112,6 +112,53 @@ class WireGoldenTest {
         }
     }
 
+    /**
+     * The five providers whose own web search rides the chat request they already use (2.7).
+     * Each switch was tested on Humam's key before it was written here; see plan item 11.
+     */
+    @Test
+    fun webSearch() {
+        val providers: List<Triple<String, String, () -> AiProvider>> = listOf(
+            Triple("anthropic", "claude-test", { AnthropicProvider(ProviderConfigs.ANTHROPIC, service(AnthropicService::class.java)) }),
+            Triple("gemini", "gemini-test", { GeminiProvider(ProviderConfigs.GEMINI, service(GeminiService::class.java)) }),
+            Triple("openrouter", "deepseek/deepseek-v4.1-flash", { openAiCompatible(ProviderConfigs.OPENROUTER) }),
+            Triple("venice", "venice-uncensored-1-2", { openAiCompatible(ProviderConfigs.VENICE) }),
+            Triple("groq", "openai/gpt-oss-120b", { openAiCompatible(ProviderConfigs.GROQ) })
+        )
+        for ((name, model, make) in providers) {
+            val provider = make()
+            server.enqueue(MockResponse().setResponseCode(200).setBody(""))
+            runBlocking {
+                runCatching {
+                    provider.sendMessageStreamingWithSearch(KEY, model, Fixtures.plain, null, null, null) {}.toList()
+                }
+            }
+            val recorded = server.takeRequest(5, TimeUnit.SECONDS) ?: error("$name sent no request")
+            Golden.check("$name-websearch-stream", describe(recorded))
+        }
+    }
+
+    /** Who gets the search entry. A provider that cannot search must say no, never fake it. */
+    @Test
+    fun whoSearches() {
+        val searches = mapOf(
+            "anthropic" to AnthropicProvider(ProviderConfigs.ANTHROPIC, service(AnthropicService::class.java)).searchesWeb("any"),
+            "gemini" to GeminiProvider(ProviderConfigs.GEMINI, service(GeminiService::class.java)).searchesWeb("any"),
+            "openrouter" to openAiCompatible(ProviderConfigs.OPENROUTER).searchesWeb("any"),
+            "venice" to openAiCompatible(ProviderConfigs.VENICE).searchesWeb("any"),
+            "groq gpt-oss" to openAiCompatible(ProviderConfigs.GROQ).searchesWeb("openai/gpt-oss-120b"),
+            "groq qwen" to openAiCompatible(ProviderConfigs.GROQ).searchesWeb("qwen/qwen3.8-27b"),
+            "together" to openAiCompatible(ProviderConfigs.TOGETHER).searchesWeb("any"),
+            // Session B adds these three.
+            "deepseek" to openAiCompatible(ProviderConfigs.DEEPSEEK).searchesWeb("deepseek-flash"),
+            "openai" to openAiCompatible(ProviderConfigs.OPENAI).searchesWeb("gpt-5.6-luna"),
+            "mistral" to openAiCompatible(ProviderConfigs.MISTRAL).searchesWeb("mistral-small-latest"),
+            "custom" to LocalProvider(ProviderConfigs.CUSTOM, client(), json).searchesWeb("any"),
+            "ollama" to LocalProvider(ProviderConfigs.OLLAMA, client(), json).searchesWeb("any")
+        )
+        Golden.check("who-searches", searches.entries.joinToString("\n") { it.key + ": " + it.value } + "\n")
+    }
+
     /** The on-device model has no wire: the prompt string IS the request. */
     @Test
     fun onDevicePrompt() {

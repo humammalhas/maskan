@@ -17,6 +17,8 @@ import app.maskan.chat.data.local.systemPromptFor
 import app.maskan.chat.data.model.Dialect
 import app.maskan.chat.data.remote.ChatCompletionResponse
 import app.maskan.chat.data.remote.Message
+import app.maskan.chat.data.remote.SearchStream
+import app.maskan.chat.data.remote.WebSource
 import app.maskan.chat.data.remote.MessageContent
 import app.maskan.chat.data.remote.VideoBackend
 import app.maskan.chat.data.remote.VideoJobClient
@@ -38,6 +40,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.FlowCollector
+import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.flow.flow
 
 enum class ExportFormat { PLAIN_TEXT, MARKDOWN }
@@ -636,7 +639,9 @@ class ChatRepository(
         userContent: String,
         model: String = "deepseek-chat",
         imageData: ByteArray? = null,
-        imageMimeType: String? = null
+        imageMimeType: String? = null,
+        /** This one message asks the provider to search the web first (2.7). */
+        webSearch: Boolean = false
     ): Flow<StreamEvent> = flow {
         val conversation = conversationDao.getConversationById(conversationId)
             ?: throw Exception("Conversation not found")
@@ -670,7 +675,7 @@ class ChatRepository(
         // Room invalidation Flow.
         emit(StreamEvent.UserSaved(userEntity.copy(id = userMessageId)))
 
-        streamAssistantReply(conversation, model, imageData, imageMimeType)
+        streamAssistantReply(conversation, model, imageData, imageMimeType, webSearch)
 
         if (conversation.title == DEFAULT_TITLE) {
             conversationDao.updateConversationTitle(conversationId, fallbackTitle(userContent))
@@ -1088,7 +1093,8 @@ class ChatRepository(
         conversation: ConversationEntity,
         model: String,
         imageData: ByteArray?,
-        imageMimeType: String?
+        imageMimeType: String?,
+        webSearch: Boolean = false
     ) {
         val conversationId = conversation.id
         val messages = buildMessageList(conversation, conversation.modelId ?: model)
@@ -1118,15 +1124,38 @@ class ChatRepository(
 
         try {
             val fullContent = StringBuilder()
-            provider.sendMessageStreaming(
-                apiKey, effectiveModel, messages, storedBaseUrl,
-                imageData, imageMimeType
-            ).collect { token ->
+            // A search's sources arrive on the stream's own thread, from inside the provider's
+            // parser; a flow may only emit from its collector's coroutine, so they are held here
+            // and handed on with the next token - and once more after the last one, because
+            // Gemini sends its sources in a final chunk that carries no text.
+            val found = AtomicReference(emptyList<WebSource>())
+            var published = emptyList<WebSource>()
+            val stream = if (webSearch) {
+                if (!provider.searchesWeb(effectiveModel)) {
+                    throw Exception("${provider.displayName} cannot search the web with $effectiveModel")
+                }
+                provider.sendMessageStreamingWithSearch(
+                    apiKey, effectiveModel, messages, storedBaseUrl,
+                    imageData, imageMimeType
+                ) { more -> found.updateAndGet { SearchStream.merge(it, more) } }
+            } else {
+                provider.sendMessageStreaming(
+                    apiKey, effectiveModel, messages, storedBaseUrl,
+                    imageData, imageMimeType
+                )
+            }
+            stream.collect { token ->
                 fullContent.append(token)
                 val snapshot = fullContent.toString()
                 messageDao.updateMessageContent(assistantMessageId, snapshot)
                 emit(StreamEvent.Token(assistantMessageId, snapshot))
+                val sources = found.get()
+                if (sources !== published) {
+                    published = sources
+                    publishSources(assistantMessageId, sources)
+                }
             }
+            found.get().let { if (it !== published) publishSources(assistantMessageId, it) }
 
             val finalContent = fullContent.toString()
             if (finalContent.isBlank()) {
@@ -1159,7 +1188,15 @@ class ChatRepository(
          * The flow ends here - a WorkManager worker delivers the clip minutes later.
          */
         data class VideoQueued(val message: MessageEntity) : StreamEvent()
+
+        /** The pages a web search read so far for this answer; already saved on its row. */
+        data class Sources(val messageId: Long, val sources: List<WebSource>) : StreamEvent()
         data object Done : StreamEvent()
+    }
+
+    private suspend fun FlowCollector<StreamEvent>.publishSources(messageId: Long, sources: List<WebSource>) {
+        messageDao.updateMessageSources(messageId, SearchStream.encode(sources))
+        emit(StreamEvent.Sources(messageId, sources))
     }
 
     suspend fun fetchModels(providerId: String): Result<app.maskan.chat.data.remote.providers.FetchedModels> {

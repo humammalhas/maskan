@@ -25,6 +25,9 @@ interface MessageDao {
     @Query("UPDATE messages SET content = :content WHERE id = :messageId")
     suspend fun updateMessageContent(messageId: Long, content: String)
 
+    @Query("UPDATE messages SET sourcesJson = :sourcesJson WHERE id = :messageId")
+    suspend fun updateMessageSources(messageId: Long, sourcesJson: String?)
+
     @Query("UPDATE messages SET imagePath = :imagePath, imageMimeType = :mimeType WHERE id = :messageId")
     suspend fun updateImagePath(messageId: Long, imagePath: String, mimeType: String)
 

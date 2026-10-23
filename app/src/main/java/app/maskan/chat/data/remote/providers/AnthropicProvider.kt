@@ -8,9 +8,13 @@ import app.maskan.chat.data.remote.AnthropicStreamEvent
 import app.maskan.chat.data.remote.AnthropicSystemBlock
 import app.maskan.chat.data.remote.Message
 import app.maskan.chat.data.remote.MessageContent
+import app.maskan.chat.data.remote.SearchStream
+import app.maskan.chat.data.remote.WebSource
 import app.maskan.chat.data.remote.parseSSEStream
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 class AnthropicProvider(
     private val config: ProviderConfig,
@@ -140,6 +144,42 @@ class AnthropicProvider(
         return parseSSEStream(call) { data ->
             val event = json.decodeFromString<AnthropicStreamEvent>(data)
             if (event.type == "content_block_delta") event.delta?.text else null
+        }
+    }
+
+    /** Every Claude model takes the server-side web_search tool (tested on claude-sonnet-5). */
+    override fun searchesWeb(model: String): Boolean = true
+
+    override fun sendMessageStreamingWithSearch(
+        apiKey: String,
+        model: String,
+        messages: List<Message>,
+        baseUrl: String?,
+        imageData: ByteArray?,
+        imageMimeType: String?,
+        onSources: (List<WebSource>) -> Unit
+    ): Flow<String> {
+        val (_, request) = buildRequest(model, messages, stream = true, imageData, imageMimeType)
+        val call = apiService.createMessageStream(
+            apiKey = apiKey,
+            request = request.copy(tools = listOf(WEB_SEARCH_TOOL))
+        )
+        return parseSSEStream(call) { data ->
+            val piece = SearchStream.anthropic(data)
+            if (piece.sources.isNotEmpty()) onSources(piece.sources)
+            piece.text
+        }
+    }
+
+    private companion object {
+        /**
+         * Anthropic runs the search on its side and bills it per search; max_uses caps one
+         * answer at three, which is what an ordinary question needs.
+         */
+        val WEB_SEARCH_TOOL = buildJsonObject {
+            put("type", "web_search_20250305")
+            put("name", "web_search")
+            put("max_uses", 3)
         }
     }
 }

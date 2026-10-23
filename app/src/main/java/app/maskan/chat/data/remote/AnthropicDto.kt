@@ -29,7 +29,12 @@ data class AnthropicRequest(
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     val system: List<AnthropicSystemBlock>? = null,
     val messages: List<AnthropicMessage>,
-    val stream: Boolean = false
+    val stream: Boolean = false,
+    // Only on a web-search request; absent otherwise, so a plain request is byte-for-byte what
+    // it was before 2.7 (the golden-request tests check it).
+    @OptIn(ExperimentalSerializationApi::class)
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val tools: List<JsonElement>? = null
 )
 
 @Serializable

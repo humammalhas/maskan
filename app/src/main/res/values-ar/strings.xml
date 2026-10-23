@@ -525,4 +525,11 @@
     <string name="restore_done">استُعيدت النسخة. سيُعاد تشغيل مسكن الآن، فإن لم يُفتح من تلقاء نفسه فافتحه مجددًا.</string>
     <string name="restore_picture_missing">هذه الصورة لم تكن في النسخة الاحتياطية.</string>
     <string name="restore_clip_missing">هذا المقطع لم يكن في النسخة الاحتياطية.</string>
+    <!-- Web search (2.7): the provider's own search, one message at a time -->
+    <string name="attach_web_search">ابحث في الإنترنت</string>
+    <string name="web_search_unavailable">هذا النموذج لا يستطيع البحث في الإنترنت.</string>
+    <string name="web_search_mode_chip">🌐 البحث في الإنترنت</string>
+    <string name="searching_web">يبحث في الإنترنت…</string>
+    <string name="sources_title_fmt">المصادر (%1$d)</string>
+    <string name="privacy_note_web_search">يُرسَل سؤالك إلى %1$s، فيبحث عنه في الإنترنت.</string>
 </resources>

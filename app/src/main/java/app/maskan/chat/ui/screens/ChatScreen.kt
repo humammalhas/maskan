@@ -87,6 +87,9 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
+import app.maskan.chat.data.remote.SearchStream
+import app.maskan.chat.data.remote.WebSource
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -910,6 +913,23 @@ fun ChatScreen(
                             onRemove = { viewModel.setEditMode(false) }
                         )
                     }
+                    if (uiState.webSearchMode) {
+                        FileAttachmentChip(
+                            fileName = stringResource(R.string.web_search_mode_chip),
+                            onRemove = { viewModel.setWebSearchMode(false) }
+                        )
+                        // The question leaves for a search engine as well as the model, and the
+                        // provider decides which one - said before the first search, not after.
+                        if (!preferenceRepository.hasSeenWebSearchPrivacyNote()) {
+                            val providerName = ProviderRegistry.getProvider(uiState.selectedProviderId)?.let { provider ->
+                                if (app.localeRepository.getLocale() == "ar") provider.nameAr else provider.displayName
+                            } ?: uiState.selectedProviderId
+                            PrivacyInfoNote(
+                                text = stringResource(R.string.privacy_note_web_search, providerName),
+                                onDismissForever = { preferenceRepository.setWebSearchPrivacyNoteSeen() }
+                            )
+                        }
+                    }
                     if (uiState.videoMode) {
                         FileAttachmentChip(
                             fileName = stringResource(
@@ -1054,7 +1074,10 @@ fun ChatScreen(
                         imageModelName = uiState.selectedImageModelName,
                         videoModelName = uiState.selectedVideoModelName,
                         onPickImageModel = { showImageModelPicker = true },
-                        onPickVideoModel = { showVideoModelPicker = true }
+                        onPickVideoModel = { showVideoModelPicker = true },
+                        canSearchWeb = viewModel.canSearchWeb(),
+                        webSearchMode = uiState.webSearchMode,
+                        onToggleWebSearch = { viewModel.setWebSearchMode(!uiState.webSearchMode) }
                     )
                 }
             }
@@ -1226,6 +1249,10 @@ fun ChatScreen(
                             null
                         }
                     )
+                    if (message.role == "assistant" && message.sourcesJson != null) {
+                        val sources = remember(message.sourcesJson) { SearchStream.decode(message.sourcesJson) }
+                        if (sources.isNotEmpty()) WebSourcesList(sources)
+                    }
                     if (modelLoading && isLastMessage && message.role == "assistant" &&
                         message.content.isBlank()
                     ) {
@@ -1782,6 +1809,10 @@ private fun MessageInputBar(
     onPickImageModel: () -> Unit = {},
     onPickVideoModel: () -> Unit = {},
     onTakePhoto: () -> Unit = {},
+    /** The provider and model can search the web themselves (2.7); otherwise the entry is greyed. */
+    canSearchWeb: Boolean = false,
+    webSearchMode: Boolean = false,
+    onToggleWebSearch: () -> Unit = {},
     /** A photo is waiting to be asked about: the hint becomes the question it invites. */
     photoAttached: Boolean = false,
     focusRequester: FocusRequester? = null
@@ -1830,6 +1861,7 @@ private fun MessageInputBar(
             var menuOpen by remember { mutableStateOf(false) }
             val attachPhotoFirst = stringResource(R.string.error_no_photo_to_edit)
             val modelCannotSee = stringResource(R.string.model_cannot_see_images)
+            val cannotSearch = stringResource(R.string.web_search_unavailable)
             Box {
                 IconButton(
                     onClick = { menuOpen = true },
@@ -1838,7 +1870,7 @@ private fun MessageInputBar(
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = stringResource(R.string.attach_type_title),
-                        tint = if (imageMode || videoMode || editMode) MaterialTheme.colorScheme.tertiary
+                        tint = if (imageMode || videoMode || editMode || webSearchMode) MaterialTheme.colorScheme.tertiary
                         else MaterialTheme.colorScheme.primary
                     )
                 }
@@ -1877,6 +1909,23 @@ private fun MessageInputBar(
                             menuOpen = false
                             if (supportsVision) onAttachPhoto()
                             else Toast.makeText(context, modelCannotSee, Toast.LENGTH_LONG).show()
+                        }
+                    )
+                    // Always listed, greyed where the provider cannot search, so the feature is
+                    // never invisible and never pretends: the toast says why it is off.
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.attach_web_search)) },
+                        leadingIcon = { Text("🌐", fontSize = 18.sp) },
+                        trailingIcon = if (webSearchMode) {
+                            { Text("✓", color = MaterialTheme.colorScheme.tertiary) }
+                        } else {
+                            null
+                        },
+                        modifier = Modifier.alpha(if (canSearchWeb) 1f else 0.4f),
+                        onClick = {
+                            menuOpen = false
+                            if (canSearchWeb) onToggleWebSearch()
+                            else Toast.makeText(context, cannotSearch, Toast.LENGTH_LONG).show()
                         }
                     )
                     if (imageFeatureAvailable) {
@@ -2247,6 +2296,54 @@ private fun shareImageBytes(context: Context, bytes: ByteArray, mimeType: String
  * has landed a plain "ready" line stands in until playback (step 3) replaces it; a row with
  * neither a job nor a file is a failed render and its content carries the reason.
  */
+/**
+ * The pages the provider's web search read, under its answer: folded to one line by default
+ * (Groq can return twenty), unfolded to a numbered list that opens each page in the browser.
+ *
+ * Text only, no fixed heights: the titles are whatever the page called itself, in any script,
+ * and a box that cannot grow is the Arabic-clipping bug this app has fixed four times.
+ */
+@Composable
+private fun WebSourcesList(sources: List<WebSource>) {
+    var open by remember { mutableStateOf(false) }
+    val uriHandler = LocalUriHandler.current
+    Column(modifier = Modifier.padding(horizontal = 12.dp)) {
+        TextButton(onClick = { open = !open }) {
+            Text(
+                text = "🌐 " + stringResource(R.string.sources_title_fmt, sources.size) +
+                    if (open) " ▴" else " ▾",
+                style = MaterialTheme.typography.labelLarge
+            )
+        }
+        if (open) {
+            sources.forEachIndexed { index, source ->
+                // The site, because pages name themselves "world news" or "top stories" and a list
+                // of those says nothing. Not for Gemini, whose urls are its own redirect address
+                // and whose titles already ARE the site.
+                val host = remember(source.url) {
+                    runCatching { java.net.URI(source.url).host?.removePrefix("www.") }.getOrNull()
+                }
+                val showHost = host != null && !host.contains("vertexaisearch") &&
+                    !source.title.contains(host, ignoreCase = true)
+                Text(
+                    // First-strong isolate: an English title in the Arabic app otherwise has its
+                    // number thrown to the far end ("NPR · .1"). Inside the isolate the line takes
+                    // its direction from its own first letters, Latin or Arabic.
+                    text = "⁨${index + 1}. ${source.title}" + (if (showHost) " · $host" else "") + "⁩",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { runCatching { uriHandler.openUri(source.url) } }
+                        .padding(vertical = 6.dp)
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun PendingRequestLine(kind: String, since: Long) {
     var elapsed by remember(since) { mutableStateOf(0L) }
@@ -2258,7 +2355,13 @@ private fun PendingRequestLine(kind: String, since: Long) {
     }
     Column {
         Text(
-            text = stringResource(if (kind == "edit") R.string.editing_photo else R.string.drawing_image),
+            text = stringResource(
+                when (kind) {
+                    "edit" -> R.string.editing_photo
+                    "search" -> R.string.searching_web
+                    else -> R.string.drawing_image
+                }
+            ),
             style = MaterialTheme.typography.bodyMedium
         )
         LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(top = 8.dp))

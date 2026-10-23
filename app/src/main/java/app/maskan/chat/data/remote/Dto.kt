@@ -87,11 +87,26 @@ data class Message(
     constructor(role: String, text: String) : this(role, MessageContent.Text(text))
 }
 
+/**
+ * The last three fields are each one provider's web-search switch (2.7), set only on a search
+ * request and absent otherwise - a plain request is byte-for-byte what it was before.
+ */
+@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
 @Serializable
 data class ChatCompletionRequest(
     val model: String,
     val messages: List<Message>,
-    val stream: Boolean = false
+    val stream: Boolean = false,
+    /** OpenRouter: `[{"id": "web"}]`. */
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
+    val plugins: JsonElement? = null,
+    /** Venice: `{"enable_web_search": "on", ...}`. */
+    @SerialName("venice_parameters")
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
+    val veniceParameters: JsonElement? = null,
+    /** Groq: `[{"type": "browser_search"}]`. */
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
+    val tools: JsonElement? = null
 )
 
 @Serializable

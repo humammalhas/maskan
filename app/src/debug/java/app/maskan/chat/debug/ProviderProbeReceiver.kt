@@ -59,11 +59,14 @@ class ProviderProbeReceiver : BroadcastReceiver() {
         val base = (intent.getStringExtra("base") ?: "https://api.deepseek.com").trimEnd('/')
         val what = intent.getStringExtra("what") ?: "models"
 
-        val key = app.keyRepository.getApiKey(providerId)
-        if (key.isNullOrBlank()) {
+        // A local server (Ollama, LM Studio, Custom) may need no key at all; send none rather than
+        // refusing, and say so.
+        val key = app.keyRepository.getApiKey(providerId).orEmpty()
+        if (key.isBlank() && providerId !in setOf("ollama", "lmstudio", "custom")) {
             Log.w(TAG, "no key stored for " + providerId)
             return
         }
+        if (key.isBlank()) Log.i(TAG, "no key stored for " + providerId + "; sending without one")
         Log.i(TAG, "key found for " + providerId + "; what=" + what + " base=" + base)
 
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
@@ -93,6 +96,28 @@ class ProviderProbeReceiver : BroadcastReceiver() {
                         val body = buildJsonObject { put("query", query) }.toString()
                         send("POST /v1/tools/search", post(base + "/v1/tools/search", key, body))
                     }
+                    // Any POST: --es path /v1/... --es b64 <base64 JSON body> --es auth bearer|anthropic|google
+                    // For trying a provider's own request shapes (web search tools) before the app
+                    // grows them. The label never contains the URL, because Google's key rides in it.
+                    "raw" -> {
+                        val path = intent.getStringExtra("path") ?: "/v1/chat/completions"
+                        val body = String(
+                            android.util.Base64.decode(intent.getStringExtra("b64").orEmpty(), android.util.Base64.DEFAULT),
+                            Charsets.UTF_8
+                        )
+                        val builder = Request.Builder()
+                            .post(body.toRequestBody("application/json".toMediaType()))
+                        when (intent.getStringExtra("auth") ?: "bearer") {
+                            "anthropic" -> builder.url(base + path)
+                                .header("x-api-key", key)
+                                .header("anthropic-version", "2023-06-01")
+                            "google" -> builder.url(base + path + (if ('?' in path) "&" else "?") + "key=" + key)
+                            else -> builder.url(base + path).apply {
+                                if (key.isNotBlank()) header("Authorization", "Bearer " + key)
+                            }
+                        }
+                        send("raw " + providerId + " " + path, builder.build(), intent.getStringExtra("save"), app.filesDir)
+                    }
                     else -> Log.w(TAG, "unknown what=" + what)
                 }
             } catch (e: Throwable) {
@@ -110,10 +135,16 @@ class ProviderProbeReceiver : BroadcastReceiver() {
             .post(json.toRequestBody("application/json".toMediaType()))
             .build()
 
-    private fun send(label: String, request: Request) {
+    private fun send(label: String, request: Request, saveAs: String? = null, dir: java.io.File? = null) {
         val started = System.currentTimeMillis()
         client.newCall(request).execute().use { response ->
             val body = response.body?.string().orEmpty()
+            // --es save <name>: the exact bytes, for a test fixture. logcat splits long lines and
+            // drops blank ones, which is fine for reading and wrong for an SSE parser's input.
+            if (saveAs != null && dir != null) {
+                java.io.File(dir, "probe").apply { mkdirs() }.resolve("$saveAs.txt").writeText(body)
+                Log.i(TAG, "saved " + body.length + " chars to probe/" + saveAs + ".txt")
+            }
             Log.i(TAG, "== " + label + " -> HTTP " + response.code + " in " +
                 (System.currentTimeMillis() - started) + " ms, " + body.length + " chars ==")
             // logcat truncates a line near 4 KB; chunk so a long catalogue arrives whole.

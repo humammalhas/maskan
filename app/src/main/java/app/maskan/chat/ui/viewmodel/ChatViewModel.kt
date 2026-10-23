@@ -19,6 +19,7 @@ import app.maskan.chat.R
 import android.content.Intent
 import android.util.Log
 import app.maskan.chat.data.remote.ApiHttpException
+import app.maskan.chat.data.remote.SearchStream
 import app.maskan.chat.data.repository.ChatRepository
 import app.maskan.chat.data.repository.ExportFormat
 import app.maskan.chat.data.repository.KeyRepository
@@ -141,6 +142,12 @@ data class ChatUiState(
     val videoMode: Boolean = false,
     /** Armed to EDIT the attached photo with the next message as the instruction. */
     val editMode: Boolean = false,
+    /**
+     * The next message asks the provider to search the web first (2.7). Unlike the three above
+     * it does not change the request path - it is an ordinary chat reply with the provider's own
+     * search switched on - and it disarms after one message, because every search is billed.
+     */
+    val webSearchMode: Boolean = false,
     /**
      * What the empty assistant placeholder is waiting for while a BLOCKING request runs -
      * "image" or "edit" - and since when. A chat reply streams words into that bubble so it
@@ -872,7 +879,26 @@ class ChatViewModel(
     }
 
     fun setImageMode(enabled: Boolean) {
-        _uiState.value = _uiState.value.copy(imageMode = enabled, videoMode = false, editMode = false)
+        _uiState.value = _uiState.value.copy(
+            imageMode = enabled, videoMode = false, editMode = false, webSearchMode = false
+        )
+    }
+
+    /**
+     * Whether the selected provider and model can search the web themselves. Tested provider by
+     * provider (AiProvider.searchesWeb); where it is false the entry is greyed out with a reason,
+     * never armed to answer from memory.
+     */
+    fun canSearchWeb(): Boolean {
+        val provider = ProviderRegistry.getProvider(_uiState.value.selectedProviderId) ?: return false
+        return provider.searchesWeb(_uiState.value.selectedModel.trim())
+    }
+
+    fun setWebSearchMode(enabled: Boolean) {
+        _uiState.value = _uiState.value.copy(
+            webSearchMode = enabled && canSearchWeb(),
+            imageMode = false, videoMode = false, editMode = false
+        )
     }
 
     /** The server's edit model, if it lists one - the whole gate for the edit entry. */
@@ -897,7 +923,9 @@ class ChatViewModel(
     }
 
     fun setEditMode(enabled: Boolean) {
-        _uiState.value = _uiState.value.copy(editMode = enabled, imageMode = false, videoMode = false)
+        _uiState.value = _uiState.value.copy(
+            editMode = enabled, imageMode = false, videoMode = false, webSearchMode = false
+        )
     }
 
     fun editImage(prompt: String) {
@@ -977,7 +1005,9 @@ class ChatViewModel(
         ProviderRegistry.getProvider(_uiState.value.selectedProviderId)?.supportsCustomBaseUrl == true
 
     fun setVideoMode(enabled: Boolean) {
-        _uiState.value = _uiState.value.copy(videoMode = enabled, imageMode = false, editMode = false)
+        _uiState.value = _uiState.value.copy(
+            videoMode = enabled, imageMode = false, editMode = false, webSearchMode = false
+        )
         refreshVideoQuote()
     }
 
@@ -1142,6 +1172,12 @@ class ChatViewModel(
         clearPendingImage()
         clearPendingFile()
 
+        // Read once and disarmed at once: the search is for THIS message only. Checked against
+        // the provider again here, so a model switched after arming can never send a "search"
+        // that quietly answers from memory.
+        val webSearch = _uiState.value.webSearchMode && canSearchWeb()
+        _uiState.value = _uiState.value.copy(webSearchMode = false)
+
         lastRequest = {
             streamingJob = viewModelScope.launch {
                 _uiState.value = _uiState.value.copy(isLoading = true, isStreaming = false, error = null)
@@ -1151,14 +1187,23 @@ class ChatViewModel(
             }
         }
         streamingJob = viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, isStreaming = false, error = null)
+            _uiState.value = _uiState.value.copy(
+                isLoading = true,
+                isStreaming = false,
+                error = null,
+                // A search can take a while before the first word; the empty bubble says what it
+                // is waiting for instead of looking stuck.
+                pendingKind = if (webSearch) "search" else null,
+                pendingSince = if (webSearch) System.currentTimeMillis() else _uiState.value.pendingSince
+            )
 
             chatRepository.sendMessageStreaming(
                 conversationId = currentConversationId,
                 userContent = effectiveContent,
                 model = _uiState.value.selectedModel,
                 imageData = imageData,
-                imageMimeType = imageMimeType
+                imageMimeType = imageMimeType,
+                webSearch = webSearch
             ).catch { error ->
                 handleSendFailure(error)
             }.collect { event ->
@@ -1264,8 +1309,19 @@ class ChatViewModel(
                 upsertMessage(event.message)
                 _uiState.value = _uiState.value.copy(isLoading = false, isStreaming = false)
             }
+            is ChatRepository.StreamEvent.Sources -> {
+                val encoded = SearchStream.encode(event.sources)
+                _uiState.value = _uiState.value.copy(
+                    messages = _uiState.value.messages.map {
+                        if (it.id == event.messageId) it.copy(sourcesJson = encoded) else it
+                    }
+                )
+            }
             is ChatRepository.StreamEvent.Done -> {
-                _uiState.value = _uiState.value.copy(isStreaming = false)
+                _uiState.value = _uiState.value.copy(
+                    isStreaming = false,
+                    pendingKind = _uiState.value.pendingKind.takeIf { it != "search" }
+                )
                 autoTitle()
             }
         }

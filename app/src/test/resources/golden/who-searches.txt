@@ -1,0 +1,12 @@
+anthropic: true
+gemini: true
+openrouter: true
+venice: true
+groq gpt-oss: true
+groq qwen: false
+together: false
+deepseek: false
+openai: false
+mistral: false
+custom: false
+ollama: false

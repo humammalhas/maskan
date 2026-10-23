@@ -525,4 +525,11 @@
     <string name="restore_done">กู้คืนแล้ว มัสกันจะเริ่มใหม่เดี๋ยวนี้ หากแอปไม่เปิดขึ้นมาเอง ให้เปิดมัสกันอีกครั้ง</string>
     <string name="restore_picture_missing">รูปนี้ไม่ได้อยู่ในไฟล์สำรองข้อมูล</string>
     <string name="restore_clip_missing">คลิปนี้ไม่ได้อยู่ในไฟล์สำรองข้อมูล</string>
+    <!-- Web search (2.7): the provider's own search, one message at a time -->
+    <string name="attach_web_search">ค้นหาบนเว็บ</string>
+    <string name="web_search_unavailable">โมเดลนี้ค้นหาบนเว็บไม่ได้</string>
+    <string name="web_search_mode_chip">🌐 ค้นหาบนเว็บ</string>
+    <string name="searching_web">กำลังค้นหาบนเว็บ…</string>
+    <string name="sources_title_fmt">แหล่งที่มา (%1$d)</string>
+    <string name="privacy_note_web_search">คำถามของคุณจะถูกส่งไปยัง %1$s เพื่อค้นหาบนเว็บ</string>
 </resources>

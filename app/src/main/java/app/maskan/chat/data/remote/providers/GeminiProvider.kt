@@ -10,6 +10,8 @@ import app.maskan.chat.data.remote.GeminiStreamChunk
 import app.maskan.chat.data.remote.GeminiSystemInstruction
 import app.maskan.chat.data.remote.Message
 import app.maskan.chat.data.remote.MessageContent
+import app.maskan.chat.data.remote.SearchStream
+import app.maskan.chat.data.remote.WebSource
 import app.maskan.chat.data.remote.parseSSEStream
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.Json
@@ -265,6 +267,32 @@ class GeminiProvider(
                 ?.parts
                 ?.firstOrNull()
                 ?.text
+        }
+    }
+
+    /** Google Search grounding, tested on gemini-3.7-flash. */
+    override fun searchesWeb(model: String): Boolean = true
+
+    override fun sendMessageStreamingWithSearch(
+        apiKey: String,
+        model: String,
+        messages: List<Message>,
+        baseUrl: String?,
+        imageData: ByteArray?,
+        imageMimeType: String?,
+        onSources: (List<WebSource>) -> Unit
+    ): Flow<String> {
+        val request = buildRequest(messages, imageData, imageMimeType)
+            .copy(tools = listOf(buildJsonObject { put("google_search", buildJsonObject {}) }))
+        val call = apiService.streamGenerateContent(
+            model = model,
+            apiKey = apiKey,
+            request = request
+        )
+        return parseSSEStream(call) { data ->
+            val piece = SearchStream.gemini(data)
+            if (piece.sources.isNotEmpty()) onSources(piece.sources)
+            piece.text
         }
     }
 }

@@ -41,5 +41,11 @@ data class MessageEntity(
      * resumes polling on restart, and what a Cancel deletes. Cleared when the clip lands (or
      * the job fails - then the row keeps its video mime and no path, which is "failed").
      */
-    val videoJobId: String? = null
+    val videoJobId: String? = null,
+    /**
+     * The pages the provider's own web search read for this answer, as JSON (SearchStream.encode).
+     * Null on every row that did not search - which is every row written before 2.7. Kept with the
+     * message because a source you cannot find again is worth little.
+     */
+    val sourcesJson: String? = null
 )

@@ -60,6 +60,14 @@ class PreferenceRepository(context: Context) {
         plainPreferences.edit().putBoolean(KEY_IMAGE_PRIVACY_NOTE_SEEN, true).apply()
     }
 
+    /** "Your question is sent to X, which searches the web for it" - shown until dismissed. */
+    fun hasSeenWebSearchPrivacyNote(): Boolean =
+        plainPreferences.getBoolean(KEY_WEB_SEARCH_PRIVACY_NOTE_SEEN, false)
+
+    fun setWebSearchPrivacyNoteSeen() {
+        plainPreferences.edit().putBoolean(KEY_WEB_SEARCH_PRIVACY_NOTE_SEEN, true).apply()
+    }
+
     /** Whether the user has been told once that generated images vanish on uninstall. */
     fun hasSeenGeneratedImageNote(): Boolean =
         plainPreferences.getBoolean(KEY_GENERATED_IMAGE_NOTE, false)
@@ -319,6 +327,7 @@ class PreferenceRepository(context: Context) {
         private const val KEY_PRIVACY_INTRO_SEEN = "privacy_intro_seen"
         private const val KEY_ONBOARDING_IN_PROGRESS = "onboarding_in_progress"
         private const val KEY_IMAGE_PRIVACY_NOTE_SEEN = "image_privacy_note_seen"
+        private const val KEY_WEB_SEARCH_PRIVACY_NOTE_SEEN = "web_search_privacy_note_seen"
         private const val KEY_VOICE_PRIVACY_NOTE_SEEN = "voice_privacy_note_seen"
         private const val KEY_MODELS_PREFIX = "models_"
         private const val KEY_MODELS_FETCHED_AT_PREFIX = "models_fetched_at_"

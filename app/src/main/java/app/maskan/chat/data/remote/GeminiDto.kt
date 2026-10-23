@@ -3,12 +3,18 @@ package app.maskan.chat.data.remote
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
 @Serializable
 data class GeminiRequest(
     val contents: List<GeminiContent>,
     @SerialName("system_instruction")
-    val systemInstruction: GeminiSystemInstruction? = null
+    val systemInstruction: GeminiSystemInstruction? = null,
+    // Only on a web-search request (`[{"google_search": {}}]`); absent otherwise, so a plain
+    // request is byte-for-byte what it was before 2.7.
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
+    val tools: List<kotlinx.serialization.json.JsonElement>? = null
 )
+
 
 @Serializable
 data class GeminiContent(

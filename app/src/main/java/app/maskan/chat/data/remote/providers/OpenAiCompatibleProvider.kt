@@ -8,6 +8,8 @@ import app.maskan.chat.data.remote.ImageResponseParser
 import app.maskan.chat.data.remote.Message
 import app.maskan.chat.data.remote.MessageContent
 import app.maskan.chat.data.remote.OpenAiCompatibleService
+import app.maskan.chat.data.remote.SearchStream
+import app.maskan.chat.data.remote.WebSource
 import app.maskan.chat.data.remote.parseSSEStream
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.Json
@@ -20,6 +22,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 class OpenAiCompatibleProvider(
     override val id: String,
@@ -426,6 +429,58 @@ class OpenAiCompatibleProvider(
             chunk.choices.firstOrNull()?.delta?.content
         }
     }
+    /**
+     * Three of the seven search through the chat endpoint itself, each with its own switch;
+     * all three tested on Humam's keys on 2026-10-23. On Groq only the gpt-oss models take the
+     * browser_search tool. DeepSeek, OpenAI and Mistral search only through other endpoints
+     * (session B); Together has no search at all.
+     */
+    override fun searchesWeb(model: String): Boolean = when (id) {
+        "openrouter", "venice" -> true
+        "groq" -> model.startsWith("openai/gpt-oss")
+        else -> false
+    }
+
+    override fun sendMessageStreamingWithSearch(
+        apiKey: String,
+        model: String,
+        messages: List<Message>,
+        baseUrl: String?,
+        imageData: ByteArray?,
+        imageMimeType: String?,
+        onSources: (List<WebSource>) -> Unit
+    ): Flow<String> {
+        if (!searchesWeb(model)) throw UnsupportedOperationException("$id cannot search the web with $model")
+        val plain = ChatCompletionRequest(
+            model = model,
+            messages = buildMessages(messages, imageData, imageMimeType),
+            stream = true
+        )
+        val request = when (id) {
+            "openrouter" -> plain.copy(plugins = buildJsonArray {
+                add(buildJsonObject { put("id", "web"); put("max_results", 5) })
+            })
+            // Without include_search_results_in_stream Venice names its sources in the text but
+            // sends no links at all.
+            "venice" -> plain.copy(veniceParameters = buildJsonObject {
+                put("enable_web_search", "on")
+                put("include_search_results_in_stream", true)
+            })
+            else -> plain.copy(tools = buildJsonArray {
+                add(buildJsonObject { put("type", "browser_search") })
+            })
+        }
+        val call = apiService.createChatCompletionStream(
+            authorization = "Bearer $apiKey",
+            request = request
+        )
+        return parseSSEStream(call) { data ->
+            val piece = SearchStream.openAiCompatible(data)
+            if (piece.sources.isNotEmpty()) onSources(piece.sources)
+            piece.text
+        }
+    }
+
     companion object {
         /** The OpenAI-compatible providers that can actually draw, verified on device. */
         private val IMAGE_CAPABLE_IDS = setOf("openai", "together", "venice", "openrouter")
