@@ -5,8 +5,9 @@ venice: true
 groq gpt-oss: true
 groq qwen: false
 together: false
-deepseek: false
-openai: false
-mistral: false
+deepseek: true
+deepseek pro: true
+openai: true
+mistral: true
 custom: false
 ollama: false

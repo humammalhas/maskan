@@ -1146,7 +1146,9 @@ class ChatRepository(
             }
             stream.collect { token ->
                 fullContent.append(token)
-                val snapshot = fullContent.toString()
+                // A search answer can open with the paragraph break SearchStream puts where the
+                // results land; nothing was said before it, so it is not shown.
+                val snapshot = if (webSearch) fullContent.toString().trimStart() else fullContent.toString()
                 messageDao.updateMessageContent(assistantMessageId, snapshot)
                 emit(StreamEvent.Token(assistantMessageId, snapshot))
                 val sources = found.get()

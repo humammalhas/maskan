@@ -1,0 +1,5 @@
+POST /v1/conversations
+authorization: Bearer <key>
+content-type: application/json; charset=utf-8
+
+{"model":"mistral-small-latest","instructions":"You are a helpful assistant. Answer briefly.","inputs":[{"role":"user","content":"What is the capital of Jordan?"},{"role":"assistant","content":"Amman."},{"role":"user","content":"ما عاصمة الأردن؟ وما أشهر معالمها؟"},{"role":"assistant","content":"عمّان. ومن أشهر معالمها جبل القلعة والمدرّج الروماني."},{"role":"user","content":"เมืองหลวงของไทยคืออะไร"}],"tools":[{"type":"web_search"}],"stream":true,"store":false}

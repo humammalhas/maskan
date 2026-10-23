@@ -342,7 +342,19 @@ class MaskanApplication : Application() {
                 keyAcquisitionUrl = config.keyAcquisitionUrl,
                 pricingInfo = config.pricingInfo,
                 apiService = service,
-                imageService = createOpenAiService(config.baseUrl, readTimeoutSeconds = 300)
+                imageService = createOpenAiService(config.baseUrl, readTimeoutSeconds = 300),
+                // DeepSeek searches the web only through its Anthropic-format endpoint (tested
+                // 2026-10-23): the same request and stream as Claude, at DeepSeek's own address.
+                searchVia = if (config.id == ProviderConfigs.DEEPSEEK.id) {
+                    AnthropicProvider(
+                        config = config,
+                        apiService = ApiClients.retrofit(
+                            OpenAiCompatibleProvider.DEEPSEEK_ANTHROPIC_BASE_URL, sharedOkHttpClient
+                        ).create(AnthropicService::class.java)
+                    )
+                } else {
+                    null
+                }
             )
             ProviderRegistry.register(provider)
         }

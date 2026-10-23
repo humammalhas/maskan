@@ -123,7 +123,11 @@ class WireGoldenTest {
             Triple("gemini", "gemini-test", { GeminiProvider(ProviderConfigs.GEMINI, service(GeminiService::class.java)) }),
             Triple("openrouter", "deepseek/deepseek-v4.1-flash", { openAiCompatible(ProviderConfigs.OPENROUTER) }),
             Triple("venice", "venice-uncensored-1-2", { openAiCompatible(ProviderConfigs.VENICE) }),
-            Triple("groq", "openai/gpt-oss-120b", { openAiCompatible(ProviderConfigs.GROQ) })
+            Triple("groq", "openai/gpt-oss-120b", { openAiCompatible(ProviderConfigs.GROQ) }),
+            // Part B: three providers whose search runs on another endpoint.
+            Triple("deepseek", "deepseek-flash", { deepSeek() }),
+            Triple("openai", "gpt-5.6-luna", { openAiCompatible(ProviderConfigs.OPENAI) }),
+            Triple("mistral", "mistral-small-latest", { openAiCompatible(ProviderConfigs.MISTRAL) })
         )
         for ((name, model, make) in providers) {
             val provider = make()
@@ -149,8 +153,8 @@ class WireGoldenTest {
             "groq gpt-oss" to openAiCompatible(ProviderConfigs.GROQ).searchesWeb("openai/gpt-oss-120b"),
             "groq qwen" to openAiCompatible(ProviderConfigs.GROQ).searchesWeb("qwen/qwen3.8-27b"),
             "together" to openAiCompatible(ProviderConfigs.TOGETHER).searchesWeb("any"),
-            // Session B adds these three.
-            "deepseek" to openAiCompatible(ProviderConfigs.DEEPSEEK).searchesWeb("deepseek-flash"),
+            "deepseek" to deepSeek().searchesWeb("deepseek-flash"),
+            "deepseek pro" to deepSeek().searchesWeb("deepseek-v4-pro"),
             "openai" to openAiCompatible(ProviderConfigs.OPENAI).searchesWeb("gpt-5.6-luna"),
             "mistral" to openAiCompatible(ProviderConfigs.MISTRAL).searchesWeb("mistral-small-latest"),
             "custom" to LocalProvider(ProviderConfigs.CUSTOM, client(), json).searchesWeb("any"),
@@ -220,7 +224,7 @@ class WireGoldenTest {
             request.body.readUtf8() + "\n"
     }
 
-    private fun openAiCompatible(config: ProviderConfig) = OpenAiCompatibleProvider(
+    private fun openAiCompatible(config: ProviderConfig, searchVia: AiProvider? = null) = OpenAiCompatibleProvider(
         id = config.id,
         displayName = config.displayName,
         nameAr = config.nameAr,
@@ -232,7 +236,14 @@ class WireGoldenTest {
         defaultModel = config.defaultModel,
         keyAcquisitionUrl = config.keyAcquisitionUrl,
         pricingInfo = config.pricingInfo,
-        apiService = service(OpenAiCompatibleService::class.java)
+        apiService = service(OpenAiCompatibleService::class.java),
+        searchVia = searchVia
+    )
+
+    /** DeepSeek as the app wires it: its search is a Claude-shaped provider at DeepSeek's address. */
+    private fun deepSeek() = openAiCompatible(
+        ProviderConfigs.DEEPSEEK,
+        searchVia = AnthropicProvider(ProviderConfigs.DEEPSEEK, service(AnthropicService::class.java))
     )
 
     // The app's own settings (ApiClients), with the client pointed at the server on localhost.

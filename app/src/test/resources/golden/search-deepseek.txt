@@ -1,0 +1,18 @@
+text:
+Based on the search, the top story on BBC News right now is:
+
+**"Comey indictment escalates Trump's promise of political retribution"** — the indictment of former FBI Director James Comey, who says the charges are politically motivated. (Source: BBC News)
+
+Note: results varied by outlet — The New York Times was leading instead with a Trump–Xi trade/fentanyl agreement — so "top" depends on the source. Also, some results looked like a mix of dates, so I'd verify against a live homepage before relying on it.
+
+sources:
+BBC Home - Breaking News, World News, US News, Sports, Business, Innovation, Climate, Culture, Travel, Video & Audio - Comey indictment escalates Trump's promise of political retributionThe criminal case against Comey fulfils the president's desir... | https://www.bbc.com/?t=16325#1
+兩岸國際 | 即時新聞、兩岸新聞、國際新聞 | https://news.now.com/home/international?date=20120214
+U.S & World News | Breaking News & Video | ABC7 KGO-TV | https://abc7news.com/us-world/?userab=kabc_content_recs-577*variant_a_control-2480,otv_web_content_rec-539*variant_c_trending-2268,otv_search_page_design_unification-546*variant_b_search_redesign-2300,abcn_popular_reads_exp-542*variant_b_7days_filter-2288
+National | https://www.firstalert4.com/news/national/165087046.html
+National - Skip to content | https://hugo.lv/lv/TranslateProxy/https/www.actionnews5.com/news/national/#1
+National - Skip to content | https://www.wistv.com:443/news/national/#1
+Shooting at church during funeral in Jordan | CNN | https://edition.cnn.com/2026/10/23/world/video/shooting-at-church-during-funeral-in-jordan-vrtc
+National News - Skip to content | https://www.kcrg.com/news/national/RECALL-2012-Ford-Edge-2-Liter-Engines-169906166.html#1
+euronews tv - euronews • 4小时前 | https://search.brave.com/news?q=euronews+tv&source=web#1
+The New York Times - Breaking News, US News, World News and Videos - Skip to contentSkip to site index | https://www.nytimes.com/?date_select=full&query=gail+collins&type=nyt&x=0&y=0#1

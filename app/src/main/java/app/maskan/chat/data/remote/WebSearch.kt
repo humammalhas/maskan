@@ -42,7 +42,10 @@ object SearchStream {
             "content_block_start" -> {
                 val block = event.obj("content_block")
                 if (block?.str("type") != "web_search_tool_result") return Piece(null)
-                Piece(null, block.arr("content").mapNotNull { source(it, "title", "url") })
+                // A paragraph break where the results land: a model that says "I'll search" and
+                // then answers writes two text blocks with nothing between them ("…news.I
+                // searched"). The repository trims it off the front when nothing came before.
+                Piece("\n\n", block.arr("content").mapNotNull { source(it, "title", "url") })
             }
             else -> Piece(null)
         }
@@ -98,6 +101,53 @@ object SearchStream {
             }
         }
         return Piece(delta?.str("content"), sources)
+    }
+
+    /**
+     * OpenAI's Responses API: text as `response.output_text.delta`, each cited page as a
+     * `response.output_text.annotation.added` of type `url_citation`.
+     */
+    fun openAiResponses(data: String): Piece {
+        val event = parse(data) ?: return Piece(null)
+        return when (event.str("type")) {
+            "response.output_text.delta" -> Piece(event.str("delta"))
+            "response.output_text.annotation.added" -> {
+                val annotation = event.obj("annotation")
+                if (annotation?.str("type") == "url_citation") {
+                    Piece(null, listOfNotNull(source(annotation, "title", "url")))
+                } else {
+                    Piece(null)
+                }
+            }
+            else -> Piece(null)
+        }
+    }
+
+    /**
+     * Mistral's Conversations API: text as `message.output.delta` (a string, or a chunk object
+     * with type "text"); the pages in each `tool.execution.done`, whose `info.result` is a JSON
+     * STRING of id -> {url, title, ...} - the search engine's own results. A streamed Mistral
+     * reply carries no tool_reference entries (the non-streamed one does), so they come from here.
+     */
+    fun mistral(data: String): Piece {
+        val event = parse(data) ?: return Piece(null)
+        return when (event.str("type")) {
+            "message.output.delta" -> when (val content = event["content"]) {
+                is JsonPrimitive -> Piece(content.contentOrNull)
+                is JsonObject -> when (content.str("type")) {
+                    "text" -> Piece(content.str("text"))
+                    "tool_reference" -> Piece(null, listOfNotNull(source(content, "title", "url")))
+                    else -> Piece(null)
+                }
+                else -> Piece(null)
+            }
+            "tool.execution.done" -> {
+                val result = event.obj("info")?.str("result") ?: return Piece(null)
+                val pages = parse(result) ?: return Piece(null)
+                Piece(null, pages.values.mapNotNull { source(it, "title", "url") })
+            }
+            else -> Piece(null)
+        }
     }
 
     /** New sources after old ones, each url once, first title kept. */

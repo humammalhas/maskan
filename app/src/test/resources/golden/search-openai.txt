@@ -1,0 +1,6 @@
+text:
+Today’s date: **October 23, 2026**.  
+Headline: **“Israeli forces killed two Palestinians who had reportedly shot five Israeli soldiers near an illegal settlement.”** Source: https://www.democracynow.org/2026/10/23/headlines ([democracynow.org](https://www.democracynow.org/2026/10/23/headlines?utm_source=openai))
+
+sources:
+Headlines for October 23, 2026 | Democracy Now! | https://www.democracynow.org/2026/10/23/headlines?utm_source=openai

@@ -42,7 +42,13 @@ class OpenAiCompatibleProvider(
      * tens of seconds to minutes (Together's Kontext edit timed out the 60 s chat client on
      * 2026-09-05); chat keeps its tight timeout, images get their own.
      */
-    private val imageService: OpenAiCompatibleService = apiService
+    private val imageService: OpenAiCompatibleService = apiService,
+    /**
+     * Where this provider's web search actually runs, when it is not the chat endpoint. DeepSeek
+     * searches only through its Anthropic-format endpoint, so its search is a Claude-shaped
+     * provider pointed at DeepSeek's address (MaskanApplication wires it).
+     */
+    private val searchVia: AiProvider? = null
 ) : AiProvider {
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
@@ -430,14 +436,20 @@ class OpenAiCompatibleProvider(
         }
     }
     /**
-     * Three of the seven search through the chat endpoint itself, each with its own switch;
-     * all three tested on Humam's keys on 2026-10-23. On Groq only the gpt-oss models take the
-     * browser_search tool. DeepSeek, OpenAI and Mistral search only through other endpoints
-     * (session B); Together has no search at all.
+     * Six of the seven search, every one tested on Humam's keys on 2026-10-23. Three through the
+     * chat endpoint itself, each with its own switch (OpenRouter, Venice, Groq - on Groq only the
+     * gpt-oss models take browser_search); three only through another endpoint: DeepSeek its
+     * Anthropic-format one (both deepseek-flash and deepseek-v4-pro searched), OpenAI its
+     * Responses API, Mistral its Conversations API. Together has no search at all.
+     *
+     * OpenAI: tested on gpt-5.6-luna; the gpt-4o / gpt-4.1 families are assumed to share the
+     * tool, untested. Mistral: tested on mistral-small and mistral-medium.
      */
     override fun searchesWeb(model: String): Boolean = when (id) {
-        "openrouter", "venice" -> true
+        "openrouter", "venice", "mistral" -> true
         "groq" -> model.startsWith("openai/gpt-oss")
+        "deepseek" -> searchVia != null
+        "openai" -> model.startsWith("gpt-5") || model.startsWith("gpt-4o") || model.startsWith("gpt-4.1")
         else -> false
     }
 
@@ -451,6 +463,27 @@ class OpenAiCompatibleProvider(
         onSources: (List<WebSource>) -> Unit
     ): Flow<String> {
         if (!searchesWeb(model)) throw UnsupportedOperationException("$id cannot search the web with $model")
+        when (id) {
+            "deepseek" -> return searchVia!!.sendMessageStreamingWithSearch(
+                apiKey, model, messages, baseUrl, imageData, imageMimeType, onSources
+            )
+            "openai" -> {
+                val call = apiService.createResponseStream("Bearer $apiKey", responsesRequest(model, messages, imageData, imageMimeType))
+                return parseSSEStream(call) { data ->
+                    val piece = SearchStream.openAiResponses(data)
+                    if (piece.sources.isNotEmpty()) onSources(piece.sources)
+                    piece.text
+                }
+            }
+            "mistral" -> {
+                val call = apiService.createConversationStream("Bearer $apiKey", conversationRequest(model, messages, imageData, imageMimeType))
+                return parseSSEStream(call) { data ->
+                    val piece = SearchStream.mistral(data)
+                    if (piece.sources.isNotEmpty()) onSources(piece.sources)
+                    piece.text
+                }
+            }
+        }
         val plain = ChatCompletionRequest(
             model = model,
             messages = buildMessages(messages, imageData, imageMimeType),
@@ -481,7 +514,86 @@ class OpenAiCompatibleProvider(
         }
     }
 
+    /**
+     * OpenAI's Responses API request: the same turns as `input`, the web_search tool, and
+     * `store: false` - the Responses API keeps conversations on OpenAI's side by default, which the
+     * chat endpoint Maskan otherwise uses never did. Tested with store off on 2026-10-23.
+     */
+    private fun responsesRequest(
+        model: String,
+        messages: List<Message>,
+        imageData: ByteArray?,
+        imageMimeType: String?
+    ): JsonObject = buildJsonObject {
+        put("model", model)
+        put("input", buildJsonArray {
+            for (message in buildMessages(messages, imageData, imageMimeType)) {
+                add(buildJsonObject {
+                    put("role", message.role)
+                    when (val content = message.content) {
+                        is MessageContent.Text -> put("content", content.text)
+                        is MessageContent.WithImage -> put("content", buildJsonArray {
+                            add(buildJsonObject { put("type", "input_text"); put("text", content.text) })
+                            add(buildJsonObject {
+                                put("type", "input_image")
+                                put("image_url", "data:${content.mimeType};base64,${content.imageBase64}")
+                            })
+                        })
+                    }
+                })
+            }
+        })
+        put("tools", buildJsonArray { add(buildJsonObject { put("type", "web_search") }) })
+        put("stream", true)
+        put("store", false)
+    }
+
+    /**
+     * Mistral's Conversations API request: system text as `instructions` (the API takes no system
+     * turn), the other turns as `inputs`, the web_search tool, and `store: false` - Conversations
+     * are kept on Mistral's side by default. Tested with store off on 2026-10-23.
+     *
+     * A picture goes as an image_url chunk, the shape Mistral's chat endpoint takes; untested
+     * on this endpoint.
+     */
+    private fun conversationRequest(
+        model: String,
+        messages: List<Message>,
+        imageData: ByteArray?,
+        imageMimeType: String?
+    ): JsonObject = buildJsonObject {
+        val turns = buildMessages(messages, imageData, imageMimeType)
+        put("model", model)
+        val instructions = turns.filter { it.role == "system" }
+            .joinToString("\n") { it.content.textContent() }
+            .trim()
+        if (instructions.isNotEmpty()) put("instructions", instructions)
+        put("inputs", buildJsonArray {
+            for (message in turns.filter { it.role != "system" }) {
+                add(buildJsonObject {
+                    put("role", message.role)
+                    when (val content = message.content) {
+                        is MessageContent.Text -> put("content", content.text)
+                        is MessageContent.WithImage -> put("content", buildJsonArray {
+                            add(buildJsonObject { put("type", "text"); put("text", content.text) })
+                            add(buildJsonObject {
+                                put("type", "image_url")
+                                put("image_url", "data:${content.mimeType};base64,${content.imageBase64}")
+                            })
+                        })
+                    }
+                })
+            }
+        })
+        put("tools", buildJsonArray { add(buildJsonObject { put("type", "web_search") }) })
+        put("stream", true)
+        put("store", false)
+    }
+
     companion object {
+        /** DeepSeek's Anthropic-format endpoint, the only one where its web search runs. */
+        const val DEEPSEEK_ANTHROPIC_BASE_URL = "https://api.deepseek.com/anthropic/"
+
         /** The OpenAI-compatible providers that can actually draw, verified on device. */
         private val IMAGE_CAPABLE_IDS = setOf("openai", "together", "venice", "openrouter")
     }

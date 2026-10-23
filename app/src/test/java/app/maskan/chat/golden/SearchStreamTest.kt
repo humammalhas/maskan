@@ -47,6 +47,22 @@ class SearchStreamTest {
         assertFalse(sources.any { "viewing lines" in it.title })
     }
 
+    /** DeepSeek's Anthropic-format endpoint: the same reader as Anthropic, thinking blocks and all. */
+    @Test
+    fun deepSeek() {
+        check("deepseek", SearchStream::anthropic)
+    }
+
+    @Test
+    fun openAi() {
+        check("openai", SearchStream::openAiResponses)
+    }
+
+    @Test
+    fun mistral() {
+        check("mistral", SearchStream::mistral)
+    }
+
     @Test
     fun mergeKeepsTheFirstOfEachUrl() {
         val a = WebSource("A", "https://a.example")
@@ -76,9 +92,10 @@ class SearchStreamTest {
             }
         assertTrue("$name: no answer text", text.isNotBlank())
         assertTrue("$name: no sources", sources.isNotEmpty())
+        // Trimmed as ChatRepository trims a search answer: a break before any text is never shown.
         Golden.check(
             "search-$name",
-            "text:\n$text\n\nsources:\n" + sources.joinToString("\n") { it.title + " | " + it.url } + "\n"
+            "text:\n${text.toString().trimStart()}\n\nsources:\n" + sources.joinToString("\n") { it.title + " | " + it.url } + "\n"
         )
         return sources
     }

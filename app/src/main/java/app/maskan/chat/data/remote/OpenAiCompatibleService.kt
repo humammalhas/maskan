@@ -111,4 +111,20 @@ interface OpenAiCompatibleService {
         @Header("Authorization") authorization: String,
         @Body request: ChatCompletionRequest
     ): Call<ResponseBody>
+
+    /** OpenAI's Responses API - the only place its web_search tool runs (2.7, web search). */
+    @Streaming
+    @POST("v1/responses")
+    fun createResponseStream(
+        @Header("Authorization") authorization: String,
+        @Body request: JsonElement
+    ): Call<ResponseBody>
+
+    /** Mistral's Conversations API - the only place its web_search tool runs (2.7, web search). */
+    @Streaming
+    @POST("v1/conversations")
+    fun createConversationStream(
+        @Header("Authorization") authorization: String,
+        @Body request: JsonElement
+    ): Call<ResponseBody>
 }
