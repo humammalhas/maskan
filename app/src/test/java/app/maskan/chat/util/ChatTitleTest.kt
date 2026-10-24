@@ -145,4 +145,19 @@ class ChatTitleTest {
         assertEquals(Script.CJK, ChatTitle.scriptOf("茶制作法"))
         assertEquals(Script.OTHER, ChatTitle.scriptOf("2+2 = ?"))
     }
+
+    @Test
+    fun theFallbackNameIgnoresTheWhitespaceAroundTheMessage() {
+        // Measured on the Pixel: a first message ending in a newline kept it in the title, and
+        // generateTitle, comparing against the trimmed question, never named the chat.
+        val typed = "Name three long rivers in Africa\n"
+        assertEquals("Name three long rivers in Africa", ChatTitle.fallback(typed))
+        assertEquals(ChatTitle.fallback(typed.trim()), ChatTitle.fallback(typed))
+        assertEquals(jordanAr, ChatTitle.fallback("\n  $jordanAr \n"))
+    }
+
+    @Test
+    fun aLongMessageIsCutAtFiftyCharactersAfterTrimming() {
+        assertEquals("a".repeat(50) + "...", ChatTitle.fallback("  " + "a".repeat(80)))
+    }
 }

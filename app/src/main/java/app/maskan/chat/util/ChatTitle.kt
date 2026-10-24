@@ -63,6 +63,16 @@ object ChatTitle {
         return line
     }
 
+    /**
+     * What a chat is called when nothing has named it: the start of its first message.
+     *
+     * Trimmed first, so the name a sent message derives and the one generateTitle recognises as
+     * derived are the same string. Before, a first message typed with a trailing newline kept it
+     * in the title, generateTitle took that title for a rename, and the chat was never named.
+     */
+    fun fallback(text: String): String =
+        text.trim().take(FALLBACK_LENGTH).let { if (it.length == FALLBACK_LENGTH) "$it..." else it }
+
     /** The script most of the letters in [text] are written in. */
     fun scriptOf(text: String): Script {
         val counts = IntArray(Script.values().size)
@@ -114,6 +124,7 @@ object ChatTitle {
     }
 
     private const val MAX_LENGTH = 60
+    private const val FALLBACK_LENGTH = 50
     private const val LEAD_IN_MAX = 40
     private val ARABIC_COMMA = 0x060C.toChar()
     private val ARABIC_SEMICOLON = 0x061B.toChar()

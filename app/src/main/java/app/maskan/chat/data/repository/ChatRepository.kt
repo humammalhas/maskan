@@ -648,7 +648,7 @@ class ChatRepository(
             saveMessage(conversationId, "assistant", assistantContent)
 
             if (conversation.title == DEFAULT_TITLE) {
-                conversationDao.updateConversationTitle(conversationId, fallbackTitle(userContent))
+                conversationDao.updateConversationTitle(conversationId, ChatTitle.fallback(userContent))
             }
 
             Result.success(ChatCompletionResponse(
@@ -723,7 +723,7 @@ class ChatRepository(
         streamAssistantReply(conversation, model, imageData, imageMimeType, webSearch)
 
         if (conversation.title == DEFAULT_TITLE) {
-            conversationDao.updateConversationTitle(conversationId, fallbackTitle(userContent))
+            conversationDao.updateConversationTitle(conversationId, ChatTitle.fallback(userContent))
         }
 
         emit(StreamEvent.Done)
@@ -901,7 +901,7 @@ class ChatRepository(
         }
 
         if (conversation.title == DEFAULT_TITLE) {
-            conversationDao.updateConversationTitle(conversationId, fallbackTitle(prompt))
+            conversationDao.updateConversationTitle(conversationId, ChatTitle.fallback(prompt))
         }
 
         emit(StreamEvent.Done)
@@ -972,7 +972,7 @@ class ChatRepository(
         emit(StreamEvent.VideoQueued(assistantEntity.copy(id = assistantMessageId)))
 
         if (conversation.title == DEFAULT_TITLE) {
-            conversationDao.updateConversationTitle(conversationId, fallbackTitle(prompt))
+            conversationDao.updateConversationTitle(conversationId, ChatTitle.fallback(prompt))
         }
 
         emit(StreamEvent.Done)
@@ -1042,7 +1042,7 @@ class ChatRepository(
         }
 
         if (conversation.title == DEFAULT_TITLE) {
-            conversationDao.updateConversationTitle(conversationId, fallbackTitle(prompt))
+            conversationDao.updateConversationTitle(conversationId, ChatTitle.fallback(prompt))
         }
         emit(StreamEvent.Done)
     }
@@ -1585,10 +1585,6 @@ class ChatRepository(
 
     // ── Naming a chat ─────────────────────────────────────────
 
-    /** What a chat is called when nothing has named it: the first line of the first message. */
-    private fun fallbackTitle(text: String): String =
-        text.take(50).let { if (it.length == 50) "$it..." else it }
-
     /**
      * Ask the provider that just answered to name this chat, in the language it is being held in.
      *
@@ -1617,7 +1613,9 @@ class ChatRepository(
             // one a chat is born with and the one the first message derived - anything else is
             // a rename, and a rename outranks us.
             val current = conversation.title
-            if (current != DEFAULT_TITLE && current != fallbackTitle(question)) return
+            // Trimmed because until 2026-10-24 the derived name kept the message's trailing
+            // newline ("Name three long rivers in Africa\n"), and such a chat is still ours.
+            if (current != DEFAULT_TITLE && current.trim() != ChatTitle.fallback(question)) return
 
             // A failure leaves the title alone, which means the next turn will try again - and
             // that is wanted exactly twice. A chat started in airplane mode gets its name when
