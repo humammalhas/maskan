@@ -441,7 +441,7 @@ class BackupProbeReceiver : BroadcastReceiver() {
                 db.execSQL(
                     "INSERT INTO conversations (title, createdAt, systemPromptId, dialectId, " +
                         "folderId, providerId, modelId) VALUES (?, ?, NULL, NULL, NULL, ?, NULL)",
-                    arrayOf(SEED_PREFIX + " " + c + " \u0645\u062d\u0627\u062f\u062b\u0629",
+                    arrayOf<Any>(SEED_PREFIX + " " + c + " \u0645\u062d\u0627\u062f\u062b\u0629",
                         now - c * 60000L, "gemini")
                 )
                 val id = db.query("SELECT last_insert_rowid()")
@@ -450,7 +450,7 @@ class BackupProbeReceiver : BroadcastReceiver() {
                     db.execSQL(
                         "INSERT INTO messages (conversationId, role, content, timestamp) " +
                             "VALUES (?, ?, ?, ?)",
-                        arrayOf(
+                        arrayOf<Any>(
                             id,
                             if (m % 2 == 0) "user" else "assistant",
                             SEED_PREFIX + " " + c + "/" + m + " " + SEED_TEXT,

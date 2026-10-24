@@ -68,10 +68,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
     buildFeatures {
         compose = true
         buildConfig = true
@@ -137,6 +133,14 @@ androidComponents {
             val abiCode = abiCodes[abi] ?: 0
             output.versionCode.set((output.versionCode.get() ?: 0) * 10 + abiCode)
         }
+    }
+}
+
+// kotlinOptions inside android {} is an error from Kotlin 2.2 on; this is its replacement, with
+// the same target (2.7: Kotlin 2.1.20 -> 2.3.21, which LiteRT-LM 0.15+ requires).
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }
 
