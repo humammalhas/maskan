@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit
  *   adb shell am start -n app.maskan.chat.debug/app.maskan.chat.debug.ProbeActivity --es probe reasoning
  *   ... --es models "groq=qwen/qwen3-32b;openrouter=deepseek/deepseek-r1"   (override, these only)
  *   ... --es what catalogue      (log each provider's model ids that look like reasoning models)
+ *   ... --es question64 <base64 UTF-8>   (ask this instead of QUESTION; the file name gets "-q")
  *
  * Keys go into a header (Gemini: the query string, as the app sends it) and are never logged; no URL
  * is logged either. Lines are tagged MaskanReason. Keep the app in the foreground while it runs.
@@ -45,6 +46,9 @@ import java.util.concurrent.TimeUnit
 class ReasoningProbeReceiver : BroadcastReceiver() {
 
     private data class Target(val provider: String, val model: String, val base: String, val key: String)
+
+    private var question = QUESTION
+    private var asked = false
 
     override fun onReceive(context: Context, intent: Intent) {
         val app = context.applicationContext as? MaskanApplication ?: return
@@ -79,6 +83,10 @@ class ReasoningProbeReceiver : BroadcastReceiver() {
                 String(android.util.Base64.decode(it, android.util.Base64.DEFAULT), Charsets.UTF_8)
             ).jsonObject
         }
+        intent.getStringExtra("question64")?.let {
+            question = String(android.util.Base64.decode(it, android.util.Base64.DEFAULT), Charsets.UTF_8)
+            asked = true
+        }
         val probeDir = File(app.filesDir, "probe").apply { mkdirs() }
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             for (target in targets) {
@@ -109,7 +117,7 @@ class ReasoningProbeReceiver : BroadcastReceiver() {
                     put("contents", buildJsonArray {
                         add(buildJsonObject {
                             put("role", "user")
-                            put("parts", buildJsonArray { add(buildJsonObject { put("text", QUESTION) }) })
+                            put("parts", buildJsonArray { add(buildJsonObject { put("text", question) }) })
                         })
                     })
                 }.toString()))
@@ -141,7 +149,7 @@ class ReasoningProbeReceiver : BroadcastReceiver() {
             File(
                 dir,
                 "reason-" + target.provider + "-" + target.model.replace(Regex("[^A-Za-z0-9.]"), "_") +
-                    (if (extra != null) "-extra" else "") + ".txt"
+                    (if (extra != null) "-extra" else "") + (if (asked) "-q" else "") + ".txt"
             ).writeText(body)
             val tokens = Regex("\"(completion_tokens|reasoning_tokens|eval_count)\":(\\d+)").findAll(body)
                 .map { it.groupValues[1] + "=" + it.groupValues[2] }.toList().takeLast(2).joinToString(" ")
@@ -183,7 +191,7 @@ class ReasoningProbeReceiver : BroadcastReceiver() {
     private fun userTurn() = buildJsonArray {
         add(buildJsonObject {
             put("role", "user")
-            put("content", QUESTION)
+            put("content", question)
         })
     }
 
