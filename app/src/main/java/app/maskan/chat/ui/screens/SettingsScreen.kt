@@ -1170,6 +1170,31 @@ fun SettingsScreen(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
+                        text = stringResource(R.string.show_thinking_label),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Text(
+                        // Says which providers really stop thinking: elsewhere off only hides it,
+                        // and the setting must not claim a saving it does not make (plan item 2).
+                        text = stringResource(R.string.show_thinking_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Switch(
+                    checked = state.showThinkingEnabled,
+                    onCheckedChange = { viewModel.toggleShowThinking() }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
                         text = stringResource(R.string.speak_button_label),
                         style = MaterialTheme.typography.bodyLarge
                     )

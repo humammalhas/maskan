@@ -568,4 +568,6 @@
     <string name="thought_for_fmt">ใช้เวลาคิด %1$d วิ</string>
     <string name="thinking_show">แสดงขั้นตอนการคิด</string>
     <string name="thinking_hide">ซ่อนขั้นตอนการคิด</string>
+    <string name="show_thinking_label">แสดงขั้นตอนการคิดของโมเดล</string>
+    <string name="show_thinking_hint">บางโมเดลจะคิดก่อนตอบ และผู้ให้บริการบางรายส่งขั้นตอนการคิดนั้นมาด้วย การปิดจะซ่อนไว้ สำหรับ DeepSeek, Together, Venice และเซิร์ฟเวอร์ของคุณเอง การปิดจะขอให้โมเดลไม่ต้องคิดด้วย คำตอบจึงเริ่มเร็วขึ้น ส่วนที่อื่นจะเป็นการซ่อนเท่านั้น</string>
 </resources>

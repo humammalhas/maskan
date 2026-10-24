@@ -1191,6 +1191,7 @@ class ChatRepository(
             // Gemini sends its sources in a final chunk that carries no text.
             val found = AtomicReference(emptyList<WebSource>())
             var published = emptyList<WebSource>()
+            val showThinking = preferenceRepository.isShowThinkingEnabled()
             val stream = if (webSearch) {
                 if (!provider.searchesWeb(effectiveModel)) {
                     throw Exception("${provider.displayName} cannot search the web with $effectiveModel")
@@ -1206,16 +1207,18 @@ class ChatRepository(
             } else {
                 provider.sendMessageStreamingWithThinking(
                     apiKey, effectiveModel, messages, storedBaseUrl,
-                    imageData, imageMimeType
+                    imageData, imageMimeType, thinkingOff = !showThinking
                 )
             }
             // The model's reasoning, where its provider sends it: shown, never saved. It is not
             // written to the row, so it cannot reach a backup, an export or the next request
-            // (plan item 2; Humam, 2026-10-24: not stored).
+            // (plan item 2; Humam, 2026-10-24: not stored). Switched off, it is not shown either -
+            // a provider that cannot stop its model thinking (Groq gpt-oss) still sends it.
             val thinking = StringBuilder()
             stream.collect { piece ->
                 val token = when (piece) {
                     is StreamPiece.Thinking -> {
+                        if (!showThinking) return@collect
                         thinking.append(piece.text)
                         emit(StreamEvent.Thinking(assistantMessageId, thinking.toString()))
                         return@collect

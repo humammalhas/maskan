@@ -13,6 +13,7 @@ import app.maskan.chat.data.remote.WebSource
 import app.maskan.chat.data.remote.StreamPiece
 import app.maskan.chat.data.remote.parseSSEPieces
 import app.maskan.chat.data.remote.parseSSEStream
+import app.maskan.chat.data.remote.retryWithoutField
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.serialization.json.Json
@@ -434,21 +435,28 @@ class OpenAiCompatibleProvider(
         messages: List<Message>,
         baseUrl: String?,
         imageData: ByteArray?,
-        imageMimeType: String?
+        imageMimeType: String?,
+        thinkingOff: Boolean
     ): Flow<StreamPiece> {
         val request = ChatCompletionRequest(
             model = model,
             messages = buildMessages(messages, imageData, imageMimeType),
             stream = true
         )
-        val call = apiService.createChatCompletionStream(
-            authorization = "Bearer $apiKey",
-            request = request
-        )
-        return parseSSEPieces(call) { data ->
-            val chunk = json.decodeFromString<ChatCompletionChunk>(data)
-            chunk.choices.firstOrNull()?.delta?.pieces()
+        // A Call runs once, so the retry without the thinking-off field needs a call of its own.
+        val stream = { body: ChatCompletionRequest ->
+            val call = apiService.createChatCompletionStream(
+                authorization = "Bearer $apiKey",
+                request = body
+            )
+            parseSSEPieces(call) { data ->
+                val chunk = json.decodeFromString<ChatCompletionChunk>(data)
+                chunk.choices.firstOrNull()?.delta?.pieces()
+            }
         }
+        val field = ChatCompletionRequest.thinkingOffField(id)
+        if (!thinkingOff || field == null) return stream(request)
+        return retryWithoutField(field, { stream(request.withThinkingOff(id)) }, { stream(request) })
     }
     /**
      * Six of the seven search, every one tested on Humam's keys on 2026-10-23. Three through the

@@ -150,6 +150,18 @@ class PreferenceRepository(context: Context) {
     }
 
     /**
+     * Whether a model's reasoning is shown (plan item 2). On by default. Off hides it everywhere,
+     * and on the providers measured to allow it (DeepSeek, Together, Venice, Custom/Ollama) also
+     * asks the model not to think - see the providers' thinkingOff.
+     */
+    fun isShowThinkingEnabled(): Boolean =
+        plainPreferences.getBoolean(KEY_SHOW_THINKING, true)
+
+    fun setShowThinkingEnabled(enabled: Boolean) {
+        plainPreferences.edit().putBoolean(KEY_SHOW_THINKING, enabled).apply()
+    }
+
+    /**
      * Whether a reply carries a speak button in its footer. Default true, i.e. unchanged from
      * 2.5.0. Only the BUTTON: "Read this to me" under a photo is the user asking for speech by
      * name and is not governed by this.
@@ -349,6 +361,7 @@ class PreferenceRepository(context: Context) {
         private const val KEY_GLOBAL_MEMORY = "global_memory"
         private const val KEY_CUSTOM_PROMPT = "custom_system_prompt"
         private const val KEY_AUTO_TITLE = "auto_title_enabled"
+        private const val KEY_SHOW_THINKING = "show_thinking_enabled"
         private const val KEY_SPEAK_BUTTON = "speak_button_shown"
         private const val KEY_PROVIDER_ORDER = "provider_order"
         private const val KEY_HIDDEN_PROVIDERS = "hidden_providers"

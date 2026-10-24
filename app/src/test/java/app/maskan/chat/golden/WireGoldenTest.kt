@@ -143,6 +143,72 @@ class WireGoldenTest {
         }
     }
 
+    /**
+     * "Show the model's thinking" switched OFF (plan item 2): the request gains the provider's
+     * measured off field and nothing else. ON is every other golden in this file, unchanged.
+     * Groq is here to pin that a provider with no off switch sends exactly its usual request.
+     */
+    @Test
+    fun thinkingOff() {
+        val providers: List<Triple<String, String, () -> AiProvider>> = listOf(
+            Triple("deepseek", "deepseek-flash", { openAiCompatible(ProviderConfigs.DEEPSEEK) }),
+            Triple("together", "moonshotai/Kimi-K3", { openAiCompatible(ProviderConfigs.TOGETHER) }),
+            Triple("venice", "qwen3-235b-a22b-thinking-2507", { openAiCompatible(ProviderConfigs.VENICE) }),
+            Triple("groq", "openai/gpt-oss-120b", { openAiCompatible(ProviderConfigs.GROQ) }),
+            Triple("local-custom", "local-test", { LocalProvider(ProviderConfigs.CUSTOM, client(), json) }),
+            Triple("local-ollama", "local-test", { LocalProvider(ProviderConfigs.OLLAMA, client(), json) })
+        )
+        for ((name, model, make) in providers) {
+            server.enqueue(MockResponse().setResponseCode(200).setBody(""))
+            runBlocking {
+                runCatching {
+                    make().sendMessageStreamingWithThinking(
+                        KEY, model, Fixtures.plain,
+                        baseUrl = if (name.startsWith("local")) server.url("/").toString() else null,
+                        thinkingOff = true
+                    ).toList()
+                }
+            }
+            val recorded = server.takeRequest(5, TimeUnit.SECONDS) ?: error("$name sent no request")
+            Golden.check("$name-thinkingoff-stream", describe(recorded))
+        }
+    }
+
+    /** A model that rejects the off field BY NAME gets the same request without it, once. */
+    @Test
+    fun thinkingOffRetriesWithoutTheField() {
+        server.enqueue(
+            MockResponse().setResponseCode(400)
+                .setBody("{\"error\":{\"message\":\"`reasoning_effort` must be one of `low`, `medium`, or `high`\"}}")
+        )
+        server.enqueue(MockResponse().setResponseCode(200).setBody("data: [DONE]\n\n"))
+        runBlocking {
+            LocalProvider(ProviderConfigs.CUSTOM, client(), json).sendMessageStreamingWithThinking(
+                KEY, "local-test", Fixtures.plain, baseUrl = server.url("/").toString(), thinkingOff = true
+            ).toList()
+        }
+        val first = server.takeRequest(5, TimeUnit.SECONDS)!!.body.readUtf8()
+        val second = server.takeRequest(5, TimeUnit.SECONDS)!!.body.readUtf8()
+        org.junit.Assert.assertTrue(first.contains("\"reasoning_effort\":\"none\""))
+        org.junit.Assert.assertFalse(second.contains("reasoning_effort"))
+        org.junit.Assert.assertEquals(2, server.requestCount)
+    }
+
+    /** Any other 400 is the user's error to see, not a reason to send twice. */
+    @Test
+    fun thinkingOffDoesNotRetryAnUnrelated400() {
+        server.enqueue(MockResponse().setResponseCode(400).setBody("{\"error\":{\"message\":\"model not found\"}}"))
+        val outcome = runBlocking {
+            runCatching {
+                LocalProvider(ProviderConfigs.CUSTOM, client(), json).sendMessageStreamingWithThinking(
+                    KEY, "local-test", Fixtures.plain, baseUrl = server.url("/").toString(), thinkingOff = true
+                ).toList()
+            }
+        }
+        org.junit.Assert.assertTrue(outcome.isFailure)
+        org.junit.Assert.assertEquals(1, server.requestCount)
+    }
+
     /** Who gets the search entry. A provider that cannot search must say no, never fake it. */
     @Test
     fun whoSearches() {

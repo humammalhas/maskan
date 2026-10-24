@@ -9,6 +9,7 @@ import app.maskan.chat.data.remote.MessageContent
 import app.maskan.chat.data.remote.OpenAiCompatibleService
 import app.maskan.chat.data.remote.StreamPiece
 import app.maskan.chat.data.remote.parseSSEPieces
+import app.maskan.chat.data.remote.retryWithoutField
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.mapNotNull
@@ -290,7 +291,8 @@ class LocalProvider(
         messages: List<Message>,
         baseUrl: String?,
         imageData: ByteArray?,
-        imageMimeType: String?
+        imageMimeType: String?,
+        thinkingOff: Boolean
     ): Flow<StreamPiece> {
         val service = getService(resolveUrl(baseUrl))
         val request = ChatCompletionRequest(
@@ -298,13 +300,19 @@ class LocalProvider(
             messages = buildMessages(messages, imageData, imageMimeType),
             stream = true
         )
-        val call = service.createChatCompletionStream(
-            authorization = if (apiKey.isNotBlank()) "Bearer $apiKey" else "",
-            request = request
-        )
-        return parseSSEPieces(call) { data ->
-            val chunk = json.decodeFromString<ChatCompletionChunk>(data)
-            chunk.choices.firstOrNull()?.delta?.pieces()
+        // A Call runs once, so the retry without the thinking-off field needs a call of its own.
+        val stream = { body: ChatCompletionRequest ->
+            val call = service.createChatCompletionStream(
+                authorization = if (apiKey.isNotBlank()) "Bearer $apiKey" else "",
+                request = body
+            )
+            parseSSEPieces(call) { data ->
+                val chunk = json.decodeFromString<ChatCompletionChunk>(data)
+                chunk.choices.firstOrNull()?.delta?.pieces()
+            }
         }
+        val field = ChatCompletionRequest.thinkingOffField(id)
+        if (!thinkingOff || field == null) return stream(request)
+        return retryWithoutField(field, { stream(request.withThinkingOff(id)) }, { stream(request) })
     }
 }

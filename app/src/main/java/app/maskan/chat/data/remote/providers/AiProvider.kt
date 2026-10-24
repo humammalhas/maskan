@@ -162,6 +162,10 @@ interface AiProvider {
      * field of its own (plan item 2; measured on Humam's keys: DeepSeek, Together, an Ollama server
      * behind Custom). The SAME request - nothing asks a model to think. The default has no
      * reasoning to give: every piece is answer.
+     *
+     * [thinkingOff]: the user switched thinking off. Where the provider was measured to allow it
+     * the request also asks the model not to think; everywhere else it changes nothing here and
+     * the caller only hides what arrives.
      */
     fun sendMessageStreamingWithThinking(
         apiKey: String,
@@ -169,7 +173,8 @@ interface AiProvider {
         messages: List<Message>,
         baseUrl: String? = null,
         imageData: ByteArray? = null,
-        imageMimeType: String? = null
+        imageMimeType: String? = null,
+        thinkingOff: Boolean = false
     ): Flow<StreamPiece> =
         sendMessageStreaming(apiKey, model, messages, baseUrl, imageData, imageMimeType)
             .map { StreamPiece.Answer(it) }

@@ -568,4 +568,6 @@
     <string name="thought_for_fmt">فكّر %1$d ث</string>
     <string name="thinking_show">إظهار التفكير</string>
     <string name="thinking_hide">إخفاء التفكير</string>
+    <string name="show_thinking_label">إظهار تفكير النموذج</string>
+    <string name="show_thinking_hint">تفكّر بعض النماذج قبل أن تجيب، ويرسل بعض المزوّدين هذا التفكير. الإيقاف يخفيه. وفي DeepSeek وTogether وVenice وخادمك الخاص يطلب أيضًا من النموذج ألّا يفكّر، فتبدأ الإجابة أسرع. أما في غيرها فيُخفى فقط.</string>
 </resources>

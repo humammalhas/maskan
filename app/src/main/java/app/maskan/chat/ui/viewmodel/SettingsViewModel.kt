@@ -74,6 +74,7 @@ data class SettingsUiState(
     /** The one memory file that is not tied to a folder. Off until the user turns it on. */
     val globalMemoryEnabled: Boolean = false,
     val autoTitleEnabled: Boolean = true,
+    val showThinkingEnabled: Boolean = true,
     val speakButtonShown: Boolean = true,
     val globalMemoryTokens: Int = 0,
     val fetchedModels: List<String> = emptyList(),
@@ -122,6 +123,7 @@ class SettingsViewModel(
             globalMemoryEnabled = preferenceRepository.isGlobalMemoryEnabled(),
             globalMemoryTokens = TokenEstimate.of(preferenceRepository.getGlobalMemory()),
             autoTitleEnabled = preferenceRepository.isAutoTitleEnabled(),
+            showThinkingEnabled = preferenceRepository.isShowThinkingEnabled(),
             speakButtonShown = preferenceRepository.isSpeakButtonShown(),
             fetchedModels = preferenceRepository.getCachedModels(provider.id),
             modelsFetchedAt = preferenceRepository.getModelsFetchedAt(provider.id),
@@ -502,6 +504,12 @@ class SettingsViewModel(
         preferenceRepository.setAutoTitleEnabled(newValue)
         _uiState.value = _uiState.value.copy(autoTitleEnabled = newValue)
         return newValue
+    }
+
+    fun toggleShowThinking() {
+        val newValue = !_uiState.value.showThinkingEnabled
+        preferenceRepository.setShowThinkingEnabled(newValue)
+        _uiState.value = _uiState.value.copy(showThinkingEnabled = newValue)
     }
 
     fun toggleSpeakButton(): Boolean {

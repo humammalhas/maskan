@@ -2,6 +2,7 @@ package app.maskan.chat.data.remote
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -42,6 +43,23 @@ sealed class StreamPiece {
 fun parseSSEStream(call: Call<ResponseBody>, extractToken: (String) -> String?): Flow<String> =
     parseSSEPieces(call) { data -> extractToken(data)?.let { listOf(StreamPiece.Answer(it)) } }
         .map { (it as StreamPiece.Answer).text }
+
+/**
+ * [primary] (a request carrying a thinking-off field), and - only if it fails with an HTTP 400 that
+ * names [field] before anything arrived - [fallback], the same request without it, once. A model
+ * with no off switch says so by name (Groq: "`reasoning_effort` must be one of `low`, `medium`, or
+ * `high`"), and turning thinking off must never cost the user the reply (Humam, 2026-10-24).
+ */
+fun <T> retryWithoutField(field: String, primary: () -> Flow<T>, fallback: () -> Flow<T>): Flow<T> = flow {
+    var received = false
+    try {
+        primary().collect { received = true; emit(it) }
+    } catch (e: ApiHttpException) {
+        val namesField = (e.providerMessage ?: e.rawBody).orEmpty().contains(field)
+        if (e.code != 400 || received || !namesField) throw e
+        emitAll(fallback())
+    }
+}
 
 /** [parseSSEStream] for a chunk that can carry reasoning beside the answer: thinking first, as it arrives. */
 fun parseSSEPieces(call: Call<ResponseBody>, extract: (String) -> List<StreamPiece>?): Flow<StreamPiece> = flow {

@@ -14,6 +14,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 
 @Serializable(with = MessageContentSerializer::class)
 sealed class MessageContent {
@@ -106,8 +107,39 @@ data class ChatCompletionRequest(
     val veniceParameters: JsonElement? = null,
     /** Groq: `[{"type": "browser_search"}]`. */
     @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
-    val tools: JsonElement? = null
-)
+    val tools: JsonElement? = null,
+    /**
+     * Thinking OFF, only when the user switched "Show the model's thinking" off (plan item 2),
+     * each measured on Humam's keys 2026-10-24: DeepSeek `{"type": "disabled"}`.
+     */
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
+    val thinking: JsonElement? = null,
+    /** Together: `{"enabled": false}`. */
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
+    val reasoning: JsonElement? = null,
+    /** Venice and an Ollama server: `"none"`. */
+    @SerialName("reasoning_effort")
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
+    val reasoningEffort: String? = null
+) {
+    /** This request with [provider]'s measured thinking-off field, or unchanged where it has none. */
+    fun withThinkingOff(provider: String): ChatCompletionRequest = when (provider) {
+        "deepseek" -> copy(thinking = buildJsonObject { put("type", "disabled") })
+        "together" -> copy(reasoning = buildJsonObject { put("enabled", false) })
+        "venice", "custom", "ollama" -> copy(reasoningEffort = "none")
+        else -> this
+    }
+
+    companion object {
+        /** The field a provider rejects by name when its model has no off switch (Groq said so in a 400). */
+        fun thinkingOffField(provider: String): String? = when (provider) {
+            "deepseek" -> "thinking"
+            "together" -> "reasoning"
+            "venice", "custom", "ollama" -> "reasoning_effort"
+            else -> null
+        }
+    }
+}
 
 @Serializable
 data class Choice(
