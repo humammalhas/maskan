@@ -1750,9 +1750,11 @@ private fun MessageBubble(
                             if (!isUser && !isStreaming) {
                                 MarkdownText(text = message.content)
                             } else {
+                                // The user's own words, and a reply still streaming: in the
+                                // direction of their text, as MarkdownText does, not the app's.
                                 Text(
                                     text = message.content,
-                                    style = MaterialTheme.typography.bodyMedium
+                                    style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Content)
                                 )
                             }
                         }
