@@ -36,6 +36,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.LayoutDirection
@@ -249,6 +250,12 @@ fun parseInlineMarkdown(text: String): AnnotatedString {
     }
 }
 
+/**
+ * Each paragraph runs in the direction of its own text, not the app's: an English reply in the
+ * Arabic app read ".pens cost $36 84", and an Arabic one in the English app ran left to right.
+ * A Text whose direction is unspecified follows the layout direction, so every Text here says
+ * Content. Code blocks stay left to right on purpose.
+ */
 @Composable
 fun MarkdownText(text: String) {
     val blocks = remember(text) { parseBlocks(latexForDisplay(text)) }
@@ -259,7 +266,7 @@ fun MarkdownText(text: String) {
                 is MdBlock.Paragraph -> {
                     Text(
                         text = parseInlineMarkdown(block.text),
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Content)
                     )
                 }
                 is MdBlock.Header -> {
@@ -270,7 +277,7 @@ fun MarkdownText(text: String) {
                             1 -> MaterialTheme.typography.titleLarge
                             2 -> MaterialTheme.typography.titleMedium
                             else -> MaterialTheme.typography.titleSmall
-                        },
+                        }.copy(textDirection = TextDirection.Content),
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(2.dp))
@@ -294,7 +301,7 @@ fun MarkdownText(text: String) {
                         )
                         Text(
                             text = parseInlineMarkdown(block.text),
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Content)
                         )
                     }
                 }
@@ -307,7 +314,7 @@ fun MarkdownText(text: String) {
                         )
                         Text(
                             text = parseInlineMarkdown(block.text),
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Content)
                         )
                     }
                 }
@@ -345,7 +352,7 @@ private fun TableView(table: MdBlock.Table) {
                     repeat(columns) { column ->
                         Text(
                             text = parseInlineMarkdown(row.getOrNull(column).orEmpty()),
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.bodySmall.copy(textDirection = TextDirection.Content),
                             fontWeight = if (rowIndex == 0) FontWeight.Bold else null,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                         )
