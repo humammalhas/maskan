@@ -17,7 +17,7 @@ import android.os.Bundle
  *   adb shell am start -n app.maskan.chat.debug/app.maskan.chat.debug.ProbeActivity \
  *       --es probe llm --es model qwen3.5-0.8b-vl-int8 --es b64 <base64 prompt>
  *
- * `probe` is llm (default), backup, assembly, provider or invalidation.
+ * `probe` is llm (default), backup, assembly, provider, invalidation or reasoning.
  */
 class ProbeActivity : Activity() {
 
@@ -29,6 +29,7 @@ class ProbeActivity : Activity() {
             "assembly" -> AssemblyProbeReceiver().onReceive(applicationContext, forwarded)
             "provider" -> ProviderProbeReceiver().onReceive(applicationContext, forwarded)
             "invalidation" -> InvalidationProbeReceiver().onReceive(applicationContext, forwarded)
+            "reasoning" -> ReasoningProbeReceiver().onReceive(applicationContext, forwarded)
             else -> LlmProbeReceiver().onReceive(applicationContext, forwarded)
         }
         finish()
