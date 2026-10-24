@@ -126,7 +126,8 @@ fun OnDeviceCard(onAddKeyInstead: () -> Unit) {
                     text = stringResource(
                         R.string.ondevice_ram_refused,
                         Formats.bytes(context, store.deviceRamBytes()),
-                        Formats.bytes(context, model.minRamBytes)
+                        // The class, as printed on a phone's box - what the gate enforces.
+                        context.getString(R.string.unit_gb, model.minRamGb.toString())
                     ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error

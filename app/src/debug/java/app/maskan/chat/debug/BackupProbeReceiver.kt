@@ -364,6 +364,10 @@ class BackupProbeReceiver : BroadcastReceiver() {
         )
         val counts = try {
             db.execSQL("DROP TABLE IF EXISTS documents")
+            // Every column a migration after 8 adds goes too, or MIGRATION_9_10 meets a column it
+            // is about to create and the restore fails with "duplicate column" - which this probe
+            // did from schema 10 on (2.7 session 7). A new migration adds its column here.
+            for (column in COLUMNS_ADDED_AFTER_8) db.execSQL("ALTER TABLE messages DROP COLUMN " + column)
             db.execSQL("PRAGMA user_version = 8")
             val version = db.rawQuery("PRAGMA user_version", null)
                 .use { if (it.moveToFirst()) it.getInt(0) else -1 }
@@ -382,8 +386,46 @@ class BackupProbeReceiver : BroadcastReceiver() {
         val check = app.backupReader.readHeader(Uri.fromFile(target))
         Log.i(TAG, "schema-8 archive at " + target.absolutePath + " (" + target.length() +
             " bytes): header schema " + check.header.schema + ", counts " + header.counts)
+        migratesToCurrent(extracted.database, extracted.manifest.dbKey, counts)
         out.deleteRecursively()
         base.delete()
+    }
+
+    /**
+     * The restore path without the restore: the app's own migrations, 8 up to the current schema,
+     * run on the schema-8 snapshot in the cache - never on the live database. Every row must still
+     * be there, and every column a later migration adds must exist afterwards.
+     */
+    private fun migratesToCurrent(file: File, key: String, counts: app.maskan.chat.data.backup.BackupCounts) {
+        val db = net.zetetic.database.sqlcipher.SQLiteDatabase.openDatabase(
+            file.absolutePath, key, null,
+            net.zetetic.database.sqlcipher.SQLiteDatabase.OPEN_READWRITE, null, null
+        )
+        try {
+            val migrations = listOf(
+                app.maskan.chat.data.local.AppDatabase.MIGRATION_8_9,
+                app.maskan.chat.data.local.AppDatabase.MIGRATION_9_10,
+                app.maskan.chat.data.local.AppDatabase.MIGRATION_10_11
+            )
+            for (m in migrations) m.migrate(db)
+            val messages = db.rawQuery("SELECT COUNT(*) FROM messages", null)
+                .use { if (it.moveToFirst()) it.getInt(0) else -1 }
+            val chats = db.rawQuery("SELECT COUNT(*) FROM conversations", null)
+                .use { if (it.moveToFirst()) it.getInt(0) else -1 }
+            val columns = db.rawQuery("PRAGMA table_info(messages)", null).use { c ->
+                buildList { while (c.moveToNext()) add(c.getString(c.getColumnIndexOrThrow("name"))) }
+            }
+            val ok = messages == counts.messages && chats == counts.chats &&
+                columns.containsAll(COLUMNS_ADDED_AFTER_8)
+            val detail = "8 -> " + migrations.last().endVersion + ": chats " + chats + "/" + counts.chats +
+                ", messages " + messages + "/" + counts.messages + ", columns " + columns
+            if (ok) Log.i(TAG, "PASS schema-8 archive migrates to current: " + detail)
+            else Log.e(TAG, "FAIL schema-8 archive migrates to current: " + detail)
+        } catch (e: Throwable) {
+            Log.e(TAG, "FAIL schema-8 archive migrates to current: " + e.javaClass.simpleName + " " + e.message)
+        } finally {
+            db.close()
+        }
     }
 
     // -- 3. Volume, so the numbers mean something ------------------------
@@ -500,6 +542,9 @@ class BackupProbeReceiver : BroadcastReceiver() {
     companion object {
         private const val TAG = "MaskanBackupProbe"
         private val TABLES = listOf("conversations", "messages", "folders", "documents")
+
+        /** `messages` columns MIGRATION_9_10 and later add, newest last. */
+        private val COLUMNS_ADDED_AFTER_8 = listOf("sourcesJson", "editedAt")
 
         /** Nobody types this. It is what `unseed` deletes by, and the only thing it deletes. */
         private const val SEED_PREFIX = "MKB-SEED"

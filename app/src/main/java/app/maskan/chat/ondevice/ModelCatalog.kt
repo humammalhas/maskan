@@ -80,12 +80,14 @@ data class OnDeviceModel(
      */
     val backend: String? = null,
     /**
-     * Total device RAM below which the download is refused, with a sentence saying why rather
-     * than a greyed-out button.
+     * The smallest RAM class, in GB as printed on the box, that runs this model. Below it the
+     * download is refused, with a sentence saying why rather than a greyed-out button.
      *
-     * Measured, not guessed: see each entry.
+     * A class and not a byte count: a phone reports less than it was sold with (see RamGate), and
+     * a byte floor of 6 GiB refused every 6 GB phone (2.7 plan item 15). Measured, not guessed: see
+     * each entry.
      */
-    val minRamBytes: Long,
+    val minRamGb: Int,
     val vision: Boolean = false
 ) {
     /** The shape LocalPrompt writes this file's turns in. */
@@ -152,7 +154,7 @@ object ModelCatalog {
         // which is less than that; a 6 GB phone has about 3 GB, which fits with room. So the
         // floor is 6 GB of TOTAL RAM - the number the device reports, not free memory, which
         // changes minute to minute and would refuse the download for the wrong reason.
-        minRamBytes = 6L * 1024 * 1024 * 1024
+        minRamGb = 6
     )
 
     /**
@@ -187,7 +189,7 @@ object ModelCatalog {
         topP = 0.95f,
         topK = 40,
         // Measured in session 5: 1.22 GB peak PSS, ~1.5 GB free needed alongside.
-        minRamBytes = 3L * 1024 * 1024 * 1024
+        minRamGb = 3
     )
 
     /** Every model the engine knows how to drive, shipped or not. */

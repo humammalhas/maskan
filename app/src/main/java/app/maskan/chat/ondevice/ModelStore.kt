@@ -62,7 +62,7 @@ class ModelStore(private val context: Context) {
         return freed
     }
 
-    /** Total RAM the device reports. See OnDeviceModel.minRamBytes for why total and not free. */
+    /** Total RAM the device reports. See OnDeviceModel.minRamGb for why total and not free. */
     fun deviceRamBytes(): Long {
         val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
             ?: return 0L
@@ -71,12 +71,7 @@ class ModelStore(private val context: Context) {
         return info.totalMem
     }
 
-    fun hasEnoughRam(model: OnDeviceModel): Boolean {
-        val ram = deviceRamBytes()
-        // A device that will not say how much memory it has is not refused on a number nobody
-        // has: the load itself will fail honestly if it cannot fit.
-        return ram == 0L || ram >= model.minRamBytes
-    }
+    fun hasEnoughRam(model: OnDeviceModel): Boolean = RamGate.fits(deviceRamBytes(), model.minRamGb)
 
     /** Free space where the model goes, which is not necessarily where the pictures go. */
     fun freeSpaceBytes(): Long = dir().usableSpace
