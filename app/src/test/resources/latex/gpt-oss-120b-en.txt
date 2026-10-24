@@ -1,0 +1,9 @@
+Each set of 7 pens costs \$3.  
+
+\(84 \div 7 = 12\) sets of 7 pens.  
+
+\(12 \times \$3 = \$36\).
+
+\[
+\boxed{\$36}
+\]

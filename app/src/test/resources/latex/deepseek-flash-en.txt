@@ -1,0 +1,36 @@
+Let's solve this step by step.
+
+We know:
+
+- 7 pens cost 3 dollars.
+- We want the cost of 84 pens.
+
+---
+
+**Step 1: Determine the number of groups of 7 pens in 84 pens.**
+
+\[
+84 \div 7 = 12
+\]
+
+So there are 12 groups of 7 pens.
+
+---
+
+**Step 2: Calculate the total cost.**
+
+Each group costs 3 dollars:
+
+\[
+12 \times 3 = 36
+\]
+
+---
+
+**Final Answer:**
+
+\[
+\boxed{36}
+\]
+
+So, 84 pens cost **36 dollars**.

@@ -251,7 +251,7 @@ fun parseInlineMarkdown(text: String): AnnotatedString {
 
 @Composable
 fun MarkdownText(text: String) {
-    val blocks = remember(text) { parseBlocks(text) }
+    val blocks = remember(text) { parseBlocks(latexForDisplay(text)) }
 
     Column {
         blocks.forEachIndexed { index, block ->
