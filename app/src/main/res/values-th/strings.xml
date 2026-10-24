@@ -495,8 +495,6 @@
     <string name="provider_unhide">แสดง</string>
     <string name="providers_hidden_fmt">ซ่อนอยู่ (%1$d)</string>
     <string name="provider_in_use">ใช้อยู่</string>
-    <string name="ondevice_nudge">ชอบไหม คีย์ของคุณเองให้คุณใช้ Gemini, GPT หรือ Claude ด้วยกฎความเป็นส่วนตัวเดียวกัน — Maskan ยังคงไม่เห็นข้อมูลของคุณ</string>
-    <string name="ondevice_nudge_dismiss">ยังก่อน</string>
     <string name="ondevice_nudge_add_key">เพิ่มคีย์</string>
     <string name="ondevice_about_title">โมเดลบนเครื่อง</string>
     <string name="ondevice_about_body">%1$s สร้างโดย %2$s ภายใต้สัญญาอนุญาต %3$s ไม่ได้สร้างโดย Maskan ทำงานบนโทรศัพท์เครื่องนี้ทั้งหมด ไม่มีบัญชี ไม่มีเซิร์ฟเวอร์ของเรา และไม่มีสิ่งใดจากบทสนทนาของคุณออกจากเครื่อง</string>

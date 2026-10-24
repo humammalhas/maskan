@@ -495,8 +495,6 @@
     <string name="provider_unhide">Show</string>
     <string name="providers_hidden_fmt">Hidden (%1$d)</string>
     <string name="provider_in_use">In use</string>
-    <string name="ondevice_nudge">Liking it? Your own key gives you Gemini, GPT or Claude with the same privacy rules — Maskan still never sees your data.</string>
-    <string name="ondevice_nudge_dismiss">Not now</string>
     <string name="ondevice_nudge_add_key">Add a key</string>
     <string name="ondevice_about_title">On-device model</string>
     <string name="ondevice_about_body">%1$s, made by %2$s and licensed %3$s. It is not made by Maskan. It runs entirely on this phone: no account, no server of ours, and nothing about your chats leaves the device.</string>

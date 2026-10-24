@@ -97,31 +97,6 @@ class PreferenceRepository(context: Context) {
         plainPreferences.edit().putBoolean(KEY_GLOBAL_MEMORY_ON, enabled).apply()
     }
 
-    // ── The on-device nudge ─────────────────────────────────────
-
-    /**
-     * How many answers the on-device model has given on this install.
-     *
-     * Per install and not per conversation: the point of the nudge is "you have used this
-     * enough to know what it is like", and someone who asked ten questions across five chats
-     * has done exactly that.
-     */
-    fun onDeviceReplyCount(): Int = plainPreferences.getInt(KEY_ONDEVICE_REPLIES, 0)
-
-    fun bumpOnDeviceReplyCount() {
-        plainPreferences.edit()
-            .putInt(KEY_ONDEVICE_REPLIES, onDeviceReplyCount() + 1)
-            .apply()
-    }
-
-    /** Dismissed once, gone for good. "Never repeat it after dismissal" is the whole ask. */
-    fun isOnDeviceNudgeDismissed(): Boolean =
-        plainPreferences.getBoolean(KEY_ONDEVICE_NUDGE_DONE, false)
-
-    fun dismissOnDeviceNudge() {
-        plainPreferences.edit().putBoolean(KEY_ONDEVICE_NUDGE_DONE, true).apply()
-    }
-
     /** Null, never an empty string, so "has the user written anything" is one check everywhere. */
     fun getGlobalMemory(): String? =
         sharedPreferences.getString(KEY_GLOBAL_MEMORY, null)?.takeIf { it.isNotBlank() }
@@ -361,8 +336,6 @@ class PreferenceRepository(context: Context) {
         // The switch is a plain preference (it decides what a screen draws); the text it switches
         // on is encrypted with the rest of the user's own words.
         private const val KEY_GLOBAL_MEMORY_ON = "global_memory_enabled"
-        private const val KEY_ONDEVICE_REPLIES = "ondevice_reply_count"
-        private const val KEY_ONDEVICE_NUDGE_DONE = "ondevice_nudge_dismissed"
         private const val KEY_GLOBAL_MEMORY = "global_memory"
         private const val KEY_CUSTOM_PROMPT = "custom_system_prompt"
         private const val KEY_AUTO_TITLE = "auto_title_enabled"

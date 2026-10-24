@@ -1234,11 +1234,6 @@ class ChatRepository(
             if (finalContent.isBlank()) {
                 throw Exception("Empty response from ${provider.displayName}")
             }
-            // Counted here and not at the start: "after the tenth reply" means ten answers the
-            // user actually read, not ten requests, half of which may have failed.
-            if (providerId == OnDeviceProvider.ID) {
-                preferenceRepository.bumpOnDeviceReplyCount()
-            }
         } catch (e: Exception) {
             val current = messageDao.getMessagesForConversationOnce(conversationId)
                 .find { it.id == assistantMessageId }

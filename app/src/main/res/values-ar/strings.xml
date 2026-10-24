@@ -495,8 +495,6 @@
     <string name="provider_unhide">إظهار</string>
     <string name="providers_hidden_fmt">مخفية (%1$d)</string>
     <string name="provider_in_use">قيد الاستعمال</string>
-    <string name="ondevice_nudge">أعجبك؟ مفتاحك الخاص يمنحك Gemini أو GPT أو Claude بقواعد الخصوصية نفسها — ولا يرى مسكن بياناتك أبداً.</string>
-    <string name="ondevice_nudge_dismiss">ليس الآن</string>
     <string name="ondevice_nudge_add_key">أضف مفتاحاً</string>
     <string name="ondevice_about_title">النموذج على الجهاز</string>
     <string name="ondevice_about_body">%1$s، من صنع %2$s وبرخصة %3$s. ليس من صنع مسكن. يعمل بالكامل على هذا الهاتف: دون حساب، ودون خادم لنا، ولا يغادر أي شيء من محادثاتك الجهاز.</string>

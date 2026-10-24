@@ -149,15 +149,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/**
- * How many on-device answers before the "add your own key" card appears, once.
- *
- * Ten is plan §3.3's number and it is the right shape: enough use to have formed an opinion
- * about the small model, few enough that the suggestion still helps rather than arriving after
- * someone has already given up.
- */
-private const val ONDEVICE_NUDGE_AFTER = 10
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
@@ -168,8 +159,6 @@ fun ChatScreen(
     /** Where a remembered fact was just written: the folder's memory, or the shared file. */
     onOpenProjectMemory: (Long) -> Unit = {},
     onOpenFolderInstructions: (Long) -> Unit = {},
-    /** Where the on-device nudge card's "add a key" goes. */
-    onNavigateToSettings: () -> Unit = {},
     /** A fork was just made from this chat: open it. */
     onOpenConversation: (Long) -> Unit = {}
 ) {
@@ -184,11 +173,6 @@ fun ChatScreen(
     var showPresetPicker by remember { mutableStateOf(false) }
     var showRenameDialog by remember { mutableStateOf(false) }
     var showExportDialog by remember { mutableStateOf(false) }
-    // Disclosure 3 of 3. Dismissed once is dismissed for good - that is the whole of the ask,
-    // and a card that comes back is an advertisement.
-    var nudgeDismissed by rememberSaveable {
-        mutableStateOf(preferenceRepository.isOnDeviceNudgeDismissed())
-    }
 
     val context = LocalContext.current
     val app = context.applicationContext as MaskanApplication
@@ -893,49 +877,6 @@ fun ChatScreen(
             // which is the one thing the screen is open to prevent.
             if (uiState.presetSelected && !showPresetPicker) {
                 Column(modifier = Modifier.navigationBarsPadding().imePadding()) {
-                    // Disclosure 3 of 3: once per install, after the tenth on-device answer.
-                    // Above the composer rather than in the transcript, because it is about the
-                    // app and not about anything that was said.
-                    if (!nudgeDismissed &&
-                        uiState.selectedProviderId == OnDeviceProvider.ID &&
-                        preferenceRepository.onDeviceReplyCount() >= ONDEVICE_NUDGE_AFTER
-                    ) {
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 6.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant
-                            )
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Text(
-                                    text = stringResource(R.string.ondevice_nudge),
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                                Row(
-                                    horizontalArrangement = Arrangement.End,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    TextButton(onClick = {
-                                        preferenceRepository.dismissOnDeviceNudge()
-                                        nudgeDismissed = true
-                                    }) {
-                                        Text(stringResource(R.string.ondevice_nudge_dismiss))
-                                    }
-                                    TextButton(onClick = {
-                                        // Dismissed on the way out too: someone who went to add
-                                        // a key has answered the question the card was asking.
-                                        preferenceRepository.dismissOnDeviceNudge()
-                                        nudgeDismissed = true
-                                        onNavigateToSettings()
-                                    }) {
-                                        Text(stringResource(R.string.ondevice_nudge_add_key))
-                                    }
-                                }
-                            }
-                        }
-                    }
                     uiState.pendingImageBytes?.let { bytes ->
                         ImagePreview(
                             imageBytes = bytes,

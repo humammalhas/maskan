@@ -233,7 +233,6 @@ private fun AppNavigation(
                 onOpenFolderInstructions = { folderId ->
                     navController.navigate(Routes.projectFileRoute(folderId, ProjectFile.INSTRUCTIONS))
                 },
-                onNavigateToSettings = { navController.navigate(Routes.SETTINGS) },
                 // A fork from this chat. Pushed on top, so Back returns to the chat it came from.
                 onOpenConversation = { id -> navController.navigate(Routes.chatRoute(id)) }
             )
