@@ -167,6 +167,7 @@ fun ChatScreen(
     onNavigateBack: () -> Unit,
     /** Where a remembered fact was just written: the folder's memory, or the shared file. */
     onOpenProjectMemory: (Long) -> Unit = {},
+    onOpenFolderInstructions: (Long) -> Unit = {},
     /** Where the on-device nudge card's "add a key" goes. */
     onNavigateToSettings: () -> Unit = {}
 ) {
@@ -769,26 +770,65 @@ fun ChatScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(MaterialTheme.maskanColors.softLavender)
-                            .clickable { showPresetPicker = true }
                             // 16dp bar inset + 48dp nav icon, so the name sits under the title.
                             // Start-relative, so it mirrors correctly in RTL.
                             .padding(start = 60.dp, end = 16.dp, bottom = 8.dp)
                     ) {
-                        Text(
-                            text = presetLabel,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Icon(
-                            imageVector = Icons.Default.KeyboardArrowDown,
-                            contentDescription = stringResource(R.string.change_preset),
-                            modifier = Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .weight(1f, fill = false)
+                                .clickable { showPresetPicker = true }
+                        ) {
+                            Text(
+                                text = presetLabel,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                imageVector = Icons.Default.KeyboardArrowDown,
+                                contentDescription = stringResource(R.string.change_preset),
+                                modifier = Modifier.size(14.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        // Which folder's instructions this chat carries - before 2.7 nothing in
+                        // the chat said so - and the way to them. On the style row, not a row of
+                        // its own: a new header row comes out of the preset picker's height.
+                        val folderId = uiState.folderId
+                        if (folderId != null) {
+                            val openLabel = stringResource(R.string.folder_chip_open_instructions)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .weight(1f, fill = false)
+                                    .clickable(onClickLabel = openLabel) {
+                                        onOpenFolderInstructions(folderId)
+                                    }
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(colorFromHex(uiState.folderColorHex))
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = uiState.folderName,
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        textDirection = TextDirection.Content
+                                    ),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
                     }
                 }
             }

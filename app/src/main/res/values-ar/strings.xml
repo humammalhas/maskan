@@ -76,6 +76,10 @@
     <string name="change_color">تغيير اللون</string>
     <string name="folder_name_hint">اسم المجلد</string>
     <string name="create_button">إنشاء</string>
+    <string name="new_folder_project_line">يستطيع المجلد أن يحمل تعليمات وذاكرة إلى كل محادثة فيه.</string>
+    <string name="new_folder_add_instructions">أضِف تعليمات</string>
+    <string name="new_chat_in_folder">محادثة جديدة هنا</string>
+    <string name="folder_chip_open_instructions">افتح تعليمات المجلد</string>
     <string name="save_button">حفظ</string>
     <string name="empty_folder">لا محادثات هنا بعد — اضغط مطوّلاً على محادثة لنقلها</string>
     <string name="create_new_folder">إنشاء مجلد جديد…</string>

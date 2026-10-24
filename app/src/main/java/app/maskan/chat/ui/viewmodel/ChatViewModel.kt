@@ -181,9 +181,10 @@ data class ChatUiState(
      * pushed straight into the composer so the user always sees what changed before it is drawn.
      */
     val improvedPrompt: String? = null,
-    /** The folder this conversation is in, and its name, for "remember this". */
+    /** The folder this conversation is in, its name and colour: "remember this", the header chip. */
     val folderId: Long? = null,
     val folderName: String = "",
+    val folderColorHex: String? = null,
     /**
      * Set when a fact has just been remembered: the folder it went into, or GLOBAL_SCOPE for the
      * shared file. The screen turns it into a toast and a trip to the editor, then clears it.
@@ -280,6 +281,7 @@ class ChatViewModel(
                 title = conversation?.title.orEmpty(),
                 folderId = folder?.id,
                 folderName = folder?.name.orEmpty(),
+                folderColorHex = folder?.colorHex,
                 selectedImageModelName = keyRepository.getSelectedImageModel(providerId).orEmpty(),
                 selectedVideoModelName = keyRepository.getSelectedVideoModel(providerId).orEmpty(),
                 // A remembered "576x1024" means nothing to Veo and "16:9" nothing to Wan.

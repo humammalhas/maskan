@@ -24,6 +24,7 @@ import app.maskan.chat.data.remote.VideoBackend
 import app.maskan.chat.data.remote.VideoJobClient
 import app.maskan.chat.data.remote.providers.OnDeviceProvider
 import app.maskan.chat.data.remote.providers.ProviderRegistry
+import app.maskan.chat.util.ChatTitle
 import app.maskan.chat.util.DocumentChunks
 import app.maskan.chat.util.DocumentExtract
 import app.maskan.chat.util.ErrorMapper
@@ -71,12 +72,14 @@ class ChatRepository(
     suspend fun createConversation(
         title: String = DEFAULT_TITLE,
         providerId: String = ProviderRegistry.getDefaultProvider().id,
-        modelId: String? = null
+        modelId: String? = null,
+        folderId: Long? = null
     ): Long {
         val conversation = ConversationEntity(
             title = title,
             providerId = providerId,
-            modelId = modelId
+            modelId = modelId,
+            folderId = folderId
         )
         return conversationDao.insertConversation(conversation)
     }
@@ -1505,9 +1508,8 @@ class ChatRepository(
      *
      * ONE extra request, on the model the user already chose, carrying the first exchange and
      * nothing else - no folder instructions, no document notes, no later turns. The language is
-     * never named: the model is told to answer in the language of what it is shown, which is how
-     * an Arabic chat gets an Arabic title without the app having to work out which language a
-     * conversation is in.
+     * named only when the first message is in Arabic or Thai script (2.7: Qwen 1.5B gave half of
+     * Arabic chats an English or Chinese title until it was); see ChatTitle.
      *
      * Silent in every failure - no key, airplane mode, a refusal, an empty answer, a model that
      * writes a paragraph instead of a title. The chat keeps the name it had. A title that failed
@@ -1546,13 +1548,7 @@ class ChatRepository(
                 ?: keyRepository.getSelectedModel(conversation.providerId)
                 ?: provider.defaultModel
 
-            val instruction = Message(
-                role = "system",
-                text = "You name conversations. Read the exchange and reply with a title of " +
-                    "3 to 5 words for it, written in THE SAME LANGUAGE as the exchange. Reply " +
-                    "with the title alone: no quotation marks, no full stop at the end, no " +
-                    "explanation, no translation, nothing else."
-            )
+            val instruction = Message(role = "system", text = ChatTitle.instruction(question))
             // Capped because a title is worth a few hundred tokens of context, not a whole
             // contract: the subject of a conversation is visible in its opening lines.
             val exchange = Message(
@@ -1566,29 +1562,17 @@ class ChatRepository(
                 listOf(instruction, exchange),
                 keyRepository.getBaseUrl(conversation.providerId)
             )
-            val title = cleanTitle(raw) ?: return
+            val title = ChatTitle.clean(raw, question)
+            // Debug only: what the model said and what was kept, so a title can be judged on
+            // the device against the model's own words (2.7 session 6 measured this way).
+            if (BuildConfig.DEBUG) {
+                android.util.Log.d("MaskanTitle", "conv=$conversationId raw<<$raw>> kept<<$title>>")
+            }
+            if (title == null) return
             conversationDao.updateConversationTitle(conversationId, title)
         } catch (_: Exception) {
             // Deliberately silent. See the doc comment.
         }
-    }
-
-    /**
-     * The first line of the answer, with the decorations models add to a title stripped off, or
-     * null if what came back is not a title at all.
-     *
-     * The length test is the one that matters: a model that ignored the instruction answers with
-     * a sentence or a paragraph, and a chat list full of paragraphs is worse than a chat list
-     * full of "New Chat". Quotation marks are stripped in all three scripts' shapes because
-     * asking a model not to quote a title works about four times in five.
-     */
-    private fun cleanTitle(raw: String): String? {
-        var line = raw.lines().map { it.trim() }.firstOrNull { it.isNotEmpty() } ?: return null
-        line = line.trim('"', '\'', '\u201c', '\u201d', '\u2018', '\u2019', '\u00ab', '\u00bb')
-            .trimEnd('.', '\u060c', ':', '\u061b')
-            .trim()
-        if (line.isEmpty() || line.length > 60) return null
-        return line
     }
 
     /**

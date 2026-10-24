@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -21,7 +22,10 @@ import app.maskan.chat.R
 @Composable
 internal fun CreateFolderDialog(
     onDismiss: () -> Unit,
-    onCreate: (name: String, colorHex: String?) -> Unit
+    onCreate: (name: String, colorHex: String?) -> Unit,
+    // Creates the folder and opens its Instructions. Null where the caller has nowhere to go
+    // (the move-to-folder sheet), and then the dialog is exactly what it was before 2.7.
+    onCreateWithInstructions: ((name: String, colorHex: String?) -> Unit)? = null
 ) {
     var name by remember { mutableStateOf("") }
     var selectedColor by remember { mutableStateOf(FOLDER_PASTELS.random()) }
@@ -40,6 +44,23 @@ internal fun CreateFolderDialog(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 PastelColorRow(selected = selectedColor, onSelect = { selectedColor = it })
+                if (onCreateWithInstructions != null) {
+                    // Instructions and memory are what make a folder a project, and before this
+                    // line the only way to them was a long press nothing mentioned.
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = stringResource(R.string.new_folder_project_line),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    // Under the line it acts on, not beside Create: three labels do not fit one
+                    // button row even in English, and AlertDialog wraps them with Create alone
+                    // on top. Here the button row stays exactly what it was.
+                    TextButton(
+                        onClick = { onCreateWithInstructions(name.trim(), colorToHex(selectedColor)) },
+                        enabled = name.isNotBlank()
+                    ) { Text(stringResource(R.string.new_folder_add_instructions)) }
+                }
             }
         },
         confirmButton = {

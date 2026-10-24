@@ -76,6 +76,10 @@
     <string name="change_color">เปลี่ยนสี</string>
     <string name="folder_name_hint">ชื่อโฟลเดอร์</string>
     <string name="create_button">สร้าง</string>
+    <string name="new_folder_project_line">โฟลเดอร์สามารถนำคำสั่งและความจำไปใช้กับทุกแชทในโฟลเดอร์นั้น</string>
+    <string name="new_folder_add_instructions">เพิ่มคำสั่ง</string>
+    <string name="new_chat_in_folder">แชทใหม่ในโฟลเดอร์นี้</string>
+    <string name="folder_chip_open_instructions">เปิดคำสั่งของโฟลเดอร์</string>
     <string name="save_button">บันทึก</string>
     <string name="empty_folder">ยังไม่มีบทสนทนา — กดค้างที่แชทเพื่อย้ายเข้ามา</string>
     <string name="create_new_folder">สร้างโฟลเดอร์ใหม่…</string>

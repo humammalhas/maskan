@@ -204,6 +204,11 @@ private fun AppNavigation(
                 },
                 onOpenProjectFiles = { folderId ->
                     navController.navigate(Routes.folderRoute(folderId))
+                },
+                // The same editor the folder screen opens, entered straight from the new-folder
+                // dialog, so Back lands on the list the folder was made from.
+                onOpenFolderInstructions = { folderId ->
+                    navController.navigate(Routes.projectFileRoute(folderId, ProjectFile.INSTRUCTIONS))
                 }
             )
         }
@@ -223,6 +228,10 @@ private fun AppNavigation(
                 // "Remember this" opens the file it just wrote to. The write is never silent.
                 onOpenProjectMemory = { folderId ->
                     navController.navigate(Routes.projectFileRoute(folderId, ProjectFile.MEMORY))
+                },
+                // The header's folder chip: the same editor as the new-folder dialog's button.
+                onOpenFolderInstructions = { folderId ->
+                    navController.navigate(Routes.projectFileRoute(folderId, ProjectFile.INSTRUCTIONS))
                 },
                 onNavigateToSettings = { navController.navigate(Routes.SETTINGS) }
             )

@@ -156,7 +156,8 @@ class ConversationListViewModel(
         }
     }
 
-    fun createNewConversation(onCreated: (Long) -> Unit) {
+    /** [folderId]: born in that folder, so its instructions apply from the first message. */
+    fun createNewConversation(folderId: Long? = null, onCreated: (Long) -> Unit) {
         viewModelScope.launch {
             // Only reached before the user has ever picked a provider; see
             // ProviderRegistry.getDefaultProvider for why this one.
@@ -170,7 +171,8 @@ class ConversationListViewModel(
                 ?: ProviderRegistry.getProvider(defaultProviderId)?.defaultModel
             val id = chatRepository.createConversation(
                 providerId = defaultProviderId,
-                modelId = defaultModel
+                modelId = defaultModel,
+                folderId = folderId
             )
             onCreated(id)
         }
@@ -191,9 +193,11 @@ class ConversationListViewModel(
         }
     }
 
-    fun createFolder(name: String, colorHex: String?) {
+    /** [onCreated] gets the new folder's id, for "Add instructions" to open its files. */
+    fun createFolder(name: String, colorHex: String?, onCreated: ((Long) -> Unit)? = null) {
         viewModelScope.launch {
-            chatRepository.createFolder(name, colorHex)
+            val id = chatRepository.createFolder(name, colorHex)
+            onCreated?.invoke(id)
         }
     }
 

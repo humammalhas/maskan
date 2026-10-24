@@ -140,7 +140,8 @@ fun ConversationListScreen(
     viewModel: ConversationListViewModel,
     onNavigateToChat: (Long) -> Unit,
     onNavigateToSettings: () -> Unit,
-    onOpenProjectFiles: (Long) -> Unit = {}
+    onOpenProjectFiles: (Long) -> Unit = {},
+    onOpenFolderInstructions: (Long) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
@@ -386,12 +387,22 @@ fun ConversationListScreen(
                                     folderConvs.size
                                 } else {
                                     null
+                                },
+                                onNewChat = {
+                                    viewModel.createNewConversation(folder.id) { id -> onNavigateToChat(id) }
                                 }
                             )
                             DropdownMenu(
                                 expanded = showMenu,
                                 onDismissRequest = { showMenu = false }
                             ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.new_chat_in_folder)) },
+                                    onClick = {
+                                        showMenu = false
+                                        viewModel.createNewConversation(folder.id) { id -> onNavigateToChat(id) }
+                                    }
+                                )
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.project_files)) },
                                     onClick = { showMenu = false; onOpenProjectFiles(folder.id) }
@@ -459,6 +470,10 @@ fun ConversationListScreen(
             onCreate = { name, colorHex ->
                 viewModel.createFolder(name, colorHex)
                 showNewFolderDialog = false
+            },
+            onCreateWithInstructions = { name, colorHex ->
+                showNewFolderDialog = false
+                viewModel.createFolder(name, colorHex) { id -> onOpenFolderInstructions(id) }
             }
         )
     }

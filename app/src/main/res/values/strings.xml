@@ -76,6 +76,10 @@
     <string name="change_color">Change color</string>
     <string name="folder_name_hint">Folder name</string>
     <string name="create_button">Create</string>
+    <string name="new_folder_project_line">A folder can carry instructions and a memory into every chat inside it.</string>
+    <string name="new_folder_add_instructions">Add instructions</string>
+    <string name="new_chat_in_folder">New chat here</string>
+    <string name="folder_chip_open_instructions">Open the instructions for this folder</string>
     <string name="save_button">Save</string>
     <string name="empty_folder">No conversations here yet — long-press a chat to move it in</string>
     <string name="create_new_folder">Create new folder…</string>
