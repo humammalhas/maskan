@@ -10,7 +10,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import okhttp3.MediaType.Companion.toMediaType
@@ -45,7 +48,7 @@ class ReasoningProbeReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val app = context.applicationContext as? MaskanApplication ?: return
-        val overrides = intent.getStringExtra("models")?.split(';')?.mapNotNull {
+        val overrides = intent.getStringExtra("models")?.split(';', ',')?.mapNotNull {
             val parts = it.split('=', limit = 2)
             if (parts.size == 2) parts[0].trim() to parts[1].trim() else null
         }
@@ -69,11 +72,18 @@ class ReasoningProbeReceiver : BroadcastReceiver() {
                 )
             }
         }
+        // --es extra64 <base64 JSON object>: merged into an OpenAI-shaped body, to try a provider's
+        // own "thinking off" switch. Absent: the request asks for nothing extra.
+        val extra = intent.getStringExtra("extra64")?.let {
+            Json.parseToJsonElement(
+                String(android.util.Base64.decode(it, android.util.Base64.DEFAULT), Charsets.UTF_8)
+            ).jsonObject
+        }
         val probeDir = File(app.filesDir, "probe").apply { mkdirs() }
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             for (target in targets) {
                 try {
-                    if (intent.getStringExtra("what") == "catalogue") catalogue(target) else ask(target, probeDir)
+                    if (intent.getStringExtra("what") == "catalogue") catalogue(target) else ask(target, probeDir, extra)
                 } catch (e: Throwable) {
                     Log.e(TAG, target.provider + " failed: " + e.javaClass.simpleName + ": " + e.message)
                 }
@@ -82,7 +92,7 @@ class ReasoningProbeReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun ask(target: Target, dir: File) {
+    private fun ask(target: Target, dir: File, extra: JsonObject?) {
         val request = when (target.provider) {
             "anthropic" -> Request.Builder().url(target.base + "v1/messages")
                 .header("x-api-key", target.key)
@@ -111,6 +121,7 @@ class ReasoningProbeReceiver : BroadcastReceiver() {
                 put(if (target.provider == "openai") "max_completion_tokens" else "max_tokens", 600)
                 put("stream", true)
                 put("messages", userTurn())
+                extra?.forEach { (key, value) -> put(key, value) }
             }.toString()))
         }.build()
 
@@ -127,14 +138,21 @@ class ReasoningProbeReceiver : BroadcastReceiver() {
                 }
             }
             val body = text.toString()
-            File(dir, "reason-" + target.provider + ".txt").writeText(body)
+            File(
+                dir,
+                "reason-" + target.provider + "-" + target.model.replace(Regex("[^A-Za-z0-9.]"), "_") +
+                    (if (extra != null) "-extra" else "") + ".txt"
+            ).writeText(body)
+            val tokens = Regex("\"(completion_tokens|reasoning_tokens|eval_count)\":(\\d+)").findAll(body)
+                .map { it.groupValues[1] + "=" + it.groupValues[2] }.toList().takeLast(2).joinToString(" ")
             val found = MARKERS.filter { (_, needle) -> body.contains(needle) }
                 .joinToString(" ") { (name, needle) -> name + "x" + occurrences(body, needle) }
             Log.i(
                 TAG,
                 target.provider + " model=" + target.model + " HTTP " + response.code +
                     " firstByte=" + firstByteMs + "ms total=" + (System.currentTimeMillis() - started) +
-                    "ms chars=" + body.length + " reasoning: " + found.ifEmpty { "NONE" }
+                    "ms chars=" + body.length + (if (extra != null) " extra=" + extra else "") + " " + tokens +
+                    " reasoning: " + found.ifEmpty { "NONE" }
             )
             if (response.code != 200) Log.i(TAG, target.provider + " body: " + body.take(600))
         }
