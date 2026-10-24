@@ -214,20 +214,20 @@ dependencies {
         exclude(group = "org.bouncycastle")
     }
 
-    // MediaPipe LLM Inference - the on-device model (Apache 2.0; androidx.annotation, Guava
-    // and protobuf-javalite are its only transitive dependencies, and no Play Services). Almost
-    // all of its weight is one prebuilt native library per ABI, in the same shape as the
-    // SQLCipher AAR above; R8 shrinks the Java side to about 38 KB. The MODEL is not here and is
-    // never in the APK - it is downloaded, verified and deleted by the user (see ondevice/).
+    // LiteRT-LM - the on-device model's runtime (Apache 2.0). Its POM names exactly three
+    // dependencies - gson, kotlin-reflect and kotlinx-coroutines-android - and no Play Services,
+    // Firebase or analytics; the AAR declares no permissions, and its native library has no
+    // socket or resolver calls in it (read 2026-10-24, 2.7 session 8). Almost all of its weight is
+    // one prebuilt native library per ABI, and it ships arm64-v8a and x86_64 ONLY: the
+    // armeabi-v7a and x86 APKs have no on-device model. The MODEL is not here and is never in the
+    // APK - it is downloaded, verified and deleted by the user (see ondevice/).
     //
-    // Cut from 2.6.0 in session 5 on Gemma's numbers and put back in session 6 on Qwen's:
-    // Qwen2.5 1.5B Instruct q8 answers the same Arabic prompts correctly at 7.9-10.3 tok/s and
-    // is Apache 2.0, which also removes the licence question Gemma raised with F-Droid. The
-    // four-model comparison is in Maskan/2.6_sessions/ondevice_measurements.md.
-    //
-    // Images on Gemma-3n would need com.google.mediapipe:tasks-core as well (MPImage lives
-    // there, not here) - another 11 MB native library per ABI. Held for 2.7.
-    implementation(libs.mediapipe.genai)
+    // It replaced MediaPipe's tasks-genai in 2.7 (plan item 14): Google put the LLM Inference API
+    // in maintenance-only mode and named this as its successor, and Qwen3.5 - a GatedDeltaNet
+    // hybrid, not a plain transformer - needs litert-lm 0.15 or later. Pinned at 0.16.1 because
+    // 0.17 and later are compiled with Kotlin 2.4, which this toolchain (2.1.20) cannot read;
+    // Humam chose no Kotlin bump.
+    implementation(libs.litertlm.android)
 
     // Tests only - never in the APK, and not resolved by assembleRelease, so F-Droid's build
     // never fetches them. JUnit 4.13.2 (EPL-1.0) and OkHttp's MockWebServer (Apache 2.0, the

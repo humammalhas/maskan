@@ -248,6 +248,7 @@
 
     <!-- Privacy context notes -->
     <string name="privacy_note_image">เนื้อหาของรูปภาพนี้จะถูกส่งไปยัง %1$s</string>
+    <string name="privacy_note_image_ondevice">รูปภาพนี้อยู่บนโทรศัพท์ของคุณ โมเดลบนเครื่องอ่านรูปนี้บนเครื่องเลย</string>
     <string name="privacy_note_voice">เสียงจะถูกประมวลผลโดยบริการรู้จำเสียงของโทรศัพท์ ซึ่งอาจส่งเสียงไปยังผู้ให้บริการ (มักเป็น Google)</string>
     <string name="privacy_note_dismiss">ไม่ต้องแสดงอีก</string>
     <string name="scroll_to_bottom">เลื่อนไปที่ข้อความล่าสุด</string>
@@ -453,7 +454,8 @@
     <string name="unit_mb">%1$s MB</string>
     <string name="ondevice_card_title">AI ฟรีบนโทรศัพท์ของคุณ</string>
     <string name="ondevice_model_by">%1$s จาก %2$s · %3$s</string>
-    <string name="ondevice_disclosure_card">นี่คือ Qwen2.5 1.5B โมเดลโอเพนซอร์สขนาดเล็กจาก Alibaba ไม่ใช่ของเรา ทำงานบนโทรศัพท์ของคุณ ฟรีและเป็นส่วนตัว แต่ฉลาดน้อยกว่าโมเดลใหญ่ หากต้องการคำตอบที่ดีกว่า ให้เพิ่มคีย์ของคุณเองจากผู้ให้บริการใดก็ได้ ใช้เวลาไม่นาน</string>
+    <string name="ondevice_disclosure_card">นี่คือ %1$s โมเดลโอเพนซอร์สขนาดเล็กจาก %2$s ไม่ใช่ของเรา ทำงานบนโทรศัพท์ของคุณทั้งหมด ฟรี เป็นส่วนตัว และอ่านรูปภาพได้โดยไม่ต้องใช้คีย์ เพราะเป็นโมเดลขนาดเล็กจึงอาจผิดพลาดได้ โปรดตรวจสอบข้อมูลสำคัญ เมื่อติดตั้งแล้วจะใช้พื้นที่ราว %3$s หากต้องการคำตอบที่ดีกว่า ให้เพิ่มคีย์จากผู้ให้บริการใดก็ได้ ข้อความของคุณจะถูกส่งไปยังผู้ให้บริการนั้น</string>
+    <string name="ondevice_upgraded">อัปเดตโมเดลบนเครื่องแล้ว ดาวน์โหลดโมเดลใหม่ (%1$s)</string>
     <string name="ondevice_download_button">ดาวน์โหลด · %1$s</string>
     <string name="ondevice_cancel">ยกเลิกการดาวน์โหลด</string>
     <string name="ondevice_delete_button">ลบโมเดล · คืนพื้นที่ %1$s</string>
@@ -466,11 +468,12 @@
     <string name="ondevice_ram_refused">โทรศัพท์นี้แจ้งว่ามีหน่วยความจำ %1$s แต่โมเดลต้องการราว %2$s จึงจะทำงานได้โดยระบบไม่ปิดแอป จึงไม่มีให้ที่นี่ เพิ่มคีย์ของคุณเองแทน — ส่วนอื่นของ Maskan ทำงานเหมือนเดิม</string>
     <string name="ondevice_checksum_failed">ไฟล์ที่ดาวน์โหลดไม่ตรงกับค่าตรวจสอบ จึงไม่มีการโหลดสิ่งใด ไฟล์ถูกลบแล้ว — โปรดลองดาวน์โหลดอีกครั้ง</string>
     <string name="ondevice_no_space">พื้นที่ว่างไม่พอสำหรับ %1$s</string>
-    <string name="ondevice_loading_model">กำลังโหลดโมเดล…</string>
+    <string name="ondevice_loading_model">กำลังโหลดโมเดล… ในบางเครื่องอาจใช้เวลาถึงหนึ่งนาที</string>
     <string name="ondevice_notification_channel">การดาวน์โหลดโมเดล</string>
     <string name="ondevice_download_title">กำลังดาวน์โหลด %1$s</string>
     <string name="ondevice_downloading_progress">%1$s จาก %2$s</string>
     <string name="ondevice_verifying">กำลังตรวจสอบไฟล์…</string>
+    <string name="ondevice_identity">คุณคือ %1$s ซึ่งพัฒนาโดย %2$s คุณเป็นผู้ช่วยที่เป็นประโยชน์</string>
     <string name="ondevice_default_system">คุณเป็นผู้ช่วยที่เป็นประโยชน์ ตอบด้วยภาษาเดียวกับคำถาม</string>
     <string name="error_ondevice_no_model">ยังไม่ได้ดาวน์โหลดโมเดลบนเครื่อง เปิดการตั้งค่าเพื่อดาวน์โหลด หรือเลือกผู้ให้บริการที่คุณมีคีย์</string>
     <string name="model_header_change">เปลี่ยน</string>

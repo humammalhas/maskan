@@ -88,11 +88,30 @@ data class OnDeviceModel(
      * each entry.
      */
     val minRamGb: Int,
-    val vision: Boolean = false
+    val vision: Boolean = false,
+    /** See LocalPrompt.Shape.assistantPrefix. Read out of the file's own chat template. */
+    val assistantPrefix: String = "",
+    /**
+     * The weight cache the runtime writes next to the model on its first load, measured on the
+     * phone. Not optional: without it LiteRT-LM unpacks the weights into RAM (5.2-5.8 GB on the
+     * Pixel). So the space a model needs is [bytes] plus this - the card says so, and the
+     * download refuses to start without room for both.
+     */
+    val cacheBytes: Long = 0L,
+    /**
+     * Who the model is, said to it before anything else (see LocalPrompt.systemFor), as the
+     * string `ondevice_identity` in the app's language with these filled in. Null for a model whose
+     * own template already says it, or one with no system role.
+     */
+    val identityName: String? = null,
+    val identityMaker: String? = null
 ) {
+    /** What the model costs on disk once it has loaded once: the file and its weight cache. */
+    val diskBytes: Long get() = bytes + cacheBytes
+
     /** The shape LocalPrompt writes this file's turns in. */
     val promptShape: LocalPrompt.Shape
-        get() = LocalPrompt.Shape(turnStart, turnEnd, assistantRole, systemRole)
+        get() = LocalPrompt.Shape(turnStart, turnEnd, assistantRole, systemRole, assistantPrefix)
 
     /**
      * What to call that shape in a log line.
@@ -136,8 +155,9 @@ object ModelCatalog {
         maker = "Alibaba",
         licence = "Apache 2.0",
         licenceUrl = "https://www.apache.org/licenses/LICENSE-2.0",
-        url = "https://github.com/humammalhas/maskan/releases/download/model-qwen2.5-1.5b/" +
-            "Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.task",
+        // 2.7: no longer offered - LiteRT-LM does not run a .task, and Qwen3.5 replaces it. Kept
+        // in the catalogue so an install that still holds this file can be recognised and cleaned.
+        url = null,
         bytes = 1_598_556_720L,
         sha256 = "82968d0a6c3872cf016fdbcfc591571605f4c7fd2b0f64d2533df502cc6596b3",
         contextTokens = 4096,
@@ -155,6 +175,63 @@ object ModelCatalog {
         // floor is 6 GB of TOTAL RAM - the number the device reports, not free memory, which
         // changes minute to minute and would refuse the download for the wrong reason.
         minRamGb = 6
+    )
+
+    /**
+     * Qwen3.5 0.8B, vision build, 8-bit, 4,096-token window. **Chosen to replace Qwen2.5** (2.7
+     * plan item 14, Humam 2026-10-24): one model, and the camera works with no key.
+     *
+     * Published by litert-community as `Qwen3.5-0.8B-VL_int8.litertlm` (Apache 2.0). Provenance:
+     * the Hugging Face LFS sha256 and a laptop download agree on 1,303,671,472 bytes and the hash
+     * below (2026-10-24); the third check is the copy on the phone. The file has been
+     * re-published three times (2026-08-13, 10-12, 10-16) - the last one fixed the tokenizer for
+     * Arabic with harakat and for Thai - so this hash pins the 2026-10-16 file and no other.
+     *
+     * The prompt shape is read out of the file's own chat template (bytes 16,549 on): ChatML, a
+     * real system role, and an empty `<think>\n\n</think>\n\n` opening every assistant turn,
+     * which is how that template turns thinking off. The template has NO default system line.
+     *
+     * Downloaded from Maskan's own GitHub release. minRamGb 6, measured: peak RSS while answering
+     * - a photo included - was 1.96-2.10 GB on the 6 GB Honor (never killed), 2.09-2.49 GB on the
+     * Redmi, 1.92-2.48 GB on the Pixel. A 4 GB phone has about 1.5-2 GB free; it would not fit.
+     */
+    val QWEN_3_5_0_8B_VL = OnDeviceModel(
+        id = "qwen3.5-0.8b-vl-int8",
+        fileName = "Qwen3.5-0.8B-VL_int8.litertlm",
+        displayName = "Qwen3.5 0.8B",
+        maker = "Alibaba",
+        licence = "Apache 2.0",
+        licenceUrl = "https://www.apache.org/licenses/LICENSE-2.0",
+        // Maskan's own GitHub release, as Qwen2.5 was (Humam, 2026-10-24): the published file
+        // re-uploaded unchanged, so the pinned hash is the hash of the file users download.
+        url = "https://github.com/humammalhas/maskan/releases/download/model-qwen3.5-0.8b-vl/" +
+            "Qwen3.5-0.8B-VL_int8.litertlm",
+        bytes = 1_303_671_472L,
+        sha256 = "1ab56460263fe94fde5fec160363d3aacbae9c5ee3638121c11feb51e483e29d",
+        contextTokens = 4096,
+        turnStart = "<|im_start|>",
+        turnEnd = "<|im_end|>",
+        assistantRole = "assistant",
+        systemRole = true,
+        // Qwen/Qwen3.5-0.8B's card, "non-thinking mode for VL tasks", read 2026-10-24. Its
+        // text-task setting is temperature 1.0 / top_p 1.0, and a small model sampled hot is what
+        // drifted Qwen2.5's Arabic into Chinese in 2.6, so the cooler of its own two is used.
+        // Its presence_penalty 1.5 has no setting on the runtime's Session.
+        temperature = 0.7f,
+        topP = 0.8f,
+        topK = 20,
+        backend = "cpu",
+        minRamGb = 6,
+        vision = true,
+        assistantPrefix = "<think>\n\n</think>\n\n",
+        // cacheDir/litertlm after the first load, on the Pixel, the Redmi and the Honor alike:
+        // 764,846,400 (decoder) + 342,435,552 (vision encoder) + 12,632,376 (vision adapter).
+        cacheBytes = 1_119_914_328L,
+        // Maskan's wording, not the template's: the file's template and Qwen's own have no
+        // default system line (Humam, 2026-10-24). In the chat's language - measured on the Redmi,
+        // the English line got 0/3 Arabic answers naming the model; the Arabic line 3/3 Alibaba.
+        identityName = "Qwen3.5",
+        identityMaker = "Alibaba Cloud"
     )
 
     /**
@@ -193,7 +270,7 @@ object ModelCatalog {
     )
 
     /** Every model the engine knows how to drive, shipped or not. */
-    val ALL: List<OnDeviceModel> = listOf(QWEN_2_5_1_5B, GEMMA_3_1B)
+    val ALL: List<OnDeviceModel> = listOf(QWEN_2_5_1_5B, QWEN_3_5_0_8B_VL, GEMMA_3_1B)
 
     /**
      * The models the app will actually offer to download. One, today.
@@ -203,8 +280,19 @@ object ModelCatalog {
      */
     val DOWNLOADABLE: List<OnDeviceModel> = ALL.filter { it.url != null }
 
-    /** The model the on-device provider runs. */
-    val DEFAULT: OnDeviceModel = QWEN_2_5_1_5B
+    /**
+     * The model the on-device provider runs: Qwen3.5 0.8B-VL from 2.7 (plan item 14). Qwen2.5
+     * stays in [ALL] so an install that still holds its file can be recognised; LiteRT-LM does
+     * not run its `.task`.
+     */
+    val DEFAULT: OnDeviceModel = QWEN_3_5_0_8B_VL
+
+    /**
+     * Models an earlier version shipped and this one no longer runs. A phone that still holds one
+     * has it - and every cache the old runtime left beside it - removed once, at start (2.7: Qwen2.5,
+     * 1.6 GB plus MediaPipe's 1.55 GB cache, sometimes twice).
+     */
+    val RETIRED: List<OnDeviceModel> = listOf(QWEN_2_5_1_5B)
 
     fun byId(id: String): OnDeviceModel? = ALL.firstOrNull { it.id == id }
 

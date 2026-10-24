@@ -24,5 +24,11 @@
             android:name="app.maskan.chat.debug.AssemblyProbeReceiver"
             android:enabled="true"
             android:exported="true" />
+        <!-- adb `am start` route to the probes, for a ROM that drops adb broadcasts (Honor). -->
+        <activity
+            android:name="app.maskan.chat.debug.ProbeActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
     </application>
 </manifest>

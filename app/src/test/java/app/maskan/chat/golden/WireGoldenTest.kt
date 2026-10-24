@@ -188,7 +188,7 @@ class WireGoldenTest {
             .map { LocalPrompt.Turn(it.role, it.content.textContent()) }
         Golden.check(
             "switched-ondevice-" + ModelCatalog.DEFAULT.id,
-            LocalPrompt.build(system, turns, ModelCatalog.DEFAULT.promptShape)
+            LocalPrompt.build(Golden.onDeviceSystem(system), turns, ModelCatalog.DEFAULT.promptShape)
         )
     }
 
@@ -201,7 +201,7 @@ class WireGoldenTest {
                 .joinToString("\n\n") { it.content.textContent() }.trim().ifEmpty { null }
             val turns = messages.filter { it.role != "system" }
                 .map { LocalPrompt.Turn(it.role, it.content.textContent()) }
-            Golden.check("ondevice-" + ModelCatalog.DEFAULT.id + "-" + name, LocalPrompt.build(system, turns, shape))
+            Golden.check("ondevice-" + ModelCatalog.DEFAULT.id + "-" + name, LocalPrompt.build(Golden.onDeviceSystem(system), turns, shape))
         }
     }
 

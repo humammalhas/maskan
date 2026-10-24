@@ -1768,6 +1768,19 @@ class ChatRepository(
     private fun effectiveLanguage(): String =
         RequestAssembly.effectiveLanguage(localeRepository.getLocale(), java.util.Locale.getDefault().language)
 
+    /**
+     * Load the on-device model and feed it this chat's history now, before the user presses Send
+     * (2.7, plan item 14). The list is built by [buildMessageList] - the same assembly a send uses -
+     * so the send finds this history as the start of its own prompt and only prefills its turn.
+     */
+    suspend fun preloadOnDevice(conversationId: Long) {
+        val conversation = getConversationById(conversationId) ?: return
+        if (conversation.providerId != OnDeviceProvider.ID) return
+        val provider = ProviderRegistry.getProvider(OnDeviceProvider.ID) as? OnDeviceProvider ?: return
+        if (!provider.isInstalled) return
+        provider.preload(buildMessageList(conversation, conversation.modelId ?: provider.defaultModel))
+    }
+
     private suspend fun buildMessageList(
         conversation: ConversationEntity,
         /** The model about to answer - it decides whether photos can go back out at all. */
@@ -1946,8 +1959,8 @@ class ChatRepository(
     /**
      * Whether a MOVED chat's model would miss a picture the chat still relies on (plan item 10).
      *
-     * Blind means known blind - the same data modelKnownBlind reads - or on-device, whose file is
-     * text only. A model nothing is known about gets the picture, as everywhere else. Asked only
+     * Blind means known blind - the same data modelKnownBlind reads - or on-device with a text-only
+     * model on the phone. A model nothing is known about gets the picture, as everywhere else. Asked only
      * for a moved chat: photosToCarry's quiet text-only fallback stays for every other chat.
      */
     private suspend fun photoUnreadable(
@@ -1955,7 +1968,10 @@ class ChatRepository(
         model: String,
         imageData: ByteArray?
     ): Boolean {
-        val blind = conversation.providerId == OnDeviceProvider.ID || modelKnownBlind(conversation, model)
+        // On-device is blind unless the model on this phone is a vision one (Qwen3.5-0.8B-VL is).
+        val onDeviceBlind = conversation.providerId == OnDeviceProvider.ID &&
+            (ProviderRegistry.getProvider(OnDeviceProvider.ID) as? OnDeviceProvider)?.supportsVision != true
+        val blind = onDeviceBlind || modelKnownBlind(conversation, model)
         if (!blind) return false
         if (imageData != null) return true
         val entities = messageDao.getMessagesForConversationOnce(conversation.id)

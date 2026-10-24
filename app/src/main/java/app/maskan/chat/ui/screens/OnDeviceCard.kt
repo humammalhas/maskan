@@ -17,6 +17,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -72,6 +73,17 @@ fun OnDeviceCard(onAddKeyInstead: () -> Unit) {
 
     val hasRam = remember { store.hasEnoughRam(model) }
 
+    // Set by the start-up clean-up when it removed a retired model (2.7: Qwen2.5); it says so here
+    // until the new model is installed, then goes away for good.
+    val prefs = app.preferenceRepository
+    var upgraded by remember { mutableStateOf(prefs.isOnDeviceUpgraded()) }
+    LaunchedEffect(state) {
+        if (state is DownloadState.Installed && upgraded) {
+            prefs.setOnDeviceUpgraded(false)
+            upgraded = false
+        }
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -96,10 +108,26 @@ fun OnDeviceCard(onAddKeyInstead: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
+            if (upgraded && state !is DownloadState.Installed) {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = stringResource(R.string.ondevice_upgraded, Formats.bytes(context, model.bytes)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
             Spacer(Modifier.height(12.dp))
             // Disclosure 1 of 3. Same size as everything else on the card, on purpose.
             Text(
-                text = stringResource(R.string.ondevice_disclosure_card),
+                // Filled from the catalogue, so the next model needs no new sentence in three
+                // languages; the space is the file AND the weight cache it writes on first load.
+                text = stringResource(
+                    R.string.ondevice_disclosure_card,
+                    model.displayName,
+                    model.maker,
+                    Formats.bytes(context, model.diskBytes)
+                ),
                 style = MaterialTheme.typography.bodyMedium
             )
 
@@ -151,7 +179,7 @@ fun OnDeviceCard(onAddKeyInstead: () -> Unit) {
                         Text(
                             stringResource(
                                 R.string.ondevice_delete_button,
-                                Formats.bytes(context, store.fileFor(model).length())
+                                Formats.bytes(context, store.bytesOnDisk(model))
                             )
                         )
                     }
@@ -211,7 +239,7 @@ fun OnDeviceCard(onAddKeyInstead: () -> Unit) {
                                 ModelDownloadWorker.REASON_NO_SPACE ->
                                     stringResource(
                                         R.string.ondevice_no_space,
-                                        Formats.bytes(context, model.bytes)
+                                        Formats.bytes(context, model.diskBytes)
                                     )
                                 ModelDownloadWorker.REASON_HTTP ->
                                     stringResource(

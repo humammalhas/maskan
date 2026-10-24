@@ -83,6 +83,16 @@ class PreferenceRepository(context: Context) {
         plainPreferences.edit().putBoolean(KEY_VOICE_PRIVACY_NOTE_SEEN, true).apply()
     }
 
+    /**
+     * Set when the start-up clean-up removed a retired on-device model (2.7: Qwen2.5), so the
+     * on-device card says the model was upgraded until the new one is installed.
+     */
+    fun isOnDeviceUpgraded(): Boolean = plainPreferences.getBoolean(KEY_ONDEVICE_UPGRADED, false)
+
+    fun setOnDeviceUpgraded(upgraded: Boolean) {
+        plainPreferences.edit().putBoolean(KEY_ONDEVICE_UPGRADED, upgraded).apply()
+    }
+
     // ── Global memory ──────────────────────────────────────────────────
     //
     // One memory file that belongs to no folder, for the handful of facts that are true in every
@@ -342,5 +352,6 @@ class PreferenceRepository(context: Context) {
         private const val KEY_SPEAK_BUTTON = "speak_button_shown"
         private const val KEY_PROVIDER_ORDER = "provider_order"
         private const val KEY_HIDDEN_PROVIDERS = "hidden_providers"
+        private const val KEY_ONDEVICE_UPGRADED = "ondevice_upgraded"
     }
 }

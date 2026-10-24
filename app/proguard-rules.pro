@@ -24,35 +24,22 @@
 # APK delta; without this line session 6's release build would have failed on Linux instead.
 -dontwarn com.gemalto.jp2.**
 
-# MediaPipe's LLM option classes are generated with Google AutoValue, whose annotations have
-# CLASS retention and are never present at runtime. R8 still refuses to finish while it cannot
-# resolve them.
+# On-device runtime: LiteRT-LM (2.7, plan item 14; it replaced MediaPipe's tasks-genai).
 #
-# Session 5 recorded R8 as "clean, no new -dontwarn" with this same dependency, and that was
-# true of that build and misleading about this one: nothing in src/main referenced the library
-# then, so R8 shrank it away before it ever read these classes. The moment the engine moved to
-# src/main and the provider called it, the release build failed. Worth remembering as a shape:
-# a dependency measured while unreachable has not been measured.
--dontwarn com.google.auto.value.**
-
-# MediaPipe ships NO consumer rules, and the -dontwarn above only lets R8 finish; it keeps
-# nothing. 2.6.0 shipped like that, and the Play build failed to load the on-device model on a
-# Redmi Note 15 Pro; an R8 build of the same commit failed identically there, and nothing in the
-# failure depends on the phone:
+# 2.6.0 shipped with the on-device model broken in EVERY store build because MediaPipe had no
+# consumer rules and R8 renamed what its native side looked up by name:
 #
 #   RuntimeException: Field modelPath_ for a3.g not found
 #
-# The load options are a protobuf-lite message, and protobuf-lite finds its fields BY NAME at
-# runtime; R8 had renamed them. The debug build has no R8, so every on-device test passed on
-# debug and the store build never ran once. MediaPipe's native side also calls back into its Java
-# classes by name (session callbacks, LlmTaskRunner), so the whole package is kept, not only the
-# class that failed first.
+# The debug build has no R8, so every test passed on debug and the store build never ran once.
+# LiteRT-LM is the same shape: its JNI library calls back into Kotlin classes by name
+# (LiteRtLmJni's callbacks, InputData's fields, SamplerConfig's getters), and the AAR ships no
+# consumer rules either. So the whole package is kept, and "R8 finished" proves nothing - the
+# model must load and answer in a minified build on a phone.
+-keep class com.google.ai.edge.litertlm.** { *; }
+# Kept from the MediaPipe era, deliberately: protobuf-lite finds message fields by name, and Tink
+# (behind EncryptedSharedPreferences) is protobuf-lite too. Removing it has not been proven safe.
 -keep class * extends com.google.protobuf.GeneratedMessageLite { <fields>; }
--keep class com.google.mediapipe.** { *; }
-# Keeping the whole package makes R8 read LlmTaskRunner.createImage, which names MPImage classes
-# that live in a separate artifact tasks-genai does not pull in. Maskan never hands the on-device
-# model an image (setMaxNumImages(0), vision modality off), so that path is never reached.
--dontwarn com.google.mediapipe.framework.image.**
 
 # Keep Retrofit interfaces
 -keep,allowobfuscation interface app.maskan.chat.data.remote.OpenAiCompatibleService

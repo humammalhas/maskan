@@ -248,6 +248,7 @@
 
     <!-- Privacy context notes -->
     <string name="privacy_note_image">This image\'s contents will be sent to %1$s.</string>
+    <string name="privacy_note_image_ondevice">This image stays on this phone. The on-device model reads it here.</string>
     <string name="privacy_note_voice">Voice is handled by your phone\'s system speech service, which may send audio to its provider (often Google).</string>
     <string name="privacy_note_dismiss">Don\'t show again</string>
     <string name="scroll_to_bottom">Scroll to latest message</string>
@@ -453,7 +454,8 @@
     <string name="unit_mb">%1$s MB</string>
     <string name="ondevice_card_title">Free AI on your phone</string>
     <string name="ondevice_model_by">%1$s by %2$s · %3$s</string>
-    <string name="ondevice_disclosure_card">This is Qwen2.5 1.5B, a small open model made by Alibaba, not by us. It runs on your phone: free and private, but not as smart as the big models. For better answers, add your own key from any provider — it does not take long.</string>
+    <string name="ondevice_disclosure_card">This is %1$s, a small open model made by %2$s, not by us. It runs entirely on your phone: free, private, and it can read a photo with no key. Because it is small it makes mistakes, so check anything important. Once set up it needs about %3$s of space. For better answers, add a key from any provider; your messages then go to that provider.</string>
+    <string name="ondevice_upgraded">The on-device model was upgraded. Download the new one (%1$s).</string>
     <string name="ondevice_download_button">Download · %1$s</string>
     <string name="ondevice_cancel">Cancel download</string>
     <string name="ondevice_delete_button">Delete model · frees %1$s</string>
@@ -466,11 +468,12 @@
     <string name="ondevice_ram_refused">This phone reports %1$s of memory. The model needs about %2$s to run without the system closing the app, so it is not offered here. Add your own key instead — everything else in Maskan works the same.</string>
     <string name="ondevice_checksum_failed">The downloaded file did not match its checksum, so nothing was loaded. The file has been deleted — please try the download again.</string>
     <string name="ondevice_no_space">Not enough free space for %1$s.</string>
-    <string name="ondevice_loading_model">Loading the model…</string>
+    <string name="ondevice_loading_model">Loading the model… on some phones this takes up to a minute.</string>
     <string name="ondevice_notification_channel">Model downloads</string>
     <string name="ondevice_download_title">Downloading %1$s</string>
     <string name="ondevice_downloading_progress">%1$s of %2$s</string>
     <string name="ondevice_verifying">Checking the file…</string>
+    <string name="ondevice_identity">You are %1$s, created by %2$s. You are a helpful assistant.</string>
     <string name="ondevice_default_system">You are a helpful assistant. Reply in the same language as the question.</string>
     <string name="error_ondevice_no_model">The on-device model is not downloaded yet. Open Settings to download it, or pick a provider you have a key for.</string>
     <string name="model_header_change">Change</string>

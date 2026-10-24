@@ -53,7 +53,7 @@ class ModelStore(private val context: Context) {
      */
     fun delete(model: OnDeviceModel): Long {
         var freed = 0L
-        for (f in listOf(fileFor(model), partFor(model))) {
+        for (f in listOf(fileFor(model), partFor(model)) + cacheFilesFor(model)) {
             if (f.isFile) {
                 val len = f.length()
                 if (f.delete()) freed += len
@@ -61,6 +61,41 @@ class ModelStore(private val context: Context) {
         }
         return freed
     }
+
+    /**
+     * The weight-cache files the runtime wrote for [model]: LiteRT-LM names them after the model
+     * file (`<fileName>_<stamp>_<size>.xnnpack_cache`, one per section). 1.1 GB for Qwen3.5 -
+     * deleting the model without them returns half the space the button promised.
+     */
+    fun cacheFilesFor(model: OnDeviceModel): List<File> =
+        File(context.cacheDir, LlmEngine.CACHE_DIR)
+            .listFiles { f -> f.isFile && f.name.startsWith(model.fileName) }
+            ?.toList().orEmpty()
+
+    /**
+     * Remove every [ModelCatalog.RETIRED] model this phone still holds - the file, a half-finished
+     * download, and every cache named after it, whichever runtime wrote it (MediaPipe put its
+     * `.xnnpack_cache_*` straight into cacheDir; LiteRT-LM uses cacheDir/litertlm). Returns the
+     * bytes freed; 0 means there was nothing to do, which is every start after the first.
+     */
+    fun deleteRetired(): Long {
+        var freed = 0L
+        for (model in ModelCatalog.RETIRED) {
+            val stale = listOf(fileFor(model), partFor(model)) + cacheFilesFor(model) +
+                context.cacheDir.listFiles { f -> f.isFile && f.name.startsWith(model.fileName) }.orEmpty()
+            for (f in stale) {
+                if (f.isFile) {
+                    val len = f.length()
+                    if (f.delete()) freed += len
+                }
+            }
+        }
+        return freed
+    }
+
+    /** What [delete] would return right now: the model file and its weight cache. */
+    fun bytesOnDisk(model: OnDeviceModel): Long =
+        (listOf(fileFor(model)) + cacheFilesFor(model)).filter { it.isFile }.sumOf { it.length() }
 
     /** Total RAM the device reports. See OnDeviceModel.minRamGb for why total and not free. */
     fun deviceRamBytes(): Long {
@@ -83,7 +118,7 @@ class ModelStore(private val context: Context) {
      * model's own size and not twice it.
      */
     fun hasRoomFor(model: OnDeviceModel): Boolean =
-        freeSpaceBytes() + partialBytes(model) >= model.bytes + SPACE_HEADROOM
+        freeSpaceBytes() + partialBytes(model) >= model.diskBytes + SPACE_HEADROOM
 
     /**
      * The sha256 of a file, in 1 MB bites, cancellable.

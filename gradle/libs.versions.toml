@@ -17,7 +17,7 @@ appcompat = "1.7.0"
 navigation-compose = "2.9.0"
 sqlcipher = "4.6.1"
 pdfbox-android = "2.0.27.0"
-mediapipe-genai = "0.10.35"
+litertlm = "0.16.1"
 sqlite = "2.4.0"
 work = "2.10.1"
 
@@ -75,7 +75,7 @@ security-crypto = { group = "androidx.security", name = "security-crypto", versi
 # SQLCipher
 sqlcipher = { group = "net.zetetic", name = "sqlcipher-android", version.ref = "sqlcipher" }
 pdfbox-android = { group = "com.tom-roush", name = "pdfbox-android", version.ref = "pdfbox-android" }
-mediapipe-genai = { group = "com.google.mediapipe", name = "tasks-genai", version.ref = "mediapipe-genai" }
+litertlm-android = { group = "com.google.ai.edge.litertlm", name = "litertlm-android", version.ref = "litertlm" }
 sqlite = { group = "androidx.sqlite", name = "sqlite", version.ref = "sqlite" }
 
 [plugins]

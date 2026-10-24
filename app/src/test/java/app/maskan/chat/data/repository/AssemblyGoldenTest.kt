@@ -65,7 +65,7 @@ class AssemblyGoldenTest {
         val system = out.messages.filter { it.role == "system" }
             .joinToString("\n\n") { it.content.textContent() }.trim().ifEmpty { null }
         val prompt = LocalPrompt.build(
-            system,
+            app.maskan.chat.golden.Golden.onDeviceSystem(system),
             out.messages.filter { it.role != "system" }.map { LocalPrompt.Turn(it.role, it.content.textContent()) },
             ModelCatalog.DEFAULT.promptShape
         )

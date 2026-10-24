@@ -18,6 +18,23 @@ object Golden {
     private val dir = File("src/test/resources/golden")
     private val updating = System.getenv("GOLDEN_UPDATE") == "1"
 
+    /**
+     * The system text an on-device request carries, as OnDeviceProvider builds it: the model's
+     * identity, then the chat's own system text or the English default line - read from
+     * values/strings.xml, so the golden cannot drift from what the app sends.
+     */
+    fun onDeviceSystem(system: String?): String? {
+        val strings = File("src/main/res/values/strings.xml").readText(Charsets.UTF_8)
+        fun string(name: String) = Regex("""<string name="$name">(.*?)</string>""")
+            .find(strings)?.groupValues?.get(1)
+            ?: error("$name not found in values/strings.xml")
+        val model = app.maskan.chat.ondevice.ModelCatalog.DEFAULT
+        val identity = model.identityName?.let {
+            string("ondevice_identity").replace("%1\$s", it).replace("%2\$s", model.identityMaker.orEmpty())
+        }
+        return app.maskan.chat.ondevice.LocalPrompt.systemFor(identity, system, string("ondevice_default_system"))
+    }
+
     fun check(name: String, actual: String) {
         val file = File(dir, "$name.txt")
         if (updating) {

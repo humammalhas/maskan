@@ -248,6 +248,7 @@
 
     <!-- Privacy context notes -->
     <string name="privacy_note_image">سيتم إرسال محتوى هذه الصورة إلى %1$s.</string>
+    <string name="privacy_note_image_ondevice">تبقى هذه الصورة على هاتفك. يقرؤها النموذج على الجهاز نفسه.</string>
     <string name="privacy_note_voice">تتعرّف على صوتك خدمة النطق المدمجة في هاتفك، وقد ترسله إلى مزوّدها (غالبًا Google).</string>
     <string name="privacy_note_dismiss">لا تعرض مرة أخرى</string>
     <string name="scroll_to_bottom">الانتقال إلى آخر رسالة</string>
@@ -453,7 +454,8 @@
     <string name="unit_mb">%1$s ميغابايت</string>
     <string name="ondevice_card_title">ذكاء اصطناعي مجاني على هاتفك</string>
     <string name="ondevice_model_by">%1$s من %2$s · %3$s</string>
-    <string name="ondevice_disclosure_card">هذا نموذج Qwen2.5 1.5B، نموذج مفتوح صغير من Alibaba وليس من صنعنا. يعمل على هاتفك: مجاني وخاص، لكنه أقل ذكاءً من النماذج الكبيرة. لإجابات أفضل أضف مفتاحك الخاص من أي مزوّد، ولا يستغرق ذلك وقتاً طويلاً.</string>
+    <string name="ondevice_disclosure_card">هذا %1$s، نموذج مفتوح صغير من صنع %2$s وليس من صنعنا. يعمل بالكامل على هاتفك: مجاني وخاص، ويقرأ الصور دون مفتاح. ولأنه صغير فهو يخطئ، فتحقّق من أي معلومة مهمة. يحتاج بعد إعداده إلى نحو %3$s من المساحة. ولإجابات أفضل أضف مفتاحاً من أي مزوّد، وعندها تُرسَل رسائلك إليه.</string>
+    <string name="ondevice_upgraded">حُدِّث النموذج على الجهاز. نزّل النموذج الجديد (%1$s).</string>
     <string name="ondevice_download_button">تنزيل · %1$s</string>
     <string name="ondevice_cancel">إلغاء التنزيل</string>
     <string name="ondevice_delete_button">حذف النموذج · يعيد %1$s</string>
@@ -466,11 +468,12 @@
     <string name="ondevice_ram_refused">يذكر هذا الهاتف أن لديه %1$s من الذاكرة، ويحتاج النموذج إلى نحو %2$s كي يعمل دون أن يغلق النظام التطبيق، لذلك لا يُعرض هنا. أضف مفتاحك الخاص بدلاً من ذلك — وكل شيء آخر في مسكن يعمل كما هو.</string>
     <string name="ondevice_checksum_failed">الملف الذي نُزّل لا يطابق بصمته، فلم يُحمّل شيء. حُذف الملف — أعد التنزيل من فضلك.</string>
     <string name="ondevice_no_space">لا توجد مساحة كافية لـ %1$s.</string>
-    <string name="ondevice_loading_model">يُحمّل النموذج…</string>
+    <string name="ondevice_loading_model">يُحمّل النموذج… قد يستغرق ذلك دقيقة على بعض الهواتف.</string>
     <string name="ondevice_notification_channel">تنزيل النماذج</string>
     <string name="ondevice_download_title">تنزيل %1$s</string>
     <string name="ondevice_downloading_progress">%1$s من %2$s</string>
     <string name="ondevice_verifying">يُفحص الملف…</string>
+    <string name="ondevice_identity">أنت %1$s، من تطوير %2$s. أنت مساعد مفيد.</string>
     <string name="ondevice_default_system">أنت مساعد مفيد. أجب بلغة السؤال نفسها.</string>
     <string name="error_ondevice_no_model">لم يُنزّل النموذج على الجهاز بعد. افتح الإعدادات لتنزيله، أو اختر مزوّداً لديك مفتاحه.</string>
     <string name="model_header_change">تغيير</string>

@@ -267,6 +267,12 @@ class ChatViewModel(
                 else -> Presets.getById(conversation.systemPromptId)
             }
             val providerId = conversation?.providerId ?: "deepseek"
+            // On-device: start loading the model and feeding it this chat now, not on Send. The
+            // load is about a minute on a 6 GB phone; this way it runs while the user reads and
+            // types (2.7, plan item 14). Its own coroutine - the screen does not wait for it.
+            if (providerId == OnDeviceProvider.ID) {
+                viewModelScope.launch { chatRepository.preloadOnDevice(conversationId) }
+            }
             // The CHAT's model first. Every request has always used the conversation's own
             // modelId; this line used to read the provider's Settings choice instead, so the
             // camera, the search entry and (from 2.7) the header asked about a model that was

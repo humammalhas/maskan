@@ -247,6 +247,7 @@ class MaskanApplication : Application() {
         registerProviders()
         resumePendingVideos()
         finishRestoreOnce()
+        retireOldOnDeviceModels()
     }
 
     private fun isPhoenixProcess(): Boolean {
@@ -265,6 +266,21 @@ class MaskanApplication : Application() {
         CoroutineScope(Dispatchers.IO).launch {
             app.maskan.chat.data.backup.RestoreCommit.finishIfOpened(this@MaskanApplication) {
                 database.openHelper.readableDatabase.version
+            }
+        }
+    }
+
+    /**
+     * 2.7 replaced Qwen2.5 with Qwen3.5 (plan item 14). A phone that still holds the old model -
+     * 1.6 GB, plus the 1.55 GB cache MediaPipe left in cacheDir, sometimes twice - has it removed
+     * once, and the on-device card then says the model was upgraded (Humam, 2026-10-24). Cheap on
+     * every later start: a few file-exists checks.
+     */
+    private fun retireOldOnDeviceModels() {
+        CoroutineScope(Dispatchers.IO).launch {
+            runCatching {
+                val freed = app.maskan.chat.ondevice.ModelStore(this@MaskanApplication).deleteRetired()
+                if (freed > 0) preferenceRepository.setOnDeviceUpgraded(true)
             }
         }
     }

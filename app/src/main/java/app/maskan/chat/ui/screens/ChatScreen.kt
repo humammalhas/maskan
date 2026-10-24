@@ -907,7 +907,12 @@ fun ChatScreen(
                                 if (app.localeRepository.getLocale() == "ar") provider.nameAr else provider.displayName
                             } ?: uiState.selectedProviderId
                             PrivacyInfoNote(
-                                text = stringResource(R.string.privacy_note_image, providerName),
+                                // On-device nothing is sent anywhere; "sent to On-device" said it was.
+                                text = if (uiState.selectedProviderId == OnDeviceProvider.ID) {
+                                    stringResource(R.string.privacy_note_image_ondevice)
+                                } else {
+                                    stringResource(R.string.privacy_note_image, providerName)
+                                },
                                 onDismissForever = { preferenceRepository.setImagePrivacyNoteSeen() }
                             )
                         }

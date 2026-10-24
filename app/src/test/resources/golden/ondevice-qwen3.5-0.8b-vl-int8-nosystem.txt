@@ -1,13 +1,27 @@
 <|im_start|>system
-You are a helpful assistant. Answer briefly.<|im_end|>
+You are Qwen3.5, created by Alibaba Cloud. You are a helpful assistant.
+
+You are a helpful assistant. Reply in the same language as the question.<|im_end|>
 <|im_start|>user
 What is the capital of Jordan?<|im_end|>
 <|im_start|>assistant
+<think>
+
+</think>
+
 Amman.<|im_end|>
 <|im_start|>user
 ما عاصمة الأردن؟ وما أشهر معالمها؟<|im_end|>
 <|im_start|>assistant
+<think>
+
+</think>
+
 عمّان. ومن أشهر معالمها جبل القلعة والمدرّج الروماني.<|im_end|>
 <|im_start|>user
-And of Thailand?<|im_end|>
+เมืองหลวงของไทยคืออะไร<|im_end|>
 <|im_start|>assistant
+<think>
+
+</think>
+

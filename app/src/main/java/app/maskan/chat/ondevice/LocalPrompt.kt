@@ -25,12 +25,27 @@ package app.maskan.chat.ondevice
  * wraps whatever it is given in the file's own template, which for an already-marked multi-turn
  * prompt means one extra user turn around the whole conversation and an empty model turn after
  * it. Qwen's template goes further and hard-codes *"You are Qwen, created by Alibaba Cloud"* into
- * its user prefix, which would sit in front of the user's own folder instructions. So the session
- * is given EMPTY templates (see LlmEngine) and this object is the only thing that writes a marker.
+ * its user prefix, which would sit in front of the user's own folder instructions.
+ *
+ * From 2.7 the engine drives LiteRT-LM's Conversation, and the runtime renders the turns with the
+ * file's own chat template - read out of the file, it writes exactly the text [build] writes for
+ * Qwen3.5 (ChatML, an empty think block opening every model turn). So this object no longer puts
+ * a marker on the wire; it is what the window's token estimate is made of, and what the golden
+ * tests pin, so a template that drifts from it is caught by comparison rather than by a user.
  */
 object LocalPrompt {
 
-    data class Turn(val role: String, val text: String)
+    /**
+     * One message. [image] is a photo the message carries, already downscaled (see
+     * OnDeviceProvider) - on a vision model only, and at most one per conversation (the newest).
+     */
+    data class Turn(val role: String, val text: String, val image: ByteArray? = null) {
+        // Arrays compare by reference; a turn is the same turn when its bytes are the same.
+        override fun equals(other: Any?): Boolean = other is Turn && role == other.role &&
+            text == other.text && (image?.contentEquals(other.image) ?: (other.image == null))
+        override fun hashCode(): Int = (role.hashCode() * 31 + text.hashCode()) * 31 +
+            (image?.contentHashCode() ?: 0)
+    }
 
     /**
      * How one model file wants its turns written.
@@ -44,7 +59,18 @@ object LocalPrompt {
         val end: String,
         /** What this family calls the model's own turn: `assistant` in ChatML, `model` in Gemma. */
         val assistantRole: String,
-        val systemRole: Boolean
+        val systemRole: Boolean,
+        /**
+         * What the file's own template writes at the start of EVERY assistant turn, before the
+         * text - past turns and the open one alike. Empty for Qwen2.5 and Gemma.
+         *
+         * Qwen3.5's is `<think>\n\n</think>\n\n`: an empty thought, which is how its template
+         * turns thinking OFF (the bundle's manifest: thinking `control: never`). Without it the
+         * model may think aloud and the user gets raw tags in the answer (Humam, 2026-10-24:
+         * thinking off; plan item 2 stays its own session). The bundle keeps the block in past
+         * turns too, where the stock template strips it; the file is followed, not the stock.
+         */
+        val assistantPrefix: String = ""
     )
 
     /**
@@ -76,7 +102,8 @@ object LocalPrompt {
                 turn.text
             }
             body.append(shape.start).append(if (isUser) "user" else shape.assistantRole)
-                .append("\n").append(text).append(shape.end).append("\n")
+                .append("\n").append(if (isUser) "" else shape.assistantPrefix)
+                .append(text).append(shape.end).append("\n")
         }
 
         // Instructions with nothing to apply them to: a chat whose first turn is somehow not the
@@ -88,9 +115,30 @@ object LocalPrompt {
 
         // The open model turn is the invitation to answer. Without it the model continues the
         // conversation as the user.
-        body.append(shape.start).append(shape.assistantRole).append("\n")
+        body.append(openTurn(shape))
         return body.toString()
     }
+
+    /**
+     * The system text an on-device request carries: the model's [identity] first, then the chat's
+     * own [assembled] system text - or [fallback] when it has none.
+     *
+     * The identity is plan item 7, done on Qwen3.5 (2.7 session 8): a small model with no word
+     * about who it is invents one - Qwen2.5 told users it was "Claude, made by Anthropic". Neither
+     * Qwen3.5's bundled template nor Qwen's own has a default system line to copy, so the line is
+     * Maskan's (Humam, 2026-10-24). It goes IN FRONT of a folder's, a preset's or a voice's text,
+     * so it survives an Arabic UI too.
+     */
+    fun systemFor(identity: String?, assembled: String?, fallback: String?): String? {
+        val own = assembled?.takeIf { it.isNotBlank() } ?: fallback
+        return listOfNotNull(identity, own).joinToString("\n\n").ifEmpty { null }
+    }
+
+    /**
+     * The open model turn [build] ends every prompt with. Without it, a prompt is the conversation
+     * so far - which is what LlmEngine.preload feeds a session before the user has typed anything.
+     */
+    fun openTurn(shape: Shape): String = shape.start + shape.assistantRole + "\n" + shape.assistantPrefix
 
     /**
      * Drop whole turns from the front until the prompt fits, keeping the newest.

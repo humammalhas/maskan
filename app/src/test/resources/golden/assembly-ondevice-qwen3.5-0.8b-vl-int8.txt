@@ -1,6 +1,8 @@
 assembled
 
 <|im_start|>system
+You are Qwen3.5, created by Alibaba Cloud. You are a helpful assistant.
+
 You are a helpful assistant. Answer briefly.
 
 أجب بالعربية دائماً، مهما كانت لغة السؤال. واكتب فصحى معاصرة سليمة وواضحة: لا عامية، ولا تقعّر وتكلّف.
@@ -35,11 +37,23 @@ Our office is in Jabal Amman.<|im_end|>
 <|im_start|>user
 What is the capital of Jordan?<|im_end|>
 <|im_start|>assistant
+<think>
+
+</think>
+
 Amman.<|im_end|>
 <|im_start|>user
 ما عاصمة الأردن؟ وما أشهر معالمها؟<|im_end|>
 <|im_start|>assistant
+<think>
+
+</think>
+
 عمّان. ومن أشهر معالمها جبل القلعة والمدرّج الروماني.<|im_end|>
 <|im_start|>user
 เมืองหลวงของไทยคืออะไร<|im_end|>
 <|im_start|>assistant
+<think>
+
+</think>
+
