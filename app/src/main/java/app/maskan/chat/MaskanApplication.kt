@@ -273,14 +273,20 @@ class MaskanApplication : Application() {
     /**
      * 2.7 replaced Qwen2.5 with Qwen3.5 (plan item 14). A phone that still holds the old model -
      * 1.6 GB, plus the 1.55 GB cache MediaPipe left in cacheDir, sometimes twice - has it removed
-     * once, and the on-device card then says the model was upgraded (Humam, 2026-10-24). Cheap on
-     * every later start: a few file-exists checks.
+     * once, and the on-device card then says the model was upgraded (Humam, 2026-10-24). The model
+     * saved for the on-device provider moves to the current one too, or Settings goes on naming the
+     * retired model and new chats store it. Cheap on every later start: a few file-exists checks.
      */
     private fun retireOldOnDeviceModels() {
         CoroutineScope(Dispatchers.IO).launch {
             runCatching {
                 val freed = app.maskan.chat.ondevice.ModelStore(this@MaskanApplication).deleteRetired()
                 if (freed > 0) preferenceRepository.setOnDeviceUpgraded(true)
+                val onDevice = app.maskan.chat.data.remote.providers.OnDeviceProvider.ID
+                val saved = keyRepository.getSelectedModel(onDevice)
+                if (app.maskan.chat.ondevice.ModelCatalog.RETIRED.any { it.id == saved }) {
+                    keyRepository.saveSelectedModel(onDevice, app.maskan.chat.ondevice.ModelCatalog.DEFAULT.id)
+                }
             }
         }
     }
