@@ -951,6 +951,7 @@ class ChatViewModel(
         }
     }
 
+    /** Same reason as refreshMessages: startReading reads _uiState.documents on the next line. */
     private suspend fun refreshDocuments() {
         val conversationId = currentConversationId
         if (conversationId < 0) return
@@ -1623,9 +1624,10 @@ class ChatViewModel(
 
     /**
      * Insert a message into the in-memory list, or replace it if one with the same id already
-     * exists (e.g. the DB invalidation Flow happened to emit it too). Keying by id keeps the
-     * open chat correct for every message — first or follow-up — without relying on Room's
-     * (unreliable under SQLCipher) UPDATE/INSERT invalidation.
+     * exists (the message Flow emits it too, ~15 ms later). Keying by id keeps the open chat
+     * correct for every message — first or follow-up — whichever of the two lands first. The
+     * stream is drawn from memory for speed: through the Flow, every token would re-read the
+     * whole chat, photos included. (Invalidation itself works under SQLCipher - 2.7 session 9.)
      */
     private fun upsertMessage(message: MessageEntity) {
         val current = _uiState.value.messages
@@ -1654,8 +1656,9 @@ class ChatViewModel(
     /**
      * Mirror the video workers of this conversation into the UI state. Progress comes from the
      * worker's progress data; when a worker FINISHES (clip landed, failed, cancelled) the
-     * message list is re-read from the database once, because Room's invalidation Flow is not
-     * relied on under SQLCipher and the change was made by another process context anyway.
+     * message list is re-read from the database once. Probably redundant: the worker writes
+     * through Room in this process, and 2.7 session 9 measured that such writes reach the message
+     * Flow. Kept because proving it can go costs a paid render.
      */
     private fun watchVideoJobs(conversationId: Long) {
         videoWatchJob?.cancel()
@@ -1685,6 +1688,14 @@ class ChatViewModel(
         }
     }
 
+    /**
+     * Read the messages once, right after a write, when the next line acts on the list.
+     *
+     * Not an invalidation workaround: the Flow brings the same rows ~15 ms later (2.7 session 9),
+     * but regenerateLast and confirmEdit stream on top of _uiState.messages straight after their
+     * delete or rewrite, and must see it first. It reads after its own write, so it cannot land
+     * an older list than the one it follows.
+     */
     private suspend fun refreshMessages() {
         val conversationId = currentConversationId
         if (conversationId < 0) return

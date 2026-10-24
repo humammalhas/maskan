@@ -14,8 +14,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class ConversationListUiState(
@@ -52,12 +51,7 @@ class ConversationListViewModel(
     val isSearchActive: StateFlow<Boolean> = _isSearchActive.asStateFlow()
 
     init {
-        observeDeletions()
         sweepEmptyConversations()
-        // A plain query first, and the flows after. The direct read cannot be held up by Room's
-        // invalidation, and combine() below emits nothing at all until both of its sources have
-        // - so this is what guarantees the list has content to show.
-        refresh()
         loadData()
         observeSearch()
     }
@@ -72,39 +66,7 @@ class ConversationListViewModel(
      */
     private fun sweepEmptyConversations() {
         viewModelScope.launch {
-            val removed = chatRepository.sweepEmptyConversations()
-            if (removed > 0) refresh()
-        }
-    }
-
-    /**
-     * Re-read the list once.
-     *
-     * Room's invalidation is not reliable under SQLCipher here (the same reason the chat screen
-     * drives itself from in-memory state), and an automatic title lands on a row while this
-     * screen is off stage. Called when the list comes back to the front, which is exactly when
-     * a title may have changed underneath it.
-     */
-    fun refresh() {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                conversations = chatRepository.getAllConversations().first(),
-                folders = chatRepository.getAllFolders().first(),
-                firstLines = chatRepository.getFirstUserLines(),
-                hasLoaded = true
-            )
-        }
-    }
-
-    /**
-     * Re-read whenever a conversation is deleted anywhere in the app.
-     *
-     * `drop(1)` skips the value the flow already holds when this collector starts - `init`
-     * already calls refresh() and there is no reason to do it twice on launch.
-     */
-    private fun observeDeletions() {
-        viewModelScope.launch {
-            chatRepository.conversationsRevision.drop(1).collect { refresh() }
+            chatRepository.sweepEmptyConversations()
         }
     }
 
@@ -138,20 +100,34 @@ class ConversationListViewModel(
         _isSearchActive.value = true
     }
 
+    /**
+     * The list, from Room's flows and nothing else.
+     *
+     * Room's invalidation does reach these flows under SQLCipher: measured in 2.7 session 9,
+     * every write the app makes re-emitted within ~15 ms. What used to put a deleted chat back on
+     * screen was a second writer - a one-shot re-read that started before the delete and landed
+     * after the flow's correct list. So this is the ONLY writer of the list, and it does not
+     * suspend between reading a value and storing it. Nothing is drawn until all three flows have
+     * emitted once: see hasLoaded.
+     */
     private fun loadData() {
         viewModelScope.launch {
             combine(
                 chatRepository.getAllConversations(),
-                chatRepository.getAllFolders()
-            ) { conversations, folders ->
-                _uiState.value.copy(
-                    conversations = conversations,
-                    folders = folders,
-                    isLoading = false,
-                    hasLoaded = true
-                )
-            }.collect { state ->
-                _uiState.value = state.copy(firstLines = chatRepository.getFirstUserLines())
+                chatRepository.getAllFolders(),
+                chatRepository.getFirstUserLines()
+            ) { conversations, folders, firstLines ->
+                Triple(conversations, folders, firstLines)
+            }.collect { (conversations, folders, firstLines) ->
+                _uiState.update {
+                    it.copy(
+                        conversations = conversations,
+                        folders = folders,
+                        firstLines = firstLines,
+                        isLoading = false,
+                        hasLoaded = true
+                    )
+                }
             }
         }
     }
@@ -183,7 +159,6 @@ class ConversationListViewModel(
         if (trimmed.isEmpty()) return
         viewModelScope.launch {
             chatRepository.updateConversationTitle(id, trimmed)
-            refresh()
         }
     }
 

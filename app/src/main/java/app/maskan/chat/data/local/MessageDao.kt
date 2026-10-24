@@ -71,12 +71,15 @@ interface MessageDao {
      * One query for the whole screen rather than one per row: the list is a LazyColumn and a
      * per-row suspend read would fire again on every scroll. MIN(id) rather than MIN(timestamp)
      * because two rows written in the same millisecond are a real thing here.
+     *
+     * A Flow: the list's conversations query does not watch `messages`, so a chat's first
+     * message would otherwise never reach a list that is already on its back stack.
      */
     @Query(
         "SELECT * FROM messages WHERE id IN " +
             "(SELECT MIN(id) FROM messages WHERE role = 'user' GROUP BY conversationId)"
     )
-    suspend fun getFirstUserMessages(): List<MessageEntity>
+    fun getFirstUserMessages(): Flow<List<MessageEntity>>
 
     /**
      * Everything written after [messageId] in this conversation, newest included.

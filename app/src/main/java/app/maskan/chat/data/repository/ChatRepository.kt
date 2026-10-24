@@ -38,9 +38,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.FlowCollector
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.flow.flow
@@ -86,24 +85,12 @@ class ChatRepository(
         return conversationDao.insertConversation(conversation)
     }
 
-    /**
-     * Bumped after a conversation is deleted, for screens that cannot trust Room to tell them.
-     *
-     * Room's invalidation is unreliable under SQLCipher here - it is the reason `refresh()`
-     * exists - and a delete that does not re-emit leaves the list drawing a chat that is no
-     * longer in the database. Collected by the list, which re-reads when this changes. The
-     * bump happens AFTER the delete, so a collector cannot read too early.
-     */
-    private val _conversationsRevision = MutableStateFlow(0L)
-    val conversationsRevision: StateFlow<Long> = _conversationsRevision.asStateFlow()
-
     suspend fun deleteConversation(id: Long) {
         // Collect the image files FIRST: the foreign-key cascade wipes the message rows, and
         // after that there is nothing left to say which files belonged to this conversation.
         val images = messageDao.getImagePathsForConversation(id)
         conversationDao.deleteConversationById(id)
         if (images.isNotEmpty()) imageStore.delete(images)
-        _conversationsRevision.value = _conversationsRevision.value + 1
     }
 
     /**
@@ -181,12 +168,17 @@ class ChatRepository(
      *
      * One query for the whole list. Only the first LINE: a message can be a pasted contract,
      * and what belongs under a title is the opening of the question, not the question.
+     *
+     * Every streamed token rewrites a message row, so the query re-runs during a reply;
+     * distinctUntilChanged keeps that from reaching the list unless a first line really changed.
      */
-    suspend fun getFirstUserLines(): Map<Long, String> =
-        messageDao.getFirstUserMessages().associate { message ->
-            message.conversationId to
-                message.content.lineSequence().firstOrNull { it.isNotBlank() }?.trim().orEmpty()
-        }
+    fun getFirstUserLines(): Flow<Map<Long, String>> =
+        messageDao.getFirstUserMessages().map { messages ->
+            messages.associate { message ->
+                message.conversationId to
+                    message.content.lineSequence().firstOrNull { it.isNotBlank() }?.trim().orEmpty()
+            }
+        }.distinctUntilChanged()
 
     // ── Folders ────────────────────────────────────────────────────────
 
@@ -291,9 +283,9 @@ class ChatRepository(
     /**
      * Read once, for the screen.
      *
-     * Not the Flow: Room's invalidation is unreliable under SQLCipher (the message list is
-     * driven the same way for the same reason), and the notes card must show 12 of 30 the
-     * moment the twelfth chunk lands, not whenever Room notices.
+     * Not the Flow: the screen reads its own write and acts on it on the next line (startReading
+     * reads the document it just saved), which the Flow's ~15 ms would race. Room's invalidation
+     * itself works under SQLCipher - measured in 2.7 session 9.
      */
     suspend fun documentsOnce(conversationId: Long): List<DocumentEntity> =
         documentDao.getForConversationOnce(conversationId)
@@ -724,8 +716,8 @@ class ChatRepository(
         )
         val userMessageId = messageDao.insertMessage(userEntity)
         // Drive the open chat from in-memory state: emit the saved user message so the
-        // ViewModel can show it immediately, independent of the (unreliable under SQLCipher)
-        // Room invalidation Flow.
+        // ViewModel can show it immediately, without waiting the ~15 ms for the message Flow
+        // to bring the same row.
         emit(StreamEvent.UserSaved(userEntity.copy(id = userMessageId)))
 
         streamAssistantReply(conversation, model, imageData, imageMimeType, webSearch)
@@ -1588,7 +1580,6 @@ class ChatRepository(
             if (copiedFiles.isNotEmpty()) imageStore.delete(copiedFiles.values)
             throw e
         }
-        _conversationsRevision.value = _conversationsRevision.value + 1
         return ForkOutcome.Created(forkId)
     }
 

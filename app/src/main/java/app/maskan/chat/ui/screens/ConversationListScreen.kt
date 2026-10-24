@@ -169,9 +169,6 @@ fun ConversationListScreen(
     val duplicateFolderNames = folders.groupingBy { it.name }.eachCount()
         .filterValues { it > 1 }.keys
 
-    // Titles change while this screen is off stage: an automatic title lands a second after the
-    // first reply, on a chat the user is still reading. Coming back is when to re-read.
-    LaunchedEffect(Unit) { viewModel.refresh() }
     val folderToDelete = folderToDeleteId?.let { id -> folders.find { it.id == id } }
 
     Scaffold(
