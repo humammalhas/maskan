@@ -113,13 +113,13 @@
     <string name="local_model_name_hint">Type the name of the model installed on your server</string>
     <string name="load_models_button">Load models from server</string>
     <string name="models_loaded_fmt">Loaded %1$d model(s) from server</string>
-    <string name="models_load_empty">No models found on the server</string>
+    <string name="models_load_empty">No models found on the server</string>
     <string name="refresh_models_button">Refresh model list</string>
     <string name="models_updated_today">Model list updated today</string>
     <string name="models_updated_days_ago_fmt">Model list updated %1$d day(s) ago</string>
     <string name="model_search_label">Search models</string>
     <string name="model_search_hint">Type to filter the list</string>
-    <string name="model_search_no_match">No model matches your search</string>
+    <string name="model_search_no_match">No model matches your search</string>
     <string name="model_picker_title">Choose model</string>
     <string name="model_check_verifying">Checking this model works with your key…</string>
     <string name="model_check_rejected_fmt">%1$s does not work with your key. Removed from the list.</string>
@@ -172,7 +172,7 @@
     <string name="error_network">Could not connect to server. Check your internet connection.</string>
 
     <!-- Detailed error messages -->
-    <string name="error_auth_invalid">Your API key was rejected. Check it in Settings.</string>
+    <string name="error_auth_invalid">Your API key was rejected. Check it in Settings.</string>
     <string name="error_model_access_denied">This model is not available on your account or plan. Pick another model in Settings.</string>
     <string name="error_auth_expired">Your API key has expired. Generate a new one from your provider\'s dashboard.</string>
     <string name="error_rate_limit">Too many requests. Wait a moment and try again.</string>
