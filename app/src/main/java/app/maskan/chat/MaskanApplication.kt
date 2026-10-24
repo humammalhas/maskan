@@ -23,6 +23,7 @@ import android.content.Context
 import android.os.LocaleList
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
+import androidx.room.withTransaction
 import app.maskan.chat.data.local.AppDatabase
 import app.maskan.chat.data.remote.ApiClients
 import app.maskan.chat.data.remote.AnthropicService
@@ -166,7 +167,8 @@ class MaskanApplication : Application() {
             imageStore = imageStore,
             videoJobClient = videoJobClient,
             videoBackendFor = ::videoBackendFor,
-            videoJobs = videoJobs
+            videoJobs = videoJobs,
+            inTransaction = { block -> database.withTransaction { block() } }
         )
     }
 

@@ -557,4 +557,10 @@
     <string name="searching_web">يبحث في الإنترنت…</string>
     <string name="sources_title_fmt">المصادر (%1$d)</string>
     <string name="privacy_note_web_search">يُرسَل سؤالك إلى %1$s، فيبحث عنه في الإنترنت.</string>
+    <string name="fork_from_here">افتح فرعًا من هنا</string>
+    <string name="fork_title">فرع من %1$s</string>
+    <string name="fork_video_rendering">ما زال فيديو في هذه المحادثة قيد الإنشاء. افتح الفرع حين يجهز الفيديو.</string>
+    <string name="edit_reply">عدّل الرد</string>
+    <string name="reply_edited_marker">معدّل</string>
+    <string name="edit_reply_keeps_followers">يتغيّر هذا الرد وحده. تبقى الرسائل التي بعده، ويظهر الرد معدّلًا.</string>
 </resources>

@@ -557,4 +557,10 @@
     <string name="searching_web">Searching the web…</string>
     <string name="sources_title_fmt">Sources (%1$d)</string>
     <string name="privacy_note_web_search">Your question is sent to %1$s, which searches the web for it.</string>
+    <string name="fork_from_here">Fork from here</string>
+    <string name="fork_title">Fork of %1$s</string>
+    <string name="fork_video_rendering">A video in this chat is still being made. Fork it once the video is ready.</string>
+    <string name="edit_reply">Edit reply</string>
+    <string name="reply_edited_marker">edited</string>
+    <string name="edit_reply_keeps_followers">Only this reply changes. The messages after it stay, and the reply is marked as edited.</string>
 </resources>

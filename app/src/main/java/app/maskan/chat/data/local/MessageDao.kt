@@ -25,6 +25,10 @@ interface MessageDao {
     @Query("UPDATE messages SET content = :content WHERE id = :messageId")
     suspend fun updateMessageContent(messageId: Long, content: String)
 
+    /** A reply the user rewrote: the text and the mark that says so, in one statement. */
+    @Query("UPDATE messages SET content = :content, editedAt = :editedAt WHERE id = :messageId")
+    suspend fun updateEditedReply(messageId: Long, content: String, editedAt: Long)
+
     @Query("UPDATE messages SET sourcesJson = :sourcesJson WHERE id = :messageId")
     suspend fun updateMessageSources(messageId: Long, sourcesJson: String?)
 

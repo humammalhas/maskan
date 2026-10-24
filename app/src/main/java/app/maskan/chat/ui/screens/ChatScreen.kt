@@ -169,7 +169,9 @@ fun ChatScreen(
     onOpenProjectMemory: (Long) -> Unit = {},
     onOpenFolderInstructions: (Long) -> Unit = {},
     /** Where the on-device nudge card's "add a key" goes. */
-    onNavigateToSettings: () -> Unit = {}
+    onNavigateToSettings: () -> Unit = {},
+    /** A fork was just made from this chat: open it. */
+    onOpenConversation: (Long) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var inputText by rememberSaveable { mutableStateOf("") }
@@ -214,6 +216,16 @@ fun ChatScreen(
             viewModel.clearRemembered()
             onOpenProjectMemory(rememberedFolderId)
         }
+    }
+
+    // A fork opens as soon as it exists; the chat it came from stays one Back away, untouched.
+    val forkedConversationId = uiState.forkedConversationId
+    LaunchedEffect(forkedConversationId, uiState.forkRefusedForVideo) {
+        if (uiState.forkRefusedForVideo) {
+            Toast.makeText(context, context.getString(R.string.fork_video_rendering), Toast.LENGTH_LONG).show()
+        }
+        viewModel.clearForkEvent()
+        if (forkedConversationId != null) onOpenConversation(forkedConversationId)
     }
 
     DisposableEffect(Unit) {
@@ -583,6 +595,13 @@ fun ChatScreen(
                 initialText = action.text,
                 followers = action.followers,
                 onConfirm = { viewModel.confirmEdit(it) },
+                onDismiss = { viewModel.cancelMessageAction() }
+            )
+            PendingMessageAction.Kind.EDIT_REPLY -> EditMessageDialog(
+                initialText = action.text,
+                followers = 0,
+                isReply = true,
+                onConfirm = { viewModel.confirmEditReply(it) },
                 onDismiss = { viewModel.cancelMessageAction() }
             )
             PendingMessageAction.Kind.DELETE -> AlertDialog(
@@ -1265,6 +1284,7 @@ fun ChatScreen(
                     }
                     val isLastMessage = message == visibleMessages.lastOrNull()
                     val busy = uiState.isLoading || uiState.isStreaming
+                    val forkTitle = stringResource(R.string.fork_title, displayTitle(uiState.title))
                     val isActivelyStreaming = uiState.isStreaming && isLastMessage && message.role == "assistant"
                     // Decrypt once per message, not once per recomposition.
                     val generatedImage = message.imagePath?.let { path ->
@@ -1335,8 +1355,23 @@ fun ChatScreen(
                         } else {
                             null
                         },
+                        // Text replies only: a picture or a video is not something to retype.
+                        onEditReply = if (
+                            !busy && message.role == "assistant" && message.content.isNotBlank() &&
+                            message.imagePath == null && message.imageMimeType == null &&
+                            message.videoJobId == null
+                        ) {
+                            { viewModel.beginEditReply(message.id) }
+                        } else {
+                            null
+                        },
                         onDelete = if (!busy) {
                             { viewModel.beginDelete(message.id) }
+                        } else {
+                            null
+                        },
+                        onFork = if (!busy && (message.role == "user" || message.role == "assistant")) {
+                            { viewModel.forkFrom(message.id, forkTitle) }
                         } else {
                             null
                         }
@@ -1637,7 +1672,11 @@ private fun MessageBubble(
      */
     onRegenerate: (() -> Unit)? = null,
     onEdit: (() -> Unit)? = null,
-    onDelete: (() -> Unit)? = null
+    /** Rewrite this reply in place, marked as edited; nothing after it goes (plan item 9). */
+    onEditReply: (() -> Unit)? = null,
+    onDelete: (() -> Unit)? = null,
+    /** Copy the chat up to and including this message into a new one (plan item 13). */
+    onFork: (() -> Unit)? = null
 ) {
     val backgroundColor = if (isUser) MaterialTheme.maskanColors.userBubble else MaterialTheme.maskanColors.assistantBubble
 
@@ -1821,7 +1860,7 @@ private fun MessageBubble(
                 // SelectionContainer and a long press there raises Compose's own Copy / Select
                 // all toolbar. Two menus at once is what killed the long-press idea in session
                 // 2, and nothing about this message has changed since.
-                if (onRegenerate != null || onEdit != null || onDelete != null) {
+                if (onRegenerate != null || onEdit != null || onEditReply != null || onDelete != null || onFork != null) {
                     var showMenu by remember { mutableStateOf(false) }
                     Box {
                         IconButton(onClick = { showMenu = true }) {
@@ -1848,6 +1887,18 @@ private fun MessageBubble(
                                     onClick = { showMenu = false; action() }
                                 )
                             }
+                            onEditReply?.let { action ->
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.edit_reply)) },
+                                    onClick = { showMenu = false; action() }
+                                )
+                            }
+                            onFork?.let { action ->
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.fork_from_here)) },
+                                    onClick = { showMenu = false; action() }
+                                )
+                            }
                             onDelete?.let { action ->
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.delete_message)) },
@@ -1856,6 +1907,16 @@ private fun MessageBubble(
                             }
                         }
                     }
+                }
+                // The reply was rewritten by the user. Same style as the time beside it, and no
+                // height of its own: it is a translated word and must be free to grow.
+                if (message.editedAt != null) {
+                    Text(
+                        text = stringResource(R.string.reply_edited_marker),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
                 }
                 Text(
                     text = formatTime(message.timestamp),
@@ -2239,6 +2300,8 @@ private fun MessageInputBar(
 private fun EditMessageDialog(
     initialText: String,
     followers: Int,
+    /** A reply, not a question: saved in place, nothing is sent and nothing after it goes. */
+    isReply: Boolean = false,
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -2246,7 +2309,7 @@ private fun EditMessageDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.edit_and_resend)) },
+        title = { Text(stringResource(if (isReply) R.string.edit_reply else R.string.edit_and_resend)) },
         text = {
             Column {
                 OutlinedTextField(
@@ -2257,7 +2320,16 @@ private fun EditMessageDialog(
                         .heightIn(min = 96.dp, max = 220.dp),
                     maxLines = 8
                 )
-                if (followers > 0) {
+                if (isReply) {
+                    // Said out loud because editing a question taught the opposite: there, what
+                    // follows is dropped. Here it stays, and the reply is marked as edited.
+                    Text(
+                        text = stringResource(R.string.edit_reply_keeps_followers),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                } else if (followers > 0) {
                     Text(
                         text = stringResource(R.string.edit_drops_followers, followers),
                         style = MaterialTheme.typography.bodySmall,
@@ -2271,7 +2343,7 @@ private fun EditMessageDialog(
             TextButton(
                 onClick = { onConfirm(text) },
                 enabled = text.isNotBlank()
-            ) { Text(stringResource(R.string.send_button)) }
+            ) { Text(stringResource(if (isReply) R.string.save_button else R.string.send_button)) }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel_button)) }

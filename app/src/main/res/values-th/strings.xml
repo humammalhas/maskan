@@ -557,4 +557,10 @@
     <string name="searching_web">กำลังค้นหาบนเว็บ…</string>
     <string name="sources_title_fmt">แหล่งที่มา (%1$d)</string>
     <string name="privacy_note_web_search">คำถามของคุณจะถูกส่งไปยัง %1$s เพื่อค้นหาบนเว็บ</string>
+    <string name="fork_from_here">แยกแชทจากตรงนี้</string>
+    <string name="fork_title">แยกจาก %1$s</string>
+    <string name="fork_video_rendering">วิดีโอในแชทนี้ยังสร้างไม่เสร็จ แยกแชทได้เมื่อวิดีโอพร้อมแล้ว</string>
+    <string name="edit_reply">แก้ไขคำตอบ</string>
+    <string name="reply_edited_marker">แก้ไขแล้ว</string>
+    <string name="edit_reply_keeps_followers">เปลี่ยนเฉพาะคำตอบนี้ ข้อความหลังจากนี้ยังอยู่ครบ และคำตอบจะมีป้ายว่าแก้ไขแล้ว</string>
 </resources>

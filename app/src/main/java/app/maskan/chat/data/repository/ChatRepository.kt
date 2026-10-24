@@ -58,7 +58,9 @@ class ChatRepository(
     private val imageStore: ImageStore,
     private val videoJobClient: VideoJobClient,
     private val videoBackendFor: (String) -> VideoBackend,
-    private val videoJobs: VideoJobs
+    private val videoJobs: VideoJobs,
+    /** Room's withTransaction, passed in so a fork's rows are written all at once or not at all. */
+    private val inTransaction: suspend (suspend () -> Unit) -> Unit
 ) {
 
     // ── Conversations ──────────────────────────────────────────────────
@@ -228,15 +230,25 @@ class ChatRepository(
             appendLine("# $title")
             appendLine()
             when (format) {
+                // A reply the user rewrote says so here too: an export is the copy that leaves the
+                // phone, and it must not claim the model wrote what the user did (plan item 9).
                 ExportFormat.PLAIN_TEXT -> {
                     for (msg in messages) {
-                        val label = if (msg.role == "user") "You" else "AI"
+                        val label = when {
+                            msg.role == "user" -> "You"
+                            msg.editedAt != null -> "AI (edited)"
+                            else -> "AI"
+                        }
                         appendLine("$label: ${msg.content}")
                     }
                 }
                 ExportFormat.MARKDOWN -> {
                     for ((index, msg) in messages.withIndex()) {
-                        val label = if (msg.role == "user") "**You:**" else "**AI:**"
+                        val label = when {
+                            msg.role == "user" -> "**You:**"
+                            msg.editedAt != null -> "**AI (edited):**"
+                            else -> "**AI:**"
+                        }
                         appendLine("$label ${msg.content}")
                         appendLine()
                         if (index < messages.lastIndex) {
@@ -1495,6 +1507,94 @@ class ChatRepository(
         messageDao.updateMessageContent(messageId, newText)
         documents.forEach { documentDao.delete(it.id) }
         if (images.isNotEmpty()) imageStore.delete(images)
+    }
+
+    /**
+     * Replace what the model said, and keep everything after it (plan item 9).
+     *
+     * Unlike editing a question, nothing is dropped and nothing is asked again: the point is to
+     * fix one bad line without paying for a whole regeneration, and the turns built on the reply
+     * are still the user's. The row is marked, and the next request carries the new text, because
+     * it is built from the row like every other turn.
+     */
+    suspend fun editAssistantMessage(messageId: Long, newText: String) {
+        val message = messageDao.getMessageById(messageId) ?: return
+        if (message.role != "assistant") return
+        messageDao.updateEditedReply(messageId, newText, System.currentTimeMillis())
+    }
+
+    // ── Forking a conversation ───────────────────────────────
+
+    sealed class ForkOutcome {
+        data class Created(val conversationId: Long) : ForkOutcome()
+        object VideoRendering : ForkOutcome()
+        object NotFound : ForkOutcome()
+    }
+
+    /**
+     * A new chat holding [sourceId]'s conversation up to and including [messageId] (plan item 13).
+     *
+     * The source is not touched and nothing links the two: a dead end is deleted with the fork.
+     * The fork takes the source's folder, provider, model and style as they are now, so the
+     * request it sends next is built by the same code from the same rows.
+     *
+     * Picture files are COPIED, never shared: deleting a chat deletes its files, and a shared
+     * name would vanish from the fork the day the source is deleted. The files are written
+     * before the transaction and removed again if it fails, so neither a half-written fork nor
+     * an orphaned file outlives an error.
+     */
+    suspend fun forkConversation(sourceId: Long, messageId: Long, title: String): ForkOutcome {
+        val source = conversationDao.getConversationById(sourceId) ?: return ForkOutcome.NotFound
+        val rows = messageDao.getMessagesForConversationOnce(sourceId)
+        val documents = documentDao.getForConversationOnce(sourceId)
+        val plan = when (
+            val result = ChatFork.plan(rows, documents, messageId, source.providerId, source.modelId.orEmpty())
+        ) {
+            is ChatFork.Result.Ready -> result.plan
+            ChatFork.Result.VideoRendering -> return ForkOutcome.VideoRendering
+            ChatFork.Result.NotFound -> return ForkOutcome.NotFound
+        }
+
+        val copiedFiles = HashMap<String, String>()
+        plan.messages.mapNotNull { it.imagePath }.distinct().forEach { name ->
+            imageStore.read(name)?.let { bytes -> copiedFiles[name] = imageStore.save(bytes) }
+        }
+
+        var forkId = 0L
+        try {
+            inTransaction {
+                forkId = conversationDao.insertConversation(
+                    source.copy(id = 0, title = title, createdAt = System.currentTimeMillis())
+                )
+                val idMap = HashMap<Long, Long>()
+                for (row in plan.messages) {
+                    idMap[row.id] = messageDao.insertMessage(
+                        row.copy(
+                            id = 0,
+                            conversationId = forkId,
+                            imagePath = row.imagePath?.let { copiedFiles[it] }
+                        )
+                    )
+                }
+                plan.documents.forEach { documentDao.insert(ChatFork.remapDocument(it, forkId, idMap)) }
+                plan.trailingSwitch?.let { move ->
+                    val last = plan.messages.maxOf { it.timestamp }
+                    messageDao.insertMessage(
+                        MessageEntity(
+                            conversationId = forkId,
+                            role = ROLE_NOTICE,
+                            content = ModelSwitch.encode(move),
+                            timestamp = last + 1
+                        )
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            if (copiedFiles.isNotEmpty()) imageStore.delete(copiedFiles.values)
+            throw e
+        }
+        _conversationsRevision.value = _conversationsRevision.value + 1
+        return ForkOutcome.Created(forkId)
     }
 
     // ── Naming a chat ─────────────────────────────────────────

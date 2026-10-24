@@ -47,5 +47,12 @@ data class MessageEntity(
      * Null on every row that did not search - which is every row written before 2.7. Kept with the
      * message because a source you cannot find again is worth little.
      */
-    val sourcesJson: String? = null
+    val sourcesJson: String? = null,
+    /**
+     * When the USER rewrote this reply (2.7, plan item 9), or null for every reply the model's
+     * words still stand in. The bubble and the export say "edited" whenever it is set, so the
+     * transcript never claims the model said something it did not. The original text is not
+     * kept: an edit that removes a line is meant to remove it, from backups too.
+     */
+    val editedAt: Long? = null
 )

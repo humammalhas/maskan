@@ -89,7 +89,8 @@ data class PendingMessageAction(
     /** The current text, for EDIT - the dialog opens on it. */
     val text: String = ""
 ) {
-    enum class Kind { EDIT, DELETE }
+    /** EDIT rewrites a question and asks again; EDIT_REPLY rewrites an answer and keeps the rest. */
+    enum class Kind { EDIT, EDIT_REPLY, DELETE }
 }
 
 data class ChatUiState(
@@ -197,7 +198,11 @@ data class ChatUiState(
      */
     val videoProgress: Map<Long, VideoProgress> = emptyMap(),
     /** An edit or a delete, waiting for the confirm dialog. */
-    val pendingMessageAction: PendingMessageAction? = null
+    val pendingMessageAction: PendingMessageAction? = null,
+    /** A fork was just made: the screen opens it, then clears this. */
+    val forkedConversationId: Long? = null,
+    /** A fork was refused because a video in the copied range is still rendering. */
+    val forkRefusedForVideo: Boolean = false
 )
 
 class ChatViewModel(
@@ -585,6 +590,31 @@ class ChatViewModel(
         }
     }
 
+    /** Open the editor on a reply. Nothing after it goes, so there is no cost to count. */
+    fun beginEditReply(messageId: Long) {
+        val message = _uiState.value.messages.firstOrNull { it.id == messageId } ?: return
+        _uiState.value = _uiState.value.copy(
+            pendingMessageAction = PendingMessageAction(
+                messageId = messageId,
+                kind = PendingMessageAction.Kind.EDIT_REPLY,
+                followers = 0,
+                text = message.content
+            )
+        )
+    }
+
+    /** Confirmed: the reply says what the user wrote, is marked as edited, and nothing is sent. */
+    fun confirmEditReply(newText: String) {
+        val action = _uiState.value.pendingMessageAction ?: return
+        val trimmed = newText.trim()
+        _uiState.value = _uiState.value.copy(pendingMessageAction = null)
+        if (trimmed.isEmpty()) return
+        viewModelScope.launch {
+            chatRepository.editAssistantMessage(action.messageId, trimmed)
+            refreshMessages()
+        }
+    }
+
     fun beginDelete(messageId: Long) {
         viewModelScope.launch {
             val message = _uiState.value.messages.firstOrNull { it.id == messageId } ?: return@launch
@@ -634,6 +664,26 @@ class ChatViewModel(
             refreshMessages()
             refreshDocuments()
         }
+    }
+
+    /**
+     * Copy this chat up to and including [messageId] into a new one, and open it (plan item 13).
+     * [title] comes from the screen, which is where the app's language is known.
+     */
+    fun forkFrom(messageId: Long, title: String) {
+        viewModelScope.launch {
+            when (val outcome = chatRepository.forkConversation(currentConversationId, messageId, title)) {
+                is ChatRepository.ForkOutcome.Created ->
+                    _uiState.value = _uiState.value.copy(forkedConversationId = outcome.conversationId)
+                ChatRepository.ForkOutcome.VideoRendering ->
+                    _uiState.value = _uiState.value.copy(forkRefusedForVideo = true)
+                ChatRepository.ForkOutcome.NotFound -> Unit
+            }
+        }
+    }
+
+    fun clearForkEvent() {
+        _uiState.value = _uiState.value.copy(forkedConversationId = null, forkRefusedForVideo = false)
     }
 
     /** Whether replies carry a speak button. The setting, read where the bubble is built. */
