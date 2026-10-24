@@ -55,7 +55,10 @@ fun WelcomeScreen(
         Text(
             text = "Maskan · مسكن",
             style = MaterialTheme.typography.titleLarge,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            // Stated, not inherited: this screen has no Surface, so an unset colour is Compose's
+            // default black - dark on dark in the dark theme (seen on the Honor, 2026-10-24).
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -117,7 +120,8 @@ private fun FeatureRow(
         Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = text,
-            style = MaterialTheme.typography.bodyMedium
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
