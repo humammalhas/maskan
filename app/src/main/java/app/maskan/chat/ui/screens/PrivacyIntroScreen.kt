@@ -56,7 +56,10 @@ fun PrivacyIntroScreen(
         Text(
             text = stringResource(R.string.privacy_intro_title),
             style = MaterialTheme.typography.titleLarge,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            // Stated, not inherited, as on the welcome screen (c3c7460): no Surface here, so an unset
+            // colour is Compose's default black - dark on dark in the dark theme (Honor, 2026-10-24).
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(32.dp))
