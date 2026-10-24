@@ -10,8 +10,11 @@ import app.maskan.chat.data.remote.MessageContent
 import app.maskan.chat.data.remote.OpenAiCompatibleService
 import app.maskan.chat.data.remote.SearchStream
 import app.maskan.chat.data.remote.WebSource
+import app.maskan.chat.data.remote.StreamPiece
+import app.maskan.chat.data.remote.parseSSEPieces
 import app.maskan.chat.data.remote.parseSSEStream
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -420,7 +423,19 @@ class OpenAiCompatibleProvider(
         baseUrl: String?,
         imageData: ByteArray?,
         imageMimeType: String?
-    ): Flow<String> {
+    ): Flow<String> =
+        sendMessageStreamingWithThinking(apiKey, model, messages, baseUrl, imageData, imageMimeType)
+            .mapNotNull { (it as? StreamPiece.Answer)?.text }
+
+    /** One request for both entry points, so showing the reasoning cannot change what is sent. */
+    override fun sendMessageStreamingWithThinking(
+        apiKey: String,
+        model: String,
+        messages: List<Message>,
+        baseUrl: String?,
+        imageData: ByteArray?,
+        imageMimeType: String?
+    ): Flow<StreamPiece> {
         val request = ChatCompletionRequest(
             model = model,
             messages = buildMessages(messages, imageData, imageMimeType),
@@ -430,9 +445,9 @@ class OpenAiCompatibleProvider(
             authorization = "Bearer $apiKey",
             request = request
         )
-        return parseSSEStream(call) { data ->
+        return parseSSEPieces(call) { data ->
             val chunk = json.decodeFromString<ChatCompletionChunk>(data)
-            chunk.choices.firstOrNull()?.delta?.content
+            chunk.choices.firstOrNull()?.delta?.pieces()
         }
     }
     /**

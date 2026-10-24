@@ -564,4 +564,8 @@
     <string name="edit_reply">عدّل الرد</string>
     <string name="reply_edited_marker">معدّل</string>
     <string name="edit_reply_keeps_followers">يتغيّر هذا الرد وحده. تبقى الرسائل التي بعده، ويظهر الرد معدّلًا.</string>
+    <string name="thinking_now_fmt">يفكر… %1$d ث</string>
+    <string name="thought_for_fmt">فكّر %1$d ث</string>
+    <string name="thinking_show">إظهار التفكير</string>
+    <string name="thinking_hide">إخفاء التفكير</string>
 </resources>

@@ -155,8 +155,19 @@ data class StreamChoice(
 @Serializable
 data class StreamDelta(
     val role: String? = null,
-    val content: String? = null
-)
+    val content: String? = null,
+    /** The model's reasoning, as DeepSeek and Together send it (measured 2026-10-24). */
+    @SerialName("reasoning_content")
+    val reasoningContent: String? = null,
+    /** The same, as an Ollama server sends it (measured behind Custom, 2026-10-24). */
+    val reasoning: String? = null
+) {
+    /** Thinking first - it arrives before the answer - then the answer; empty pieces dropped later. */
+    fun pieces(): List<StreamPiece> = listOfNotNull(
+        (reasoningContent ?: reasoning)?.let { StreamPiece.Thinking(it) },
+        content?.let { StreamPiece.Answer(it) }
+    )
+}
 
 @Serializable
 data class ChatCompletionChunk(

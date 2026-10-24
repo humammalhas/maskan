@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -28,7 +29,22 @@ open class ApiHttpException(
     val rawBody: String? = null
 ) : Exception("API error ($code): ${providerMessage ?: rawBody ?: "Unknown error"}")
 
-fun parseSSEStream(call: Call<ResponseBody>, extractToken: (String) -> String?): Flow<String> = flow {
+/**
+ * One piece of a streamed reply: the answer, or the model's reasoning, which some providers send
+ * in a field of its own (plan item 2). Thinking is shown while the chat is open and goes nowhere
+ * else - not into the saved reply, not into the next request.
+ */
+sealed class StreamPiece {
+    data class Answer(val text: String) : StreamPiece()
+    data class Thinking(val text: String) : StreamPiece()
+}
+
+fun parseSSEStream(call: Call<ResponseBody>, extractToken: (String) -> String?): Flow<String> =
+    parseSSEPieces(call) { data -> extractToken(data)?.let { listOf(StreamPiece.Answer(it)) } }
+        .map { (it as StreamPiece.Answer).text }
+
+/** [parseSSEStream] for a chunk that can carry reasoning beside the answer: thinking first, as it arrives. */
+fun parseSSEPieces(call: Call<ResponseBody>, extract: (String) -> List<StreamPiece>?): Flow<StreamPiece> = flow {
     val response = call.execute()
     if (!response.isSuccessful) {
         val errorBody = response.errorBody()?.string()
@@ -46,12 +62,18 @@ fun parseSSEStream(call: Call<ResponseBody>, extractToken: (String) -> String?):
                 if (!line.startsWith("data: ")) continue
                 val data = line.removePrefix("data: ").trim()
                 if (data == "[DONE]") break
-                val token = try {
-                    extractToken(data)
+                val pieces = try {
+                    extract(data)
                 } catch (_: Exception) {
                     continue
                 } ?: continue
-                if (token.isNotEmpty()) emit(token)
+                for (piece in pieces) {
+                    val text = when (piece) {
+                        is StreamPiece.Answer -> piece.text
+                        is StreamPiece.Thinking -> piece.text
+                    }
+                    if (text.isNotEmpty()) emit(piece)
+                }
             }
         }
     }

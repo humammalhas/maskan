@@ -1,0 +1,28 @@
+data: {"id":"chatcmpl-01a16f8cfb9b718e920ec6e4","object":"chat.completion.chunk","created":1792872872,"model":"moonshotai/Kimi-K3","system_fingerprint":"default","choices":[{"index":0,"delta":{"role":"assistant","content":""},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-01a16f8cfb9b718e920ec6e4","object":"chat.completion.chunk","created":1792872872,"model":"moonshotai/Kimi-K3","system_fingerprint":"default","choices":[{"index":0,"delta":{"reasoning_content":"P"},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-01a16f8cfb9b718e920ec6e4","object":"chat.completion.chunk","created":1792872872,"model":"moonshotai/Kimi-K3","system_fingerprint":"default","choices":[{"index":0,"delta":{"reasoning_content":"ens are"},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-01a16f8cfb9b718e920ec6e4","object":"chat.completion.chunk","created":1792872872,"model":"moonshotai/Kimi-K3","system_fingerprint":"default","choices":[{"index":0,"delta":{"reasoning_content":" sold at 7 for "},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-01a16f8cfb9b718e920ec6e4","object":"chat.completion.chunk","created":1792872872,"model":"moonshotai/Kimi-K3","system_fingerprint":"default","choices":[{"index":0,"delta":{"reasoning_content":"3 dollars. So 84"},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-01a16f8cfb9b718e920ec6e4","object":"chat.completion.chunk","created":1792872872,"model":"moonshotai/Kimi-K3","system_fingerprint":"default","choices":[{"index":0,"delta":{"reasoning_content":" pens ="},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-01a16f8cfb9b718e920ec6e4","object":"chat.completion.chunk","created":1792872872,"model":"moonshotai/Kimi-K3","system_fingerprint":"default","choices":[{"index":0,"delta":{"reasoning_content":" 84/7 = "},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-01a16f8cfb9b718e920ec6e4","object":"chat.completion.chunk","created":1792872872,"model":"moonshotai/Kimi-K3","system_fingerprint":"default","choices":[{"index":0,"delta":{"reasoning_content":"12 groups of 7"},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-01a16f8cfb9b718e920ec6e4","object":"chat.completion.chunk","created":1792872872,"model":"moonshotai/Kimi-K3","system_fingerprint":"default","choices":[{"index":0,"delta":{"reasoning_content":". Each group costs 3"},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-01a16f8cfb9b718e920ec6e4","object":"chat.completion.chunk","created":1792872872,"model":"moonshotai/Kimi-K3","system_fingerprint":"default","choices":[{"index":0,"delta":{"reasoning_content":" dollars, so 12 × 3 = 36 dollars."},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-01a16f8cfb9b718e920ec6e4","object":"chat.completion.chunk","created":1792872872,"model":"moonshotai/Kimi-K3","system_fingerprint":"default","choices":[{"index":0,"delta":{"reasoning_content":""},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-01a16f8cfb9b718e920ec6e4","object":"chat.completion.chunk","created":1792872872,"model":"moonshotai/Kimi-K3","system_fingerprint":"default","choices":[{"index":0,"delta":{"content":"36"},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-01a16f8cfb9b718e920ec6e4","object":"chat.completion.chunk","created":1792872872,"model":"moonshotai/Kimi-K3","system_fingerprint":"default","choices":[{"index":0,"delta":{},"logprobs":null,"finish_reason":"stop","usage":{"prompt_tokens":111,"completion_tokens":61,"total_tokens":172,"prompt_tokens_details":{"cached_tokens":0},"completion_tokens_details":{"reasoning_tokens":47}}}]}
+
+data: [DONE]
+

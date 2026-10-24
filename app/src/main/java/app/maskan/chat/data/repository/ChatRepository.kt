@@ -18,6 +18,7 @@ import app.maskan.chat.data.model.Dialect
 import app.maskan.chat.data.remote.ChatCompletionResponse
 import app.maskan.chat.data.remote.Message
 import app.maskan.chat.data.remote.SearchStream
+import app.maskan.chat.data.remote.StreamPiece
 import app.maskan.chat.data.remote.WebSource
 import app.maskan.chat.data.remote.MessageContent
 import app.maskan.chat.data.remote.VideoBackend
@@ -1198,16 +1199,29 @@ class ChatRepository(
                     apiKey, effectiveModel, messages, storedBaseUrl,
                     imageData, imageMimeType
                 ) { more -> found.updateAndGet { SearchStream.merge(it, more) } }
+                    .map { StreamPiece.Answer(it) }
             } else if (switched && provider is OnDeviceProvider) {
                 // Moved here from a bigger window: the whole history fits or the send is refused.
-                provider.sendMessageStreamingWhole(messages)
+                provider.sendMessageStreamingWhole(messages).map { StreamPiece.Answer(it) }
             } else {
-                provider.sendMessageStreaming(
+                provider.sendMessageStreamingWithThinking(
                     apiKey, effectiveModel, messages, storedBaseUrl,
                     imageData, imageMimeType
                 )
             }
-            stream.collect { token ->
+            // The model's reasoning, where its provider sends it: shown, never saved. It is not
+            // written to the row, so it cannot reach a backup, an export or the next request
+            // (plan item 2; Humam, 2026-10-24: not stored).
+            val thinking = StringBuilder()
+            stream.collect { piece ->
+                val token = when (piece) {
+                    is StreamPiece.Thinking -> {
+                        thinking.append(piece.text)
+                        emit(StreamEvent.Thinking(assistantMessageId, thinking.toString()))
+                        return@collect
+                    }
+                    is StreamPiece.Answer -> piece.text
+                }
                 fullContent.append(token)
                 // A search answer can open with the paragraph break SearchStream puts where the
                 // results land; nothing was said before it, so it is not shown.
@@ -1239,6 +1253,9 @@ class ChatRepository(
         data class UserSaved(val message: MessageEntity) : StreamEvent()
         data class Started(val message: MessageEntity) : StreamEvent()
         data class Token(val messageId: Long, val fullContent: String) : StreamEvent()
+
+        /** The reasoning so far for this reply. For the screen only; never on the row. */
+        data class Thinking(val messageId: Long, val fullThinking: String) : StreamEvent()
 
         /** A generated image finished and was written to disk; the entity carries its path. */
         data class ImageReady(val message: MessageEntity) : StreamEvent()

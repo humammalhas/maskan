@@ -1,8 +1,10 @@
 package app.maskan.chat.data.remote.providers
 
 import app.maskan.chat.data.remote.Message
+import app.maskan.chat.data.remote.StreamPiece
 import app.maskan.chat.data.remote.WebSource
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 interface AiProvider {
     val id: String
@@ -154,6 +156,23 @@ interface AiProvider {
         imageData: ByteArray? = null,
         imageMimeType: String? = null
     ): Flow<String>
+
+    /**
+     * [sendMessageStreaming] with the model's reasoning as well, where the provider sends it in a
+     * field of its own (plan item 2; measured on Humam's keys: DeepSeek, Together, an Ollama server
+     * behind Custom). The SAME request - nothing asks a model to think. The default has no
+     * reasoning to give: every piece is answer.
+     */
+    fun sendMessageStreamingWithThinking(
+        apiKey: String,
+        model: String,
+        messages: List<Message>,
+        baseUrl: String? = null,
+        imageData: ByteArray? = null,
+        imageMimeType: String? = null
+    ): Flow<StreamPiece> =
+        sendMessageStreaming(apiKey, model, messages, baseUrl, imageData, imageMimeType)
+            .map { StreamPiece.Answer(it) }
 
     /**
      * Whether this provider can search the web itself when answering with [model]. Tested on

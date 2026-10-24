@@ -120,6 +120,7 @@ import androidx.compose.material.icons.filled.BookmarkAdd
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.animation.fadeOut
@@ -145,6 +146,7 @@ import app.maskan.chat.data.repository.ExportFormat
 import app.maskan.chat.ui.viewmodel.ChatViewModel
 import app.maskan.chat.ui.viewmodel.PendingMessageAction
 import app.maskan.chat.ui.viewmodel.ProjectFilesViewModel
+import app.maskan.chat.ui.viewmodel.ReplyThinking
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -1320,7 +1322,8 @@ fun ChatScreen(
                             { viewModel.forkFrom(message.id, forkTitle) }
                         } else {
                             null
-                        }
+                        },
+                        thinking = uiState.thinking[message.id]
                     )
                     if (message.role == "assistant" && message.sourcesJson != null) {
                         val sources = remember(message.sourcesJson) { SearchStream.decode(message.sourcesJson) }
@@ -1622,7 +1625,9 @@ private fun MessageBubble(
     onEditReply: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null,
     /** Copy the chat up to and including this message into a new one (plan item 13). */
-    onFork: (() -> Unit)? = null
+    onFork: (() -> Unit)? = null,
+    /** The model's reasoning for this reply, while the chat is open (plan item 2). */
+    thinking: ReplyThinking? = null
 ) {
     val backgroundColor = if (isUser) MaterialTheme.maskanColors.userBubble else MaterialTheme.maskanColors.assistantBubble
 
@@ -1736,6 +1741,9 @@ private fun MessageBubble(
                                 contentScale = ContentScale.FillWidth
                             )
                         }
+                    }
+                    if (thinking != null && !isUser) {
+                        ThinkingRow(thinking = thinking, hasAnswer = message.content.isNotBlank())
                     }
                     if (message.content.isNotBlank() && !isVideo) {
                         SelectionContainer {
@@ -2450,6 +2458,63 @@ private fun WebSourcesList(sources: List<WebSource>) {
                         .padding(vertical = 6.dp)
                 )
             }
+        }
+    }
+}
+
+/**
+ * The model's reasoning, folded to one muted line above the answer (plan item 2).
+ *
+ * "Thinking… 12 s" while it thinks, "Thought for 12 s" once the answer starts; a tap unfolds the
+ * text. No height cap on the unfolded text - it can be Arabic, and a box that cannot grow is the
+ * defect CLAUDE.md forbids. Styles come from the theme; no lineHeight is set here.
+ */
+@Composable
+private fun ThinkingRow(thinking: ReplyThinking, hasAnswer: Boolean) {
+    var open by remember { mutableStateOf(false) }
+    var now by remember { mutableStateOf(System.currentTimeMillis()) }
+    if (thinking.answeredAt == null) {
+        LaunchedEffect(thinking.startedAt) {
+            while (true) {
+                now = System.currentTimeMillis()
+                kotlinx.coroutines.delay(1000L)
+            }
+        }
+    }
+    val seconds = thinking.seconds(now)
+    val label = if (thinking.answeredAt == null) {
+        stringResource(R.string.thinking_now_fmt, seconds)
+    } else {
+        stringResource(R.string.thought_for_fmt, seconds)
+    }
+    val toggleLabel = stringResource(if (open) R.string.thinking_hide else R.string.thinking_show)
+    Column(modifier = Modifier.padding(bottom = if (hasAnswer) 8.dp else 0.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .heightIn(min = 32.dp)
+                .clickable(onClickLabel = toggleLabel) { open = !open }
+        ) {
+            Icon(
+                imageVector = if (open) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        AnimatedVisibility(visible = open) {
+            Text(
+                text = thinking.text,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 22.dp, top = 4.dp)
+            )
         }
     }
 }

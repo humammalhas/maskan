@@ -564,4 +564,8 @@
     <string name="edit_reply">Edit reply</string>
     <string name="reply_edited_marker">edited</string>
     <string name="edit_reply_keeps_followers">Only this reply changes. The messages after it stay, and the reply is marked as edited.</string>
+    <string name="thinking_now_fmt">Thinking… %1$d s</string>
+    <string name="thought_for_fmt">Thought for %1$d s</string>
+    <string name="thinking_show">Show the reasoning</string>
+    <string name="thinking_hide">Hide the reasoning</string>
 </resources>

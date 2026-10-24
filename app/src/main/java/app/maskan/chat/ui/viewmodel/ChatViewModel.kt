@@ -93,6 +93,16 @@ data class PendingMessageAction(
     enum class Kind { EDIT, EDIT_REPLY, DELETE }
 }
 
+/** A reply's reasoning: its text, when it began, and when the answer began (null while still thinking). */
+data class ReplyThinking(
+    val text: String,
+    val startedAt: Long,
+    val answeredAt: Long? = null
+) {
+    /** Whole seconds spent thinking: up to the answer, or up to [now] while it is still thinking. */
+    fun seconds(now: Long): Long = (((answeredAt ?: now) - startedAt) / 1000).coerceAtLeast(1)
+}
+
 data class ChatUiState(
     val messages: List<MessageEntity> = emptyList(),
     val isLoading: Boolean = false,
@@ -197,6 +207,12 @@ data class ChatUiState(
      * "waiting"), and never persisted - the database holds only the job id.
      */
     val videoProgress: Map<Long, VideoProgress> = emptyMap(),
+    /**
+     * The model's reasoning per reply, where its provider sends it (plan item 2). Kept while this
+     * chat is open and never persisted: loadConversation starts a fresh state, so leaving the chat
+     * is what clears it (Humam, 2026-10-24).
+     */
+    val thinking: Map<Long, ReplyThinking> = emptyMap(),
     /** An edit or a delete, waiting for the confirm dialog. */
     val pendingMessageAction: PendingMessageAction? = null,
     /** A fork was just made: the screen opens it, then clears this. */
@@ -1483,6 +1499,23 @@ class ChatViewModel(
             }
             is ChatRepository.StreamEvent.Token -> {
                 updateMessageContent(event.messageId, event.fullContent)
+                // The first word of the answer is where the thinking ends.
+                val held = _uiState.value.thinking[event.messageId]
+                if (held != null && held.answeredAt == null) {
+                    _uiState.value = _uiState.value.copy(
+                        thinking = _uiState.value.thinking +
+                            (event.messageId to held.copy(answeredAt = System.currentTimeMillis()))
+                    )
+                }
+            }
+            is ChatRepository.StreamEvent.Thinking -> {
+                val held = _uiState.value.thinking[event.messageId]
+                _uiState.value = _uiState.value.copy(
+                    thinking = _uiState.value.thinking + (event.messageId to (
+                        held?.copy(text = event.fullThinking)
+                            ?: ReplyThinking(event.fullThinking, System.currentTimeMillis())
+                        ))
+                )
             }
             is ChatRepository.StreamEvent.ImageReady -> {
                 val kind = _uiState.value.pendingKind

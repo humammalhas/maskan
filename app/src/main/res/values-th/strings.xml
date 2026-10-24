@@ -564,4 +564,8 @@
     <string name="edit_reply">แก้ไขคำตอบ</string>
     <string name="reply_edited_marker">แก้ไขแล้ว</string>
     <string name="edit_reply_keeps_followers">เปลี่ยนเฉพาะคำตอบนี้ ข้อความหลังจากนี้ยังอยู่ครบ และคำตอบจะมีป้ายว่าแก้ไขแล้ว</string>
+    <string name="thinking_now_fmt">กำลังคิด… %1$d วิ</string>
+    <string name="thought_for_fmt">ใช้เวลาคิด %1$d วิ</string>
+    <string name="thinking_show">แสดงขั้นตอนการคิด</string>
+    <string name="thinking_hide">ซ่อนขั้นตอนการคิด</string>
 </resources>
