@@ -586,7 +586,7 @@
     <string name="audio_chip_transcribe_answer">Transcribe and answer</string>
     <string name="transcribe_voice_notes_label">Voice notes</string>
     <string name="transcribe_own">%1$s transcribes them itself · %2$s</string>
-    <string name="transcribe_sent_to">%1$s can\'t transcribe them. They are sent to %2$s. Tap to change.</string>
+    <string name="transcribe_sent_to">%1$s can\'t transcribe them. They are sent to %2$s.</string>
     <string name="audio_chip_listen_answer">Listen and answer</string>
     <string name="listening_audio">Listening to the recording…</string>
     <string name="audio_listen_failed">This recording could not be prepared for listening. Its transcript is saved; ask about it, or use Transcribe and answer.</string>

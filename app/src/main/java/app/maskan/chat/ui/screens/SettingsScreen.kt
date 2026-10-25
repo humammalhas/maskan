@@ -1208,14 +1208,14 @@ fun SettingsScreen(
             // transcribes does it for its own chats; one that cannot sends them to the choice here.
             val shownName = if (isArabic) selectedProvider.nameAr else selectedProvider.displayName
             val ownBackend = state.configuredProviderIds.let { viewModel.ownTranscribeBackend(selectedProvider.id) }
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(enabled = ownBackend == null && transcribeChoices.any { it.second }) {
-                        showTranscribePicker = true
-                    }
-                    .padding(vertical = 4.dp)
+            // Change sits beside the label, orange like the chat header's Change (Humam), and only
+            // where there is a choice: a provider that transcribes its own chats has none to make.
+            val canChange = ownBackend == null && transcribeChoices.any { it.second }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+            Column(modifier = Modifier.weight(1f).padding(vertical = 4.dp)) {
                 Text(
                     text = stringResource(R.string.transcribe_voice_notes_label),
                     style = MaterialTheme.typography.bodyLarge
@@ -1236,6 +1236,12 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+            if (canChange) {
+                TextButton(onClick = { showTranscribePicker = true }) {
+                    Text(stringResource(R.string.model_header_change))
+                }
+            }
             }
             if (showTranscribePicker) {
                 AlertDialog(

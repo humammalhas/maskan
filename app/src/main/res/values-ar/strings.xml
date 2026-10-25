@@ -586,7 +586,7 @@
     <string name="audio_chip_transcribe_answer">حوّله إلى نص وأجب</string>
     <string name="transcribe_voice_notes_label">الرسائل الصوتية</string>
     <string name="transcribe_own">يحوّلها %1$s إلى نص بنفسه · %2$s</string>
-    <string name="transcribe_sent_to">لا يستطيع %1$s تحويلها إلى نص، فتُرسَل إلى %2$s. اضغط للتغيير.</string>
+    <string name="transcribe_sent_to">لا يستطيع %1$s تحويلها إلى نص، فتُرسَل إلى %2$s.</string>
     <string name="audio_chip_listen_answer">استمع وأجب</string>
     <string name="listening_audio">يستمع إلى التسجيل…</string>
     <string name="audio_listen_failed">تعذّر تجهيز هذا التسجيل للاستماع. حُفظ نصّه، فاسأل عنه أو اختر \"حوّله إلى نص وأجب\".</string>
