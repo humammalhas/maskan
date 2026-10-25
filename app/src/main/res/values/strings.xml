@@ -593,4 +593,18 @@
     <string name="audio_heard_by">Heard and answered by %1$s · %2$s</string>
     <string name="audio_prompt_answer">What does the speaker in this voice note say, and what do they want? Do not reply to the speaker.</string>
     <string name="audio_prompt_listen">Listen to this voice note and tell me briefly: how the speaker sounds (calm, angry, rushed…), how many people speak, which dialect it is, and what they are saying or asking for. Do not reply to the speaker.</string>
+    <string name="audio_chip_rewrite">Rewrite in…</string>
+    <string name="audio_prompt_rewrite">Rewrite this voice note in %1$s: the same meaning, in the speaker\'s own voice (keep the first person), with names and terms unchanged. Write only the rewritten text.</string>
+    <string name="rewrite_menu_msa">Fusha (Modern Standard Arabic)</string>
+    <string name="rewrite_menu_levantine">Levantine</string>
+    <string name="rewrite_menu_egyptian">Egyptian</string>
+    <string name="rewrite_menu_gulf">Gulf</string>
+    <string name="rewrite_menu_maghrebi">Maghrebi</string>
+    <string name="rewrite_menu_algerian">Algerian</string>
+    <string name="rewrite_name_msa">Modern Standard Arabic (Fusha)</string>
+    <string name="rewrite_name_levantine">Levantine Arabic</string>
+    <string name="rewrite_name_egyptian">Egyptian Arabic</string>
+    <string name="rewrite_name_gulf">Gulf Arabic</string>
+    <string name="rewrite_name_maghrebi">Maghrebi Darija</string>
+    <string name="rewrite_name_algerian">Algerian Darja</string>
 </resources>

@@ -593,4 +593,18 @@
     <string name="audio_heard_by">استمع إليه وأجاب %1$s · %2$s</string>
     <string name="audio_prompt_answer">ماذا يقول المتحدث في هذه الرسالة الصوتية، وماذا يريد؟ لا تردّ على المتحدث.</string>
     <string name="audio_prompt_listen">استمع إلى هذه الرسالة الصوتية وأخبرني باختصار: كيف تبدو نبرة المتحدث (هادئة، غاضبة، مستعجلة…)، وكم شخصًا يتكلم، وما اللهجة، وماذا يقول أو يطلب. لا تردّ على المتحدث.</string>
+    <string name="audio_chip_rewrite">حوّله إلى…</string>
+    <string name="audio_prompt_rewrite">أعد كتابة هذه الرسالة الصوتية ب%1$s، بالمعنى نفسه وعلى لسان المتحدث نفسه، مع إبقاء الأسماء والمصطلحات كما هي. اكتب النص المُعاد فقط.</string>
+    <string name="rewrite_menu_msa">الفصحى</string>
+    <string name="rewrite_menu_levantine">الشامية</string>
+    <string name="rewrite_menu_egyptian">المصرية</string>
+    <string name="rewrite_menu_gulf">الخليجية</string>
+    <string name="rewrite_menu_maghrebi">المغاربية</string>
+    <string name="rewrite_menu_algerian">الجزائرية</string>
+    <string name="rewrite_name_msa">الفصحى</string>
+    <string name="rewrite_name_levantine">اللهجة الشامية</string>
+    <string name="rewrite_name_egyptian">اللهجة المصرية</string>
+    <string name="rewrite_name_gulf">اللهجة الخليجية</string>
+    <string name="rewrite_name_maghrebi">الدارجة المغاربية</string>
+    <string name="rewrite_name_algerian">الدارجة الجزائرية</string>
 </resources>

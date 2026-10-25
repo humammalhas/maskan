@@ -1470,7 +1470,13 @@ class ChatViewModel(
      * no model anything; true sends it, with [content] if any, for a reply. On failure the audio,
      * any photo or file and the typed text all stay in the composer, with the provider's own words.
      */
-    fun transcribeVoiceNote(content: String, answer: Boolean, listen: Boolean = false) {
+    fun transcribeVoiceNote(
+        content: String,
+        answer: Boolean,
+        listen: Boolean = false,
+        /** "Rewrite in…": the reply is the note rewritten in this dialect's voice (layer B). */
+        rewrite: app.maskan.chat.data.model.Dialect? = null
+    ) {
         val audio = _uiState.value.pendingAudio ?: return
         if (_uiState.value.transcribing) return
         val context: Context = getApplication()
@@ -1518,7 +1524,7 @@ class ChatViewModel(
                         sendPrepared(content, attachment, hearing)
                     }
                 } else if (answer) {
-                    sendPrepared(content, attachment)
+                    sendPrepared(content, attachment, rewrite = rewrite)
                 } else {
                     try {
                         upsertMessage(chatRepository.saveVoiceNote(currentConversationId, content, attachment))
@@ -1562,7 +1568,8 @@ class ChatViewModel(
     private fun sendPrepared(
         content: String,
         audioAttachment: ChatRepository.AudioAttachment?,
-        hearing: ChatRepository.Hearing? = null
+        hearing: ChatRepository.Hearing? = null,
+        rewrite: app.maskan.chat.data.model.Dialect? = null
     ) {
         val imageData = _uiState.value.pendingImageBytes
         val imageMimeType = _uiState.value.pendingImageMimeType
@@ -1617,7 +1624,8 @@ class ChatViewModel(
                 imageMimeType = imageMimeType,
                 webSearch = webSearch,
                 audio = audioAttachment,
-                hearing = hearing
+                hearing = hearing,
+                rewriteVoice = rewrite
             ).catch { error ->
                 handleSendFailure(error)
             }.collect { event ->

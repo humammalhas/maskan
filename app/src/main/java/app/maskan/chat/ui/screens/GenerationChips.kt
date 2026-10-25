@@ -1,6 +1,14 @@
 package app.maskan.chat.ui.screens
 
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import app.maskan.chat.data.model.Dialect
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -149,8 +157,11 @@ internal fun AudioActionChips(
     onTranscribeAndAnswer: () -> Unit,
     /** Gemini and OpenAI chats only: the model hears the file itself (layer C). */
     canListen: Boolean = false,
-    onListenAndAnswer: () -> Unit = {}
+    onListenAndAnswer: () -> Unit = {},
+    /** "Rewrite in…" (layer B): every provider, because it is text rewriting text. */
+    onRewrite: (Dialect) -> Unit = {}
 ) {
+    var rewriteMenu by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier
             .padding(horizontal = 12.dp, vertical = 2.dp)
@@ -189,7 +200,50 @@ internal fun AudioActionChips(
                 }
             )
         }
+        Box {
+            AssistChip(
+                onClick = { rewriteMenu = true },
+                enabled = enabled,
+                label = {
+                    Text(
+                        text = stringResource(R.string.audio_chip_rewrite),
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                }
+            )
+            DropdownMenu(expanded = rewriteMenu, onDismissRequest = { rewriteMenu = false }) {
+                Dialect.entries.forEach { dialect ->
+                    DropdownMenuItem(
+                        text = { Text(stringResource(dialectMenuName(dialect))) },
+                        onClick = {
+                            rewriteMenu = false
+                            onRewrite(dialect)
+                        }
+                    )
+                }
+            }
+        }
     }
+}
+
+/** A dialect as the "Rewrite in…" menu lists it. */
+internal fun dialectMenuName(dialect: Dialect): Int = when (dialect) {
+    Dialect.MSA -> R.string.rewrite_menu_msa
+    Dialect.LEVANTINE -> R.string.rewrite_menu_levantine
+    Dialect.EGYPTIAN -> R.string.rewrite_menu_egyptian
+    Dialect.GULF -> R.string.rewrite_menu_gulf
+    Dialect.MAGHREBI -> R.string.rewrite_menu_maghrebi
+    Dialect.ALGERIAN -> R.string.rewrite_menu_algerian
+}
+
+/** A dialect as the visible rewrite request names it ("Rewrite this voice note in %1$s…"). */
+internal fun dialectPromptName(dialect: Dialect): Int = when (dialect) {
+    Dialect.MSA -> R.string.rewrite_name_msa
+    Dialect.LEVANTINE -> R.string.rewrite_name_levantine
+    Dialect.EGYPTIAN -> R.string.rewrite_name_egyptian
+    Dialect.GULF -> R.string.rewrite_name_gulf
+    Dialect.MAGHREBI -> R.string.rewrite_name_maghrebi
+    Dialect.ALGERIAN -> R.string.rewrite_name_algerian
 }
 
 /** Image shape: square, wide, tall. Sent as `size`; the local server honours it on every model. */

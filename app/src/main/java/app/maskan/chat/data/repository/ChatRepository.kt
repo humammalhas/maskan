@@ -698,7 +698,9 @@ class ChatRepository(
         /** An audio file already transcribed (2.7, plan item 3): stored with the row, never sent. */
         audio: AudioAttachment? = null,
         /** "Listen and answer": this one reply hears the audio itself (Gemini, OpenAI gpt-audio). */
-        hearing: Hearing? = null
+        hearing: Hearing? = null,
+        /** "Rewrite in…": this one reply is written in this dialect's voice, whatever the chat's is. */
+        rewriteVoice: Dialect? = null
     ): Flow<StreamEvent> = flow {
         val conversation = conversationDao.getConversationById(conversationId)
             ?: throw Exception("Conversation not found")
@@ -746,7 +748,8 @@ class ChatRepository(
 
         streamAssistantReply(
             conversation, model, imageData, imageMimeType, webSearch,
-            heard = hearing?.let { it to userEntity.copy(id = userMessageId) }
+            heard = hearing?.let { it to userEntity.copy(id = userMessageId) },
+            voiceOverride = rewriteVoice
         )
 
         if (conversation.title == DEFAULT_TITLE) {
@@ -1274,10 +1277,12 @@ class ChatRepository(
         imageMimeType: String?,
         webSearch: Boolean = false,
         /** "Listen and answer": the audio to send on this turn, and the user row it belongs to. */
-        heard: Pair<Hearing, MessageEntity>? = null
+        heard: Pair<Hearing, MessageEntity>? = null,
+        /** "Rewrite in…": the voice for this reply only. */
+        voiceOverride: Dialect? = null
     ) {
         val conversationId = conversation.id
-        val messages = buildMessageList(conversation, conversation.modelId ?: model)
+        val messages = buildMessageList(conversation, conversation.modelId ?: model, voiceOverride)
         noteVoiceDropIfNeeded(conversationId)
 
         val providerId = conversation.providerId
@@ -1957,7 +1962,12 @@ class ChatRepository(
     private suspend fun buildMessageList(
         conversation: ConversationEntity,
         /** The model about to answer - it decides whether photos can go back out at all. */
-        model: String
+        model: String,
+        /**
+         * "Rewrite in…" (plan item 3, layer B): this one reply in a dialect's voice instead of the
+         * chat's. Any language: the target is Arabic whatever the app is speaking.
+         */
+        voiceOverride: Dialect? = null
     ): List<Message> {
         val entities = messageDao.getMessagesForConversationOnce(conversation.id)
         val documents = documentDao.getForConversationOnce(conversation.id)
@@ -1990,7 +2000,7 @@ class ChatRepository(
         )
 
         val project = projectText(conversation)
-        val voice = dialectVoice(conversation)
+        val voice = voiceOverride?.let { RequestAssembly.voiceFor("ar", it) } ?: dialectVoice(conversation)
 
         // The question the document evidence is chosen for is the turn being sent: the user row
         // is written before the request is built, so the last user message IS the question.

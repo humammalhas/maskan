@@ -133,6 +133,7 @@ import app.maskan.chat.MaskanApplication
 import app.maskan.chat.R
 import app.maskan.chat.util.CameraCapture
 import app.maskan.chat.data.local.MessageEntity
+import app.maskan.chat.data.model.Dialect
 import app.maskan.chat.data.local.localizedName
 import app.maskan.chat.data.remote.providers.ProviderRegistry
 import app.maskan.chat.data.repository.PreferenceRepository
@@ -976,6 +977,9 @@ fun ChatScreen(
                         // The text box is emptied only when the transcript is back (audioSent).
                         val answerPrompt = stringResource(R.string.audio_prompt_answer)
                         val listenPrompt = stringResource(R.string.audio_prompt_listen)
+                        val rewritePrompts = Dialect.entries.associateWith { dialect ->
+                            stringResource(R.string.audio_prompt_rewrite, stringResource(dialectPromptName(dialect)))
+                        }
                         AudioActionChips(
                             enabled = !uiState.transcribing && !uiState.isLoading && !uiState.isStreaming,
                             onTranscribeOnly = { viewModel.transcribeVoiceNote(inputText, answer = false) },
@@ -988,6 +992,15 @@ fun ChatScreen(
                             canListen = viewModel.canListen(),
                             onListenAndAnswer = {
                                 viewModel.transcribeVoiceNote(inputText.ifBlank { listenPrompt }, answer = true, listen = true)
+                            },
+                            // The request is visible in the bubble; anything typed rides under it.
+                            onRewrite = { dialect ->
+                                val request = rewritePrompts.getValue(dialect)
+                                viewModel.transcribeVoiceNote(
+                                    if (inputText.isBlank()) request else request + "\n\n" + inputText,
+                                    answer = true,
+                                    rewrite = dialect
+                                )
                             }
                         )
                         // Said every time, not once: a voice note is usually somebody else's

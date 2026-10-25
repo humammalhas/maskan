@@ -80,6 +80,14 @@ class ListenerTest {
         assertTrue(body.contains("\"role\":\"system\""))
     }
 
+    /** "Rewrite in…" (layer B) asks for the target's voice in Arabic whatever the app speaks. */
+    @Test
+    fun everyRewriteTargetHasAnArabicVoice() {
+        for (dialect in app.maskan.chat.data.model.Dialect.entries) {
+            assertTrue(dialect.id, app.maskan.chat.data.repository.RequestAssembly.voiceFor("ar", dialect).isNotBlank())
+        }
+    }
+
     @Test
     fun aWavIsSixteenKilohertzMonoSixteenBit() {
         val pcm = ShortArray(48_000) { (it % 100).toShort() }       // one second at 48 kHz

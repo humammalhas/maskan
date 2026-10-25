@@ -593,4 +593,18 @@
     <string name="audio_heard_by">ฟังและตอบโดย %1$s · %2$s</string>
     <string name="audio_prompt_answer">ผู้พูดในข้อความเสียงนี้พูดว่าอะไร และต้องการอะไร ไม่ต้องตอบกลับผู้พูด</string>
     <string name="audio_prompt_listen">ฟังข้อความเสียงนี้แล้วบอกสั้นๆ ว่า น้ำเสียงผู้พูดเป็นอย่างไร (สงบ โกรธ รีบร้อน…) มีกี่คนที่พูด เป็นภาษาถิ่นใด และพูดหรือขออะไร ไม่ต้องตอบกลับผู้พูด</string>
+    <string name="audio_chip_rewrite">เขียนใหม่เป็น…</string>
+    <string name="audio_prompt_rewrite">เขียนข้อความเสียงนี้ใหม่เป็น%1$s โดยคงความหมายเดิม ใช้น้ำเสียงของผู้พูดเอง (คงบุรุษที่หนึ่งไว้) และไม่เปลี่ยนชื่อหรือศัพท์เฉพาะ เขียนเฉพาะข้อความที่เขียนใหม่</string>
+    <string name="rewrite_menu_msa">ฟุสฮา (อาหรับมาตรฐาน)</string>
+    <string name="rewrite_menu_levantine">สำเนียงเลแวนต์</string>
+    <string name="rewrite_menu_egyptian">สำเนียงอียิปต์</string>
+    <string name="rewrite_menu_gulf">สำเนียงอ่าวอาหรับ</string>
+    <string name="rewrite_menu_maghrebi">สำเนียงมาเกร็บ</string>
+    <string name="rewrite_menu_algerian">สำเนียงแอลจีเรีย</string>
+    <string name="rewrite_name_msa">ภาษาอาหรับมาตรฐาน (ฟุสฮา)</string>
+    <string name="rewrite_name_levantine">ภาษาอาหรับสำเนียงเลแวนต์</string>
+    <string name="rewrite_name_egyptian">ภาษาอาหรับสำเนียงอียิปต์</string>
+    <string name="rewrite_name_gulf">ภาษาอาหรับสำเนียงอ่าวอาหรับ</string>
+    <string name="rewrite_name_maghrebi">ภาษาอาหรับดาริจามาเกร็บ</string>
+    <string name="rewrite_name_algerian">ภาษาอาหรับดาริจาแอลจีเรีย</string>
 </resources>
