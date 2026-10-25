@@ -166,6 +166,8 @@ fun ChatScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var inputText by rememberSaveable { mutableStateOf("") }
+    // A voice note's message leaves the box only once its transcript is back (see onSend).
+    LaunchedEffect(uiState.audioSent) { if (uiState.audioSent > 0) inputText = "" }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     var showCustomPromptDialog by remember { mutableStateOf(false) }
@@ -291,6 +293,15 @@ fun ChatScreen(
     ) { uri ->
         if (uri != null) {
             viewModel.attachFile(uri)
+        }
+    }
+
+    // The system file picker again: no storage permission, and the user opens exactly one file.
+    val audioPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            viewModel.attachAudio(uri)
         }
     }
 
@@ -956,6 +967,44 @@ fun ChatScreen(
                             onRemove = { viewModel.clearPendingPages() }
                         )
                     }
+                    uiState.pendingAudio?.let { audio ->
+                        FileAttachmentChip(
+                            fileName = "🎙 " + audio.name +
+                                (audio.durationMs?.let { " · " + audioDuration(it) } ?: ""),
+                            onRemove = { viewModel.clearPendingAudio() }
+                        )
+                        // The text box is emptied only when the transcript is back (audioSent).
+                        AudioActionChips(
+                            enabled = !uiState.transcribing && !uiState.isLoading && !uiState.isStreaming,
+                            onTranscribeOnly = { viewModel.transcribeVoiceNote(inputText, answer = false) },
+                            onTranscribeAndAnswer = { viewModel.transcribeVoiceNote(inputText, answer = true) }
+                        )
+                        // Said every time, not once: a voice note is usually somebody else's
+                        // voice, and the provider receiving it can change with the user's keys.
+                        val isArabic = app.localeRepository.getLocale() == "ar"
+                        val backend = viewModel.transcribeBackend()
+                        Text(
+                            text = stringResource(
+                                if (backend?.anonymizedOnly == true) R.string.privacy_note_audio_anonymized
+                                else R.string.privacy_note_audio,
+                                viewModel.transcribeProviderName(isArabic)
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 4.dp)
+                        )
+                        if (uiState.transcribing) {
+                            Text(
+                                text = stringResource(
+                                    R.string.audio_transcribing,
+                                    viewModel.transcribeProviderName(isArabic)
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 4.dp)
+                            )
+                        }
+                    }
                     if (uiState.readingFile) {
                         Text(
                             text = stringResource(R.string.document_reading_file),
@@ -1062,7 +1111,11 @@ fun ChatScreen(
                         onSend = {
                             // Pages of a scan count as an attachment: with only pages waiting
                             // and nothing typed, Send was dead and the chip just sat there.
-                            if (inputText.isNotBlank() || uiState.pendingImageBytes != null ||
+                            if (uiState.pendingAudio != null) {
+                                // Kept in the box until the transcript is back: a failed
+                                // transcription sends nothing, so nothing typed may be lost.
+                                if (!uiState.transcribing) viewModel.sendMessage(inputText)
+                            } else if (inputText.isNotBlank() || uiState.pendingImageBytes != null ||
                                 uiState.pendingFileText != null || uiState.pendingPages != null
                             ) {
                                 viewModel.sendMessage(inputText)
@@ -1104,7 +1157,8 @@ fun ChatScreen(
                         supportsVision = viewModel.currentProviderSupportsVision() ||
                             viewModel.editModel() != null || viewModel.canGenerateVideos(),
                         hasAttachment = uiState.pendingImageBytes != null ||
-                            uiState.pendingFileText != null || uiState.pendingPages != null,
+                            uiState.pendingFileText != null || uiState.pendingPages != null ||
+                            uiState.pendingAudio != null,
                         imageFeatureAvailable = viewModel.imageFeatureAvailable(),
                         canGenerateImages = viewModel.canGenerateImages(),
                         imageMode = uiState.imageMode,
@@ -1134,7 +1188,11 @@ fun ChatScreen(
                         onPickVideoModel = { showVideoModelPicker = true },
                         canSearchWeb = viewModel.canSearchWeb(),
                         webSearchMode = uiState.webSearchMode,
-                        onToggleWebSearch = { viewModel.setWebSearchMode(!uiState.webSearchMode) }
+                        onToggleWebSearch = { viewModel.setWebSearchMode(!uiState.webSearchMode) },
+                        canAttachAudio = viewModel.transcribeBackend() != null,
+                        onAttachAudio = {
+                            audioPickerLauncher.launch(arrayOf("audio/*", "application/ogg"))
+                        }
                     )
                 }
             }
@@ -1538,6 +1596,60 @@ private fun FileAttachmentChip(
     }
 }
 
+/** "0:37", "3:29", "1:02:05": a recording's length the way a phone's player writes it. */
+private fun audioDuration(ms: Long): String {
+    val total = ms / 1000
+    val h = total / 3600
+    val m = (total % 3600) / 60
+    val s = total % 60
+    return if (h > 0) String.format(java.util.Locale.US, "%d:%02d:%02d", h, m, s)
+    else String.format(java.util.Locale.US, "%d:%02d", m, s)
+}
+
+/**
+ * A voice note inside the user's bubble (plan item 3): what was attached, the transcript as spoken,
+ * and who wrote it out. The transcript is what the model read, so it is shown in full - the user
+ * checks it rather than trusting it - in its own text's direction, like the rest of the bubble.
+ */
+@Composable
+private fun VoiceNoteBlock(message: MessageEntity, hasText: Boolean) {
+    val isArabic = LocalContext.current.resources.configuration.locales[0].language == "ar"
+    Column(modifier = Modifier.padding(bottom = if (hasText) 8.dp else 0.dp)) {
+        Text(
+            text = "🎙 " + (message.audioName ?: "") +
+                (message.audioDurationMs?.let { " · " + audioDuration(it) } ?: ""),
+            style = MaterialTheme.typography.labelMedium.copy(textDirection = TextDirection.Content),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        message.transcript?.let { transcript ->
+            SelectionContainer {
+                Text(
+                    text = transcript,
+                    style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Content),
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+        message.transcribedBy?.let { by ->
+            val providerId = by.substringBefore('/')
+            val model = by.substringAfter('/', "")
+            val provider = ProviderRegistry.getProvider(providerId)
+            val name = when {
+                provider == null -> providerId
+                isArabic -> provider.nameAr
+                else -> provider.displayName
+            }
+            Text(
+                // The model id is Latin inside a possibly Arabic sentence: isolate it.
+                text = stringResource(R.string.audio_transcribed_by, name, "⁨" + model + "⁩"),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+    }
+}
+
 @Composable
 private fun CustomPromptDialog(
     initialText: String,
@@ -1742,6 +1854,9 @@ private fun MessageBubble(
                             )
                         }
                     }
+                    if (message.audioName != null || message.transcript != null) {
+                        VoiceNoteBlock(message = message, hasText = message.content.isNotBlank())
+                    }
                     if (thinking != null && !isUser) {
                         ThinkingRow(thinking = thinking, hasAnswer = message.content.isNotBlank())
                     }
@@ -1922,6 +2037,8 @@ private fun MessageInputBar(
     canSearchWeb: Boolean = false,
     webSearchMode: Boolean = false,
     onToggleWebSearch: () -> Unit = {},
+    canAttachAudio: Boolean = false,
+    onAttachAudio: () -> Unit = {},
     /** A photo is waiting to be asked about: the hint becomes the question it invites. */
     photoAttached: Boolean = false,
     focusRequester: FocusRequester? = null
@@ -1971,6 +2088,12 @@ private fun MessageInputBar(
             val attachPhotoFirst = stringResource(R.string.error_no_photo_to_edit)
             val modelCannotSee = stringResource(R.string.model_cannot_see_images)
             val cannotSearch = stringResource(R.string.web_search_unavailable)
+            val cannotTranscribe = stringResource(
+                R.string.audio_no_backend,
+                ProviderRegistry.getProvider("groq")?.let {
+                    if (LocalContext.current.resources.configuration.locales[0].language == "ar") it.nameAr else it.displayName
+                } ?: "Groq"
+            )
             Box {
                 IconButton(
                     onClick = { menuOpen = true },
@@ -2035,6 +2158,18 @@ private fun MessageInputBar(
                             menuOpen = false
                             if (canSearchWeb) onToggleWebSearch()
                             else Toast.makeText(context, cannotSearch, Toast.LENGTH_LONG).show()
+                        }
+                    )
+                    // Greyed, never hidden, when none of the user's keys can transcribe: the
+                    // toast names the free key that would (plan item 3).
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.attach_audio)) },
+                        leadingIcon = { Text("🎙", fontSize = 18.sp) },
+                        modifier = Modifier.alpha(if (canAttachAudio) 1f else 0.4f),
+                        onClick = {
+                            menuOpen = false
+                            if (canAttachAudio) onAttachAudio()
+                            else Toast.makeText(context, cannotTranscribe, Toast.LENGTH_LONG).show()
                         }
                     )
                     if (imageFeatureAvailable) {

@@ -35,9 +35,13 @@ import kotlin.random.Random
  */
 class ImageStore(private val context: Context) {
 
-    fun save(bytes: ByteArray): String {
+    /**
+     * [prefix] only names the file: "aud" for an attached audio file (2.7), which is kept here for
+     * the same reasons as a generated picture - too big for a database row, private to the app.
+     */
+    fun save(bytes: ByteArray, prefix: String = "img"): String {
         val dir = File(context.filesDir, DIR).apply { mkdirs() }
-        val name = "img_${System.currentTimeMillis()}_${Random.nextInt(100000)}.enc"
+        val name = "${prefix}_${System.currentTimeMillis()}_${Random.nextInt(100000)}.enc"
         val cipher = Cipher.getInstance(TRANSFORMATION).apply {
             init(Cipher.ENCRYPT_MODE, secretKey())
         }

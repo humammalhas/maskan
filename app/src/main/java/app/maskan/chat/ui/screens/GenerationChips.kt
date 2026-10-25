@@ -136,6 +136,47 @@ internal fun PhotoQuestionChips(
     }
 }
 
+/**
+ * What to do with an attached voice note (plan item 3), the way PhotoQuestionChips offers what to do
+ * with a photo. "Transcribe only" saves the transcript and asks no model anything; "Transcribe and
+ * answer" sends it for a reply, told the voice may be somebody else's. Send with nothing typed is
+ * "Transcribe only"; with a question it is the question, answered. Phase B adds the rewrites here.
+ */
+@Composable
+internal fun AudioActionChips(
+    enabled: Boolean,
+    onTranscribeOnly: () -> Unit,
+    onTranscribeAndAnswer: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .padding(horizontal = 12.dp, vertical = 2.dp)
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        AssistChip(
+            onClick = onTranscribeOnly,
+            enabled = enabled,
+            label = {
+                Text(
+                    text = stringResource(R.string.audio_chip_transcribe_only),
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
+        )
+        AssistChip(
+            onClick = onTranscribeAndAnswer,
+            enabled = enabled,
+            label = {
+                Text(
+                    text = stringResource(R.string.audio_chip_transcribe_answer),
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
+        )
+    }
+}
+
 /** Image shape: square, wide, tall. Sent as `size`; the local server honours it on every model. */
 @Composable
 internal fun ImageSizeChips(size: String, onSize: (String) -> Unit) {

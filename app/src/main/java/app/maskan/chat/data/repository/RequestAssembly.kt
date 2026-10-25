@@ -26,6 +26,23 @@ internal object RequestAssembly {
     fun conversationTurns(messages: List<Message>): List<Message> =
         messages.filter { it.role != "system" && it.role != ChatRepository.ROLE_NOTICE }
 
+    /**
+     * What a model reads for a user turn that carries a voice note (2.7, plan item 3): the transcript,
+     * labelled the way a pasted file is ("[File: name]"), then whatever the user typed. The audio
+     * file itself goes to no chat model, on this turn or any later one - which is why every one of
+     * the twelve providers, and on-device, can answer it. A row with no transcript is unchanged.
+     *
+     * The label says the words may be somebody else's. Without it, DeepSeek answered a colleague's
+     * forwarded voice note as if it were the colleague being spoken to (Humam, session 11).
+     */
+    fun withTranscript(content: String, transcript: String?, audioName: String?): String {
+        if (transcript.isNullOrBlank()) return content
+        val head = "[A voice note the user attached" + (audioName?.let { ": $it" } ?: "") +
+            ". Someone else may be speaking: this is a transcript of the recording, not the user's own words.]\n\n" +
+            transcript.trim()
+        return if (content.isBlank()) head else head + "\n\n" + content
+    }
+
     /** What a conversation's folder contributes to the system role (see ChatRepository.projectText). */
     data class ProjectText(val instructions: String, val memory: String)
 

@@ -570,4 +570,21 @@
     <string name="thinking_hide">Hide the reasoning</string>
     <string name="show_thinking_label">Show the model\'s thinking</string>
     <string name="show_thinking_hint">Some models think before they answer, and some providers send that thinking. Off hides it. On DeepSeek, Together, Venice and your own server it also asks the model not to think, so the answer starts sooner. Elsewhere it is only hidden.</string>
+    <string name="attach_audio">Choose audio</string>
+    <string name="audio_no_backend">None of your keys can transcribe audio. A free %1$s key can.</string>
+    <string name="audio_too_large">That audio file is too large. The limit is 25 MB.</string>
+    <string name="privacy_note_audio">The audio file leaves your phone: it is sent to %1$s, which writes out what is said. Only that text goes to the chat model.</string>
+    <string name="privacy_note_audio_anonymized">The audio file leaves your phone: it is sent to %1$s, which writes out what is said. %1$s marks this model \"anonymized\", not \"private\". Only that text goes to the chat model.</string>
+    <string name="audio_transcribing">Transcribing with %1$s…</string>
+    <string name="audio_transcribe_failed">%1$s could not transcribe this audio: %2$s</string>
+    <string name="audio_transcribed_by">Transcribed by %1$s · %2$s</string>
+    <string name="transcribe_with_label">Voice notes in other chats</string>
+    <string name="transcribe_with_hint">Each provider that can transcribe does it for its own chats. Chats on DeepSeek, Anthropic, a local server or on-device send their voice notes to the provider chosen here. The chat model reads only the text.</string>
+    <string name="transcribe_no_key">No key saved</string>
+    <string name="transcribe_anonymized">The provider marks this model \"anonymized\", not \"private\"</string>
+    <string name="audio_chip_transcribe_only">Transcribe only</string>
+    <string name="audio_chip_transcribe_answer">Transcribe and answer</string>
+    <string name="transcribe_voice_notes_label">Voice notes</string>
+    <string name="transcribe_own">%1$s transcribes them itself · %2$s</string>
+    <string name="transcribe_sent_to">%1$s can\'t transcribe them. They are sent to %2$s. Tap to change.</string>
 </resources>

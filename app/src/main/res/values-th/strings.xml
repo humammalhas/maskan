@@ -570,4 +570,21 @@
     <string name="thinking_hide">ซ่อนขั้นตอนการคิด</string>
     <string name="show_thinking_label">แสดงขั้นตอนการคิดของโมเดล</string>
     <string name="show_thinking_hint">บางโมเดลจะคิดก่อนตอบ และผู้ให้บริการบางรายส่งขั้นตอนการคิดนั้นมาด้วย การปิดจะซ่อนไว้ สำหรับ DeepSeek, Together, Venice และเซิร์ฟเวอร์ของคุณเอง การปิดจะขอให้โมเดลไม่ต้องคิดด้วย คำตอบจึงเริ่มเร็วขึ้น ส่วนที่อื่นจะเป็นการซ่อนเท่านั้น</string>
+    <string name="attach_audio">เลือกไฟล์เสียง</string>
+    <string name="audio_no_backend">ไม่มีคีย์ใดของคุณที่ถอดเสียงได้ แต่คีย์ %1$s แบบฟรีทำได้</string>
+    <string name="audio_too_large">ไฟล์เสียงใหญ่เกินไป จำกัดที่ 25 MB</string>
+    <string name="privacy_note_audio">ไฟล์เสียงจะออกจากโทรศัพท์ของคุณ โดยส่งไปยัง %1$s เพื่อถอดสิ่งที่พูดเป็นข้อความ โมเดลแชตจะได้รับเฉพาะข้อความนั้น</string>
+    <string name="privacy_note_audio_anonymized">ไฟล์เสียงจะออกจากโทรศัพท์ของคุณ โดยส่งไปยัง %1$s เพื่อถอดสิ่งที่พูดเป็นข้อความ %1$s ระบุว่าโมเดลนี้ \"ไม่ระบุตัวตน\" ไม่ใช่ \"ส่วนตัว\" โมเดลแชตจะได้รับเฉพาะข้อความนั้น</string>
+    <string name="audio_transcribing">กำลังถอดเสียงผ่าน %1$s…</string>
+    <string name="audio_transcribe_failed">%1$s ถอดเสียงนี้ไม่ได้: %2$s</string>
+    <string name="audio_transcribed_by">ถอดเสียงโดย %1$s · %2$s</string>
+    <string name="transcribe_with_label">ข้อความเสียงในแชตอื่น</string>
+    <string name="transcribe_with_hint">ผู้ให้บริการที่ถอดเสียงได้จะถอดข้อความเสียงในแชตของตัวเอง ส่วนแชตบน DeepSeek, Anthropic, เซิร์ฟเวอร์ในเครื่อง หรือบนอุปกรณ์ จะส่งข้อความเสียงไปยังผู้ให้บริการที่เลือกไว้ที่นี่ โมเดลแชตอ่านเฉพาะข้อความ</string>
+    <string name="transcribe_no_key">ยังไม่ได้บันทึกคีย์</string>
+    <string name="transcribe_anonymized">ผู้ให้บริการระบุว่าโมเดลนี้ \"ไม่ระบุตัวตน\" ไม่ใช่ \"ส่วนตัว\"</string>
+    <string name="audio_chip_transcribe_only">ถอดเสียงอย่างเดียว</string>
+    <string name="audio_chip_transcribe_answer">ถอดเสียงแล้วตอบ</string>
+    <string name="transcribe_voice_notes_label">ข้อความเสียง</string>
+    <string name="transcribe_own">%1$s ถอดเสียงเอง · %2$s</string>
+    <string name="transcribe_sent_to">%1$s ถอดเสียงไม่ได้ จึงส่งไปที่ %2$s แตะเพื่อเปลี่ยน</string>
 </resources>

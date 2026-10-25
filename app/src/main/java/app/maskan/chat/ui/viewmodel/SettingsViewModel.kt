@@ -1,6 +1,7 @@
 package app.maskan.chat.ui.viewmodel
 
 import android.app.Application
+import app.maskan.chat.data.remote.TranscribeBackends
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.maskan.chat.MaskanApplication
@@ -76,6 +77,8 @@ data class SettingsUiState(
     val autoTitleEnabled: Boolean = true,
     val showThinkingEnabled: Boolean = true,
     val speakButtonShown: Boolean = true,
+    /** The provider that writes out audio now (plan item 3), or null when no key can. */
+    val transcribeBackendId: String? = null,
     val globalMemoryTokens: Int = 0,
     val fetchedModels: List<String> = emptyList(),
     val fetchModelsState: FetchModelsState = FetchModelsState.Idle,
@@ -125,6 +128,7 @@ class SettingsViewModel(
             autoTitleEnabled = preferenceRepository.isAutoTitleEnabled(),
             showThinkingEnabled = preferenceRepository.isShowThinkingEnabled(),
             speakButtonShown = preferenceRepository.isSpeakButtonShown(),
+            transcribeBackendId = chatRepository.transcribeBackend()?.providerId,
             fetchedModels = preferenceRepository.getCachedModels(provider.id),
             modelsFetchedAt = preferenceRepository.getModelsFetchedAt(provider.id),
             unavailableModels = preferenceRepository.getUnavailableModels(provider.id),
@@ -510,6 +514,20 @@ class SettingsViewModel(
         val newValue = !_uiState.value.showThinkingEnabled
         preferenceRepository.setShowThinkingEnabled(newValue)
         _uiState.value = _uiState.value.copy(showThinkingEnabled = newValue)
+    }
+
+    /**
+     * Every transcription backend in the user's provider order, and whether a key is saved for it.
+     * A plain call, re-read whenever the state changes - which a saved or removed key does.
+     */
+    fun transcribeChoices(): List<Pair<TranscribeBackends.Backend, Boolean>> = chatRepository.transcribeChoices()
+
+    /** The backend shown as chosen: the saved choice while it has a key, else the default. */
+    fun currentTranscribeBackend(): TranscribeBackends.Backend? = chatRepository.transcribeBackend()
+
+    fun selectTranscribeBackend(providerId: String) {
+        preferenceRepository.setTranscribeBackend(providerId)
+        _uiState.value = _uiState.value.copy(transcribeBackendId = chatRepository.transcribeBackend()?.providerId)
     }
 
     fun toggleSpeakButton(): Boolean {

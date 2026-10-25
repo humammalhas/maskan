@@ -23,6 +23,10 @@ import app.maskan.chat.data.remote.WebSource
 import app.maskan.chat.data.remote.MessageContent
 import app.maskan.chat.data.remote.VideoBackend
 import app.maskan.chat.data.remote.VideoJobClient
+import app.maskan.chat.data.remote.TranscribeBackends
+import app.maskan.chat.data.remote.TranscribeException
+import app.maskan.chat.data.remote.Transcriber
+import app.maskan.chat.data.remote.providers.ProviderOrder
 import app.maskan.chat.data.remote.providers.OnDeviceProvider
 import app.maskan.chat.data.remote.providers.ProviderRegistry
 import app.maskan.chat.util.ChatTitle
@@ -60,7 +64,8 @@ class ChatRepository(
     private val videoBackendFor: (String) -> VideoBackend,
     private val videoJobs: VideoJobs,
     /** Room's withTransaction, passed in so a fork's rows are written all at once or not at all. */
-    private val inTransaction: suspend (suspend () -> Unit) -> Unit
+    private val inTransaction: suspend (suspend () -> Unit) -> Unit,
+    private val transcriber: Transcriber = Transcriber()
 ) {
 
     // ── Conversations ──────────────────────────────────────────────────
@@ -89,7 +94,7 @@ class ChatRepository(
     suspend fun deleteConversation(id: Long) {
         // Collect the image files FIRST: the foreign-key cascade wipes the message rows, and
         // after that there is nothing left to say which files belonged to this conversation.
-        val images = messageDao.getImagePathsForConversation(id)
+        val images = messageDao.getImagePathsForConversation(id) + messageDao.getAudioPathsForConversation(id)
         conversationDao.deleteConversationById(id)
         if (images.isNotEmpty()) imageStore.delete(images)
     }
@@ -687,7 +692,9 @@ class ChatRepository(
         imageData: ByteArray? = null,
         imageMimeType: String? = null,
         /** This one message asks the provider to search the web first (2.7). */
-        webSearch: Boolean = false
+        webSearch: Boolean = false,
+        /** An audio file already transcribed (2.7, plan item 3): stored with the row, never sent. */
+        audio: AudioAttachment? = null
     ): Flow<StreamEvent> = flow {
         val conversation = conversationDao.getConversationById(conversationId)
             ?: throw Exception("Conversation not found")
@@ -708,14 +715,26 @@ class ChatRepository(
         val imageBase64ForStorage = imageData?.let {
             Base64.encodeToString(it, Base64.NO_WRAP)
         }
+        val audioFile = audio?.let { imageStore.save(it.bytes, AUDIO_PREFIX) }
         val userEntity = MessageEntity(
             conversationId = conversationId,
             role = "user",
             content = userContent,
             imageBase64 = imageBase64ForStorage,
-            imageMimeType = imageMimeType
+            imageMimeType = imageMimeType,
+            audioPath = audioFile,
+            audioMimeType = audio?.mimeType,
+            audioName = audio?.name,
+            audioDurationMs = audio?.durationMs,
+            transcript = audio?.transcript,
+            transcribedBy = audio?.transcribedBy
         )
-        val userMessageId = messageDao.insertMessage(userEntity)
+        val userMessageId = try {
+            messageDao.insertMessage(userEntity)
+        } catch (e: Exception) {
+            audioFile?.let { imageStore.delete(listOf(it)) }
+            throw e
+        }
         // Drive the open chat from in-memory state: emit the saved user message so the
         // ViewModel can show it immediately, without waiting the ~15 ms for the message Flow
         // to bring the same row.
@@ -724,11 +743,111 @@ class ChatRepository(
         streamAssistantReply(conversation, model, imageData, imageMimeType, webSearch)
 
         if (conversation.title == DEFAULT_TITLE) {
-            conversationDao.updateConversationTitle(conversationId, ChatTitle.fallback(userContent))
+            // A voice note sent with nothing typed is named from what was said in it.
+            val titleSource = userContent.ifBlank { audio?.transcript.orEmpty() }
+            conversationDao.updateConversationTitle(conversationId, ChatTitle.fallback(titleSource))
         }
 
         emit(StreamEvent.Done)
     }
+
+    /**
+     * "Transcribe only" (plan item 3): the voice note and its transcript become a user row and
+     * nothing is asked of any model. The user decides what happens next - a question, a rewrite,
+     * or the composer's "Generate reply", which answers this row like any unanswered message.
+     */
+    suspend fun saveVoiceNote(conversationId: Long, userContent: String, audio: AudioAttachment): MessageEntity {
+        val audioFile = imageStore.save(audio.bytes, AUDIO_PREFIX)
+        val entity = MessageEntity(
+            conversationId = conversationId,
+            role = "user",
+            content = userContent,
+            audioPath = audioFile,
+            audioMimeType = audio.mimeType,
+            audioName = audio.name,
+            audioDurationMs = audio.durationMs,
+            transcript = audio.transcript,
+            transcribedBy = audio.transcribedBy
+        )
+        val id = try {
+            messageDao.insertMessage(entity)
+        } catch (e: Exception) {
+            imageStore.delete(listOf(audioFile))
+            throw e
+        }
+        val conversation = conversationDao.getConversationById(conversationId)
+        if (conversation?.title == DEFAULT_TITLE) {
+            conversationDao.updateConversationTitle(
+                conversationId,
+                ChatTitle.fallback(userContent.ifBlank { audio.transcript })
+            )
+        }
+        return entity.copy(id = id)
+    }
+
+    /** An audio file the user attached, with the transcript written before the message was sent. */
+    class AudioAttachment(
+        val bytes: ByteArray,
+        val name: String,
+        val mimeType: String,
+        val durationMs: Long?,
+        val transcript: String,
+        val transcribedBy: String
+    )
+
+    // ── Transcribing audio (2.7, plan item 3) ───────────────────────────
+
+    /** Every backend, in the user's provider order, with whether it can run (a key is saved). */
+    fun transcribeChoices(): List<Pair<TranscribeBackends.Backend, Boolean>> {
+        val arranged = ProviderOrder.arrange(
+            ProviderRegistry.getAllProviders().map { it.id },
+            preferenceRepository.getProviderOrder(),
+            preferenceRepository.getHiddenProviders()
+        )
+        return (arranged.visible + arranged.hidden).mapNotNull { id ->
+            TranscribeBackends.forProvider(id)?.let { it to !keyRepository.getApiKey(id).isNullOrBlank() }
+        }
+    }
+
+    /**
+     * The backend that will write out the next audio file in a chat on [chatProviderId].
+     *
+     * Each provider that transcribes does it for its own chats (Humam, session 11): a Gemini chat is
+     * heard by Gemini, an OpenAI chat by OpenAI - one company receives the audio and the words. A chat
+     * on a provider that cannot (DeepSeek, Anthropic, local servers, on-device) uses the Settings
+     * choice, or with none saved the first provider in the user's order that has a key. Null means
+     * none of their keys can transcribe - the composer greys "Choose audio" and names a free key.
+     */
+    fun transcribeBackend(chatProviderId: String? = null): TranscribeBackends.Backend? {
+        chatProviderId?.let { id ->
+            TranscribeBackends.forProvider(id)?.let { own ->
+                if (!keyRepository.getApiKey(id).isNullOrBlank()) return own
+            }
+        }
+        val choices = transcribeChoices()
+        val chosen = preferenceRepository.getTranscribeBackend()
+        return choices.firstOrNull { it.first.providerId == chosen && it.second }?.first
+            ?: choices.firstOrNull { it.second }?.first
+    }
+
+    /** The audio as spoken, from [backend]. Throws TranscribeException with the provider's own words. */
+    suspend fun transcribe(
+        backend: TranscribeBackends.Backend,
+        bytes: ByteArray,
+        fileName: String,
+        mimeType: String
+    ): String {
+        val provider = ProviderRegistry.getProvider(backend.providerId)
+            ?: throw TranscribeException(backend.providerId)
+        val baseUrl = keyRepository.getBaseUrl(backend.providerId)?.takeIf { it.isNotBlank() } ?: provider.defaultBaseUrl
+        val apiKey = keyRepository.getApiKey(backend.providerId).orEmpty()
+        return withContext(Dispatchers.IO) {
+            transcriber.transcribe(backend, baseUrl, apiKey, bytes, fileName, mimeType)
+        }
+    }
+
+    /** Decrypted bytes of a message's audio file, or null when it is gone (not in a backup). */
+    fun readAudio(fileName: String): ByteArray? = imageStore.read(fileName)
 
     /**
      * Re-run the last user turn WITHOUT inserting it again.
@@ -1483,7 +1602,7 @@ class ChatRepository(
             emptyList()
         }
         val doomed = after + message
-        val images = doomed.mapNotNull { it.imagePath }
+        val images = doomed.flatMap { listOfNotNull(it.imagePath, it.audioPath) }
         val doomedIds = doomed.map { it.id }.toSet()
         val documents = documentDao.getForConversationOnce(conversationId)
             .filter { it.attachedMessageId in doomedIds }
@@ -1505,7 +1624,7 @@ class ChatRepository(
     suspend fun editUserMessage(conversationId: Long, messageId: Long, newText: String) {
         val message = messageDao.getMessageById(messageId) ?: return
         val after = messageDao.getMessagesAfter(conversationId, message.timestamp, messageId)
-        val images = after.mapNotNull { it.imagePath }
+        val images = after.flatMap { listOfNotNull(it.imagePath, it.audioPath) }
         val afterIds = after.map { it.id }.toSet()
         val documents = documentDao.getForConversationOnce(conversationId)
             .filter { it.attachedMessageId in afterIds }
@@ -1566,6 +1685,9 @@ class ChatRepository(
         plan.messages.mapNotNull { it.imagePath }.distinct().forEach { name ->
             imageStore.read(name)?.let { bytes -> copiedFiles[name] = imageStore.save(bytes) }
         }
+        plan.messages.mapNotNull { it.audioPath }.distinct().forEach { name ->
+            imageStore.read(name)?.let { bytes -> copiedFiles[name] = imageStore.save(bytes, AUDIO_PREFIX) }
+        }
 
         var forkId = 0L
         try {
@@ -1579,7 +1701,8 @@ class ChatRepository(
                         row.copy(
                             id = 0,
                             conversationId = forkId,
-                            imagePath = row.imagePath?.let { copiedFiles[it] }
+                            imagePath = row.imagePath?.let { copiedFiles[it] },
+                            audioPath = row.audioPath?.let { copiedFiles[it] }
                         )
                     )
                 }
@@ -1625,7 +1748,10 @@ class ChatRepository(
 
             val rows = messageDao.getMessagesForConversationOnce(conversationId)
                 .filter { it.role != "system" }
-            val question = rows.firstOrNull { it.role == "user" }?.content?.trim().orEmpty()
+            // A first message that is only a voice note is titled from its transcript, as the
+            // fallback title in sendMessageStreaming was.
+            val question = rows.firstOrNull { it.role == "user" }
+                ?.let { it.content.ifBlank { it.transcript.orEmpty() } }?.trim().orEmpty()
             val answer = rows.firstOrNull { it.role == "assistant" }?.content?.trim().orEmpty()
             if (question.isEmpty() || answer.isEmpty()) return
 
@@ -1800,17 +1926,19 @@ class ChatRepository(
         val carried = photosToCarry(conversation, model, entities, documents)
         val messages = entities.map { entity ->
             val base64 = entity.imageBase64
+            // A voice note reaches the model as its transcript only (plan item 3).
+            val text = RequestAssembly.withTranscript(entity.content, entity.transcript, entity.audioName)
             if (entity.id in carried && base64 != null) {
                 Message(
                     role = entity.role,
                     content = MessageContent.WithImage(
-                        text = entity.content,
+                        text = text,
                         imageBase64 = base64,
                         mimeType = entity.imageMimeType ?: "image/jpeg"
                     )
                 )
             } else {
-                Message(role = entity.role, text = entity.content)
+                Message(role = entity.role, text = text)
             }
         }
 
@@ -1828,7 +1956,8 @@ class ChatRepository(
 
         // The question the document evidence is chosen for is the turn being sent: the user row
         // is written before the request is built, so the last user message IS the question.
-        val question = entities.lastOrNull { it.role == "user" }?.content.orEmpty()
+        val question = entities.lastOrNull { it.role == "user" }
+            ?.let { RequestAssembly.withTranscript(it.content, it.transcript, it.audioName) }.orEmpty()
         val budget = budgetFor(conversation.providerId)
         val documentText = documentBlock(documents, question, budget)
 
@@ -2039,6 +2168,9 @@ class ChatRepository(
          * already looking.
          */
         const val ROLE_NOTICE = "notice"
+
+        /** File-name prefix of an attached audio file in the encrypted store (see ImageStore.save). */
+        const val AUDIO_PREFIX = "aud"
 
         /** Stored in the row; localized at the point it is drawn. See noteVoiceDropIfNeeded. */
         const val NOTICE_VOICE_DROPPED = "voice_dropped"

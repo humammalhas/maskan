@@ -54,5 +54,20 @@ data class MessageEntity(
      * transcript never claims the model said something it did not. The original text is not
      * kept: an edit that removes a line is meant to remove it, from backups too.
      */
-    val editedAt: Long? = null
+    val editedAt: Long? = null,
+    /**
+     * A voice note or other audio file the user attached (2.7, plan item 3). The file lives in
+     * app-private storage, AES-GCM encrypted like a generated image (ImageStore); this is its name.
+     * The audio itself never goes to a chat model - only [transcript] does - and backups carry the
+     * transcript but not the file.
+     */
+    val audioPath: String? = null,
+    val audioMimeType: String? = null,
+    /** The file's own name as the user picked it, for the chip in the bubble. */
+    val audioName: String? = null,
+    val audioDurationMs: Long? = null,
+    /** The audio as spoken, written out by [transcribedBy]. This is what every model reads. */
+    val transcript: String? = null,
+    /** "providerId/model" of the backend that wrote [transcript]. */
+    val transcribedBy: String? = null
 )

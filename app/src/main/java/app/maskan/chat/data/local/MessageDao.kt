@@ -42,6 +42,10 @@ interface MessageDao {
     @Query("SELECT imagePath FROM messages WHERE conversationId = :conversationId AND imagePath IS NOT NULL")
     suspend fun getImagePathsForConversation(conversationId: Long): List<String>
 
+    /** The same for attached audio files (2.7), which live in the same encrypted store. */
+    @Query("SELECT audioPath FROM messages WHERE conversationId = :conversationId AND audioPath IS NOT NULL")
+    suspend fun getAudioPathsForConversation(conversationId: Long): List<String>
+
     @Query("SELECT * FROM messages WHERE id = :messageId")
     suspend fun getMessageById(messageId: Long): MessageEntity?
 

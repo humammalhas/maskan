@@ -4,6 +4,11 @@ import android.app.Activity
 import android.view.WindowManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.material3.RadioButton
+import androidx.compose.ui.draw.alpha
+import androidx.compose.foundation.layout.heightIn
+import app.maskan.chat.data.remote.TranscribeBackends
+import app.maskan.chat.data.remote.providers.ProviderRegistry
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -1185,6 +1190,111 @@ fun SettingsScreen(
                 Switch(
                     checked = state.showThinkingEnabled,
                     onCheckedChange = { viewModel.toggleShowThinking() }
+                )
+            }
+
+            // Which provider writes out an attached voice note (plan item 3). Re-read on every
+            // state change, so a key saved or removed above shows here at once.
+            Spacer(modifier = Modifier.height(12.dp))
+            var showTranscribePicker by remember { mutableStateOf(false) }
+            val transcribeChoices = viewModel.transcribeChoices()
+            val currentTranscribe = state.transcribeBackendId.let { viewModel.currentTranscribeBackend() }
+            fun backendLabel(backend: TranscribeBackends.Backend): String {
+                val provider = ProviderRegistry.getProvider(backend.providerId)
+                val name = provider?.let { if (isArabic) it.nameAr else it.displayName } ?: backend.providerId
+                return name + " · ⁨" + backend.model + "⁩"
+            }
+            // Said about the provider chosen at the top of this screen (Humam, session 11): one that
+            // transcribes does it for its own chats; one that cannot sends them to the choice here.
+            val shownName = if (isArabic) selectedProvider.nameAr else selectedProvider.displayName
+            val ownBackend = TranscribeBackends.forProvider(selectedProvider.id)
+                ?.takeIf { selectedProvider.id in state.configuredProviderIds }
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = ownBackend == null && transcribeChoices.any { it.second }) {
+                        showTranscribePicker = true
+                    }
+                    .padding(vertical = 4.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.transcribe_voice_notes_label),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Text(
+                    text = when {
+                        ownBackend != null -> stringResource(
+                            R.string.transcribe_own, shownName, "⁨" + ownBackend.model + "⁩"
+                        )
+                        currentTranscribe != null -> stringResource(
+                            R.string.transcribe_sent_to, shownName, backendLabel(currentTranscribe)
+                        )
+                        else -> stringResource(
+                            R.string.audio_no_backend,
+                            ProviderRegistry.getProvider("groq")?.let { if (isArabic) it.nameAr else it.displayName } ?: "Groq"
+                        )
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (showTranscribePicker) {
+                AlertDialog(
+                    onDismissRequest = { showTranscribePicker = false },
+                    title = { Text(stringResource(R.string.transcribe_with_label)) },
+                    text = {
+                        Column {
+                            Text(
+                                text = stringResource(R.string.transcribe_with_hint),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                            transcribeChoices.forEach { (backend, hasKey) ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(min = 48.dp)
+                                        .clickable(enabled = hasKey) {
+                                            viewModel.selectTranscribeBackend(backend.providerId)
+                                            showTranscribePicker = false
+                                        }
+                                        .alpha(if (hasKey) 1f else 0.4f),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    RadioButton(
+                                        selected = backend.providerId == currentTranscribe?.providerId,
+                                        onClick = null,
+                                        enabled = hasKey
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Column {
+                                        Text(
+                                            text = backendLabel(backend),
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                        val note = when {
+                                            !hasKey -> stringResource(R.string.transcribe_no_key)
+                                            backend.anonymizedOnly -> stringResource(R.string.transcribe_anonymized)
+                                            else -> null
+                                        }
+                                        note?.let {
+                                            Text(
+                                                text = it,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { showTranscribePicker = false }) {
+                            Text(stringResource(R.string.cancel_button))
+                        }
+                    }
                 )
             }
 

@@ -405,7 +405,8 @@ class BackupProbeReceiver : BroadcastReceiver() {
             val migrations = listOf(
                 app.maskan.chat.data.local.AppDatabase.MIGRATION_8_9,
                 app.maskan.chat.data.local.AppDatabase.MIGRATION_9_10,
-                app.maskan.chat.data.local.AppDatabase.MIGRATION_10_11
+                app.maskan.chat.data.local.AppDatabase.MIGRATION_10_11,
+                app.maskan.chat.data.local.AppDatabase.MIGRATION_11_12
             )
             for (m in migrations) m.migrate(db)
             val messages = db.rawQuery("SELECT COUNT(*) FROM messages", null)
@@ -544,7 +545,10 @@ class BackupProbeReceiver : BroadcastReceiver() {
         private val TABLES = listOf("conversations", "messages", "folders", "documents")
 
         /** `messages` columns MIGRATION_9_10 and later add, newest last. */
-        private val COLUMNS_ADDED_AFTER_8 = listOf("sourcesJson", "editedAt")
+        private val COLUMNS_ADDED_AFTER_8 = listOf(
+            "sourcesJson", "editedAt",
+            "audioPath", "audioMimeType", "audioName", "audioDurationMs", "transcript", "transcribedBy"
+        )
 
         /** Nobody types this. It is what `unseed` deletes by, and the only thing it deletes. */
         private const val SEED_PREFIX = "MKB-SEED"

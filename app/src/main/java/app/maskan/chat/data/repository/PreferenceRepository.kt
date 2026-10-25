@@ -162,6 +162,17 @@ class PreferenceRepository(context: Context) {
     }
 
     /**
+     * Which provider writes out an attached audio file (2.7, plan item 3), by provider id - one of
+     * TranscribeBackends.ALL. Null until the user picks one: then the first provider in their own
+     * order that has a key is used (ChatRepository.transcribeBackend).
+     */
+    fun getTranscribeBackend(): String? = plainPreferences.getString(KEY_TRANSCRIBE_BACKEND, null)
+
+    fun setTranscribeBackend(providerId: String?) {
+        plainPreferences.edit().putString(KEY_TRANSCRIBE_BACKEND, providerId).apply()
+    }
+
+    /**
      * Whether a reply carries a speak button in its footer. Default true, i.e. unchanged from
      * 2.5.0. Only the BUTTON: "Read this to me" under a photo is the user asking for speech by
      * name and is not governed by this.
@@ -363,6 +374,7 @@ class PreferenceRepository(context: Context) {
         private const val KEY_AUTO_TITLE = "auto_title_enabled"
         private const val KEY_SHOW_THINKING = "show_thinking_enabled"
         private const val KEY_SPEAK_BUTTON = "speak_button_shown"
+        private const val KEY_TRANSCRIBE_BACKEND = "transcribe_backend"
         private const val KEY_PROVIDER_ORDER = "provider_order"
         private const val KEY_HIDDEN_PROVIDERS = "hidden_providers"
         private const val KEY_ONDEVICE_UPGRADED = "ondevice_upgraded"

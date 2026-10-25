@@ -1,0 +1,18 @@
+no-audio:
+What time?
+
+---
+
+audio-only:
+[A voice note the user attached: PTT-0001.opus. Someone else may be speaking: this is a transcript of the recording, not the user's own words.]
+
+يا جماعة، الاجتماع بكرة الساعة عشرة بدل تسعة.
+
+---
+
+audio-and-question:
+[A voice note the user attached: PTT-0001.opus. Someone else may be speaking: this is a transcript of the recording, not the user's own words.]
+
+يا جماعة، الاجتماع بكرة الساعة عشرة بدل تسعة.
+
+اكتبها بالفصحى

@@ -15,7 +15,7 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
         FolderEntity::class,
         DocumentEntity::class
     ],
-    version = 11,
+    version = 12,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -132,6 +132,22 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * 2.7: an audio file on a user message and its transcript (plan item 3). Six nullable
+         * columns, additive only - every existing row reads null, which means "no audio". A backup
+         * made at schema 11 or older restores through this same migration (BACKUP_FORMAT.md section 5).
+         */
+        val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE messages ADD COLUMN audioPath TEXT")
+                db.execSQL("ALTER TABLE messages ADD COLUMN audioMimeType TEXT")
+                db.execSQL("ALTER TABLE messages ADD COLUMN audioName TEXT")
+                db.execSQL("ALTER TABLE messages ADD COLUMN audioDurationMs INTEGER")
+                db.execSQL("ALTER TABLE messages ADD COLUMN transcript TEXT")
+                db.execSQL("ALTER TABLE messages ADD COLUMN transcribedBy TEXT")
+            }
+        }
+
         fun getInstance(context: Context, passphrase: ByteArray): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val factory = SupportOpenHelperFactory(passphrase)
@@ -143,7 +159,8 @@ abstract class AppDatabase : RoomDatabase() {
                     .openHelperFactory(factory)
                     .addMigrations(
                         MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
-                        MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11
+                        MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11,
+                        MIGRATION_11_12
                     )
                     .build()
                 INSTANCE = instance

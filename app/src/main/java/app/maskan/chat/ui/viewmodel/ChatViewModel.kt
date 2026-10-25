@@ -23,6 +23,7 @@ import android.content.Intent
 import android.util.Log
 import app.maskan.chat.data.remote.ApiHttpException
 import app.maskan.chat.data.remote.SearchStream
+import app.maskan.chat.data.remote.TranscribeBackends
 import app.maskan.chat.data.repository.ChatRepository
 import app.maskan.chat.data.repository.ExportFormat
 import app.maskan.chat.data.repository.KeyRepository
@@ -218,7 +219,21 @@ data class ChatUiState(
     /** A fork was just made: the screen opens it, then clears this. */
     val forkedConversationId: Long? = null,
     /** A fork was refused because a video in the copied range is still rendering. */
-    val forkRefusedForVideo: Boolean = false
+    val forkRefusedForVideo: Boolean = false,
+    /** An audio file waiting to be written out and sent with the next message (plan item 3). */
+    val pendingAudio: PendingAudio? = null,
+    /** True while the pending audio is with the transcription backend, before anything is sent. */
+    val transcribing: Boolean = false,
+    /** Counts voice notes sent: the screen empties the text box when it moves, not before. */
+    val audioSent: Int = 0
+)
+
+/** A picked audio file, held in memory until Send; nothing has left the phone yet. */
+class PendingAudio(
+    val bytes: ByteArray,
+    val name: String,
+    val mimeType: String,
+    val durationMs: Long?
 )
 
 class ChatViewModel(
@@ -1027,6 +1042,83 @@ class ChatViewModel(
         )
     }
 
+    // ── Audio (2.7, plan item 3) ─────────────────────────────────
+
+    /** The backend that would write out an audio file now, or null: then "Choose audio" is greyed. */
+    fun transcribeBackend(): TranscribeBackends.Backend? =
+        chatRepository.transcribeBackend(_uiState.value.selectedProviderId)
+
+    /** The provider's name as the privacy line and the error say it, in the app's language. */
+    fun transcribeProviderName(isArabic: Boolean): String {
+        val id = transcribeBackend()?.providerId ?: return ""
+        val provider = ProviderRegistry.getProvider(id) ?: return id
+        return if (isArabic) provider.nameAr else provider.displayName
+    }
+
+    /** The free key the "no backend" line points at, named as the app names it. */
+    fun groqName(isArabic: Boolean): String =
+        ProviderRegistry.getProvider("groq")?.let { if (isArabic) it.nameAr else it.displayName } ?: "Groq"
+
+    private fun appIsArabic(): Boolean =
+        (getApplication<Application>() as app.maskan.chat.MaskanApplication).localeRepository.getLocale() == "ar"
+
+    /**
+     * Read a picked audio file into memory. Nothing is sent here: the file goes to the
+     * transcription backend on Send, and to no chat model ever.
+     */
+    fun attachAudio(uri: Uri) {
+        viewModelScope.launch {
+            val context: Context = getApplication()
+            val name = resolveFileName(context, uri)
+            val loaded = withContext(Dispatchers.IO) {
+                runCatching {
+                    val size = context.contentResolver.openAssetFileDescriptor(uri, "r")?.use { it.length } ?: -1L
+                    if (size > TranscribeBackends.MAX_BYTES) return@runCatching null
+                    val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                        ?: return@runCatching null
+                    if (bytes.size > TranscribeBackends.MAX_BYTES) return@runCatching null
+                    val duration = runCatching {
+                        android.media.MediaMetadataRetriever().run {
+                            try {
+                                setDataSource(context, uri)
+                                extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull()
+                            } finally {
+                                release()
+                            }
+                        }
+                    }.getOrNull()
+                    PendingAudio(bytes, name, audioMimeType(context.contentResolver.getType(uri), name), duration)
+                }.getOrNull()
+            }
+            _uiState.value = if (loaded == null) {
+                _uiState.value.copy(error = context.getString(R.string.audio_too_large))
+            } else {
+                _uiState.value.copy(pendingAudio = loaded, error = null)
+            }
+        }
+    }
+
+    fun clearPendingAudio() {
+        _uiState.value = _uiState.value.copy(pendingAudio = null)
+    }
+
+    /**
+     * The type the backend is told. A file manager often reports a WhatsApp note as
+     * application/octet-stream; the name says what it is.
+     */
+    private fun audioMimeType(reported: String?, name: String): String {
+        if (reported != null && reported.startsWith("audio/")) return reported
+        return when (name.substringAfterLast('.', "").lowercase()) {
+            "opus", "ogg", "oga" -> "audio/ogg"
+            "m4a", "mp4", "aac" -> "audio/mp4"
+            "mp3", "mpga", "mpeg" -> "audio/mpeg"
+            "wav" -> "audio/wav"
+            "webm" -> "audio/webm"
+            "flac" -> "audio/flac"
+            else -> reported ?: "application/octet-stream"
+        }
+    }
+
     /**
      * Vision is a property of the MODEL, not the provider. Where the provider publishes
      * capability data (OpenRouter, Venice, Ollama) or its whole lineup is known multimodal
@@ -1357,8 +1449,81 @@ class ChatViewModel(
             return
         }
 
-        if (content.isBlank() && _uiState.value.pendingImageBytes == null && _uiState.value.pendingFileText == null) return
+        if (content.isBlank() && _uiState.value.pendingImageBytes == null &&
+            _uiState.value.pendingFileText == null && _uiState.value.pendingAudio == null
+        ) return
 
+        // A voice note is written out FIRST, and nothing is sent unless that worked: a message
+        // whose transcript failed would reach the model as a question about nothing. With nothing
+        // typed, Send only transcribes; with a question, the question is answered (Humam,
+        // session 11: a forwarded note answered unasked read as the model replying to its speaker).
+        val audio = _uiState.value.pendingAudio
+        if (audio != null) {
+            transcribeVoiceNote(content, answer = content.isNotBlank())
+            return
+        }
+        sendPrepared(content, null)
+    }
+
+    /**
+     * The audio chips' two actions: [answer] false saves the voice note and its transcript and asks
+     * no model anything; true sends it, with [content] if any, for a reply. On failure the audio,
+     * any photo or file and the typed text all stay in the composer, with the provider's own words.
+     */
+    fun transcribeVoiceNote(content: String, answer: Boolean) {
+        val audio = _uiState.value.pendingAudio ?: return
+        if (_uiState.value.transcribing) return
+        val context: Context = getApplication()
+        val backend = transcribeBackend()
+        if (backend == null) {
+            _uiState.value = _uiState.value.copy(error = context.getString(R.string.audio_no_backend, groqName(appIsArabic())))
+            return
+        }
+        streamingJob = viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(transcribing = true, error = null)
+            val result = try {
+                Result.success(chatRepository.transcribe(backend, audio.bytes, audio.name, audio.mimeType))
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                _uiState.value = _uiState.value.copy(transcribing = false)
+                throw e
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+            _uiState.value = _uiState.value.copy(transcribing = false)
+            result.onSuccess { transcript ->
+                val attachment = ChatRepository.AudioAttachment(
+                    bytes = audio.bytes,
+                    name = audio.name,
+                    mimeType = audio.mimeType,
+                    durationMs = audio.durationMs,
+                    transcript = transcript,
+                    transcribedBy = backend.providerId + "/" + backend.model
+                )
+                _uiState.value = _uiState.value.copy(pendingAudio = null, audioSent = _uiState.value.audioSent + 1)
+                if (answer) {
+                    sendPrepared(content, attachment)
+                } else {
+                    try {
+                        upsertMessage(chatRepository.saveVoiceNote(currentConversationId, content, attachment))
+                    } catch (e: kotlinx.coroutines.CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        _uiState.value = _uiState.value.copy(error = e.message)
+                    }
+                }
+            }.onFailure { e ->
+                _uiState.value = _uiState.value.copy(
+                    error = context.getString(
+                        R.string.audio_transcribe_failed,
+                        transcribeProviderName(appIsArabic()),
+                        e.message.orEmpty()
+                    )
+                )
+            }
+        }
+    }
+
+    private fun sendPrepared(content: String, audioAttachment: ChatRepository.AudioAttachment?) {
         val imageData = _uiState.value.pendingImageBytes
         val imageMimeType = _uiState.value.pendingImageMimeType
 
@@ -1406,7 +1571,8 @@ class ChatViewModel(
                 model = _uiState.value.selectedModel,
                 imageData = imageData,
                 imageMimeType = imageMimeType,
-                webSearch = webSearch
+                webSearch = webSearch,
+                audio = audioAttachment
             ).catch { error ->
                 handleSendFailure(error)
             }.collect { event ->
