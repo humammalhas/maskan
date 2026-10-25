@@ -6,6 +6,7 @@ import android.content.Intent
 import android.util.Log
 import app.maskan.chat.MaskanApplication
 import app.maskan.chat.data.local.ConversationEntity
+import app.maskan.chat.data.model.Dialect
 import app.maskan.chat.data.remote.Message
 import app.maskan.chat.data.remote.MessageContent
 import app.maskan.chat.data.remote.providers.ProviderRegistry
@@ -49,6 +50,7 @@ class AssemblyProbeReceiver : BroadcastReceiver() {
                     "buildMessageList",
                     ConversationEntity::class.java,
                     String::class.java,
+                    Dialect::class.java,
                     Continuation::class.java
                 ).apply { isAccessible = true }
 
@@ -58,7 +60,8 @@ class AssemblyProbeReceiver : BroadcastReceiver() {
                         ?: ""
                     @Suppress("UNCHECKED_CAST")
                     val messages = suspendCoroutineUninterceptedOrReturn<Any?> { cont ->
-                        build.invoke(repository, conversation, model, cont)
+                        // voiceOverride = null: the chat's own voice, as an ordinary send.
+                        build.invoke(repository, conversation, model, null, cont)
                     } as List<Message>
                     Log.i(
                         TAG,
