@@ -23,6 +23,7 @@ import app.maskan.chat.data.remote.WebSource
 import app.maskan.chat.data.remote.MessageContent
 import app.maskan.chat.data.remote.VideoBackend
 import app.maskan.chat.data.remote.VideoJobClient
+import app.maskan.chat.data.remote.Listener
 import app.maskan.chat.data.remote.TranscribeBackends
 import app.maskan.chat.data.remote.TranscribeException
 import app.maskan.chat.data.remote.Transcriber
@@ -65,7 +66,8 @@ class ChatRepository(
     private val videoJobs: VideoJobs,
     /** Room's withTransaction, passed in so a fork's rows are written all at once or not at all. */
     private val inTransaction: suspend (suspend () -> Unit) -> Unit,
-    private val transcriber: Transcriber = Transcriber()
+    private val transcriber: Transcriber = Transcriber(),
+    private val listener: Listener = Listener()
 ) {
 
     // ── Conversations ──────────────────────────────────────────────────
@@ -694,7 +696,9 @@ class ChatRepository(
         /** This one message asks the provider to search the web first (2.7). */
         webSearch: Boolean = false,
         /** An audio file already transcribed (2.7, plan item 3): stored with the row, never sent. */
-        audio: AudioAttachment? = null
+        audio: AudioAttachment? = null,
+        /** "Listen and answer": this one reply hears the audio itself (Gemini, OpenAI gpt-audio). */
+        hearing: Hearing? = null
     ): Flow<StreamEvent> = flow {
         val conversation = conversationDao.getConversationById(conversationId)
             ?: throw Exception("Conversation not found")
@@ -740,7 +744,10 @@ class ChatRepository(
         // to bring the same row.
         emit(StreamEvent.UserSaved(userEntity.copy(id = userMessageId)))
 
-        streamAssistantReply(conversation, model, imageData, imageMimeType, webSearch)
+        streamAssistantReply(
+            conversation, model, imageData, imageMimeType, webSearch,
+            heard = hearing?.let { it to userEntity.copy(id = userMessageId) }
+        )
 
         if (conversation.title == DEFAULT_TITLE) {
             // A voice note sent with nothing typed is named from what was said in it.
@@ -784,6 +791,12 @@ class ChatRepository(
         }
         return entity.copy(id = id)
     }
+
+    /**
+     * The audio as a listening model takes it: Gemini the file as it is, OpenAI WAV or MP3 ([format]),
+     * converted on the phone beforehand when it was neither (AudioToWav).
+     */
+    class Hearing(val bytes: ByteArray, val mimeType: String, val format: String)
 
     /** An audio file the user attached, with the transcript written before the message was sent. */
     class AudioAttachment(
@@ -1259,7 +1272,9 @@ class ChatRepository(
         model: String,
         imageData: ByteArray?,
         imageMimeType: String?,
-        webSearch: Boolean = false
+        webSearch: Boolean = false,
+        /** "Listen and answer": the audio to send on this turn, and the user row it belongs to. */
+        heard: Pair<Hearing, MessageEntity>? = null
     ) {
         val conversationId = conversation.id
         val messages = buildMessageList(conversation, conversation.modelId ?: model)
@@ -1311,7 +1326,24 @@ class ChatRepository(
             val found = AtomicReference(emptyList<WebSource>())
             var published = emptyList<WebSource>()
             val showThinking = preferenceRepository.isShowThinkingEnabled()
-            val stream = if (webSearch) {
+            // OpenAI lets only gpt-audio hear; this reply comes from it, and the bubble says so.
+            val listeningModel = if (providerId == "openai") Listener.OPENAI_LISTENER else effectiveModel
+            val stream = if (heard != null) {
+                if (providerId !in Listener.PROVIDERS) throw Exception("${provider.displayName} cannot hear audio")
+                val baseUrl = storedBaseUrl?.takeIf { it.isNotBlank() } ?: provider.defaultBaseUrl
+                kotlinx.coroutines.flow.flow {
+                    emit(
+                        StreamPiece.Answer(
+                            withContext(Dispatchers.IO) {
+                                listener.answer(
+                                    providerId, listeningModel, baseUrl, apiKey, messages,
+                                    heard.first.bytes, heard.first.mimeType, heard.first.format
+                                )
+                            }
+                        )
+                    )
+                }
+            } else if (webSearch) {
                 if (!provider.searchesWeb(effectiveModel)) {
                     throw Exception("${provider.displayName} cannot search the web with $effectiveModel")
                 }
@@ -1361,6 +1393,12 @@ class ChatRepository(
             val finalContent = fullContent.toString()
             if (finalContent.isBlank()) {
                 throw Exception("Empty response from ${provider.displayName}")
+            }
+            // Recorded only once the model has answered: a voice note is "heard" when it was.
+            heard?.let { (_, row) ->
+                val by = "$providerId/$listeningModel"
+                messageDao.updateHeardBy(row.id, by)
+                emit(StreamEvent.UserSaved(row.copy(heardBy = by)))
             }
         } catch (e: Exception) {
             val current = messageDao.getMessagesForConversationOnce(conversationId)

@@ -69,5 +69,10 @@ data class MessageEntity(
     /** The audio as spoken, written out by [transcribedBy]. This is what every model reads. */
     val transcript: String? = null,
     /** "providerId/model" of the backend that wrote [transcript]. */
-    val transcribedBy: String? = null
+    val transcribedBy: String? = null,
+    /**
+     * "providerId/model" of the model that HEARD the audio and answered it ("Listen and answer",
+     * Gemini or OpenAI gpt-audio). Null for a voice note that was only read as a transcript.
+     */
+    val heardBy: String? = null
 )

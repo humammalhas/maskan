@@ -974,10 +974,21 @@ fun ChatScreen(
                             onRemove = { viewModel.clearPendingAudio() }
                         )
                         // The text box is emptied only when the transcript is back (audioSent).
+                        val answerPrompt = stringResource(R.string.audio_prompt_answer)
+                        val listenPrompt = stringResource(R.string.audio_prompt_listen)
                         AudioActionChips(
                             enabled = !uiState.transcribing && !uiState.isLoading && !uiState.isStreaming,
                             onTranscribeOnly = { viewModel.transcribeVoiceNote(inputText, answer = false) },
-                            onTranscribeAndAnswer = { viewModel.transcribeVoiceNote(inputText, answer = true) }
+                            // Nothing typed: the chip asks a visible question, as the photo chips do.
+                            // A note answered with no question was answered AS ITS SPEAKER'S
+                            // listener, even with the voice-note label (Gemini and DeepSeek, session 11).
+                            onTranscribeAndAnswer = {
+                                viewModel.transcribeVoiceNote(inputText.ifBlank { answerPrompt }, answer = true)
+                            },
+                            canListen = viewModel.canListen(),
+                            onListenAndAnswer = {
+                                viewModel.transcribeVoiceNote(inputText.ifBlank { listenPrompt }, answer = true, listen = true)
+                            }
                         )
                         // Said every time, not once: a voice note is usually somebody else's
                         // voice, and the provider receiving it can change with the user's keys.
@@ -1645,6 +1656,21 @@ private fun VoiceNoteBlock(message: MessageEntity, hasText: Boolean) {
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+        // "Listen and answer": the model heard the recording itself, not only the transcript.
+        message.heardBy?.let { by ->
+            val provider = ProviderRegistry.getProvider(by.substringBefore('/'))
+            val name = when {
+                provider == null -> by.substringBefore('/')
+                isArabic -> provider.nameAr
+                else -> provider.displayName
+            }
+            Text(
+                text = stringResource(R.string.audio_heard_by, name, "⁨" + by.substringAfter('/', "") + "⁩"),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp)
             )
         }
     }
@@ -2671,6 +2697,7 @@ private fun PendingRequestLine(kind: String, since: Long) {
                 when (kind) {
                     "edit" -> R.string.editing_photo
                     "search" -> R.string.searching_web
+                    "listen" -> R.string.listening_audio
                     else -> R.string.drawing_image
                 }
             ),

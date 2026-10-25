@@ -1470,7 +1470,7 @@ class ChatViewModel(
      * no model anything; true sends it, with [content] if any, for a reply. On failure the audio,
      * any photo or file and the typed text all stay in the composer, with the provider's own words.
      */
-    fun transcribeVoiceNote(content: String, answer: Boolean) {
+    fun transcribeVoiceNote(content: String, answer: Boolean, listen: Boolean = false) {
         val audio = _uiState.value.pendingAudio ?: return
         if (_uiState.value.transcribing) return
         val context: Context = getApplication()
@@ -1500,7 +1500,24 @@ class ChatViewModel(
                     transcribedBy = backend.providerId + "/" + backend.model
                 )
                 _uiState.value = _uiState.value.copy(pendingAudio = null, audioSent = _uiState.value.audioSent + 1)
-                if (answer) {
+                if (listen) {
+                    // The model hears the file on this turn. OpenAI takes WAV or MP3 only, so a
+                    // WhatsApp note is decoded on the phone first; Gemini takes it as it is.
+                    val hearing = try {
+                        withContext(Dispatchers.IO) { hearingFor(audio) }
+                    } catch (e: kotlinx.coroutines.CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        null
+                    }
+                    if (hearing == null || hearing.bytes.size > TranscribeBackends.MAX_BYTES) {
+                        // The transcript is already back: keep it, as "Transcribe only" would.
+                        upsertMessage(chatRepository.saveVoiceNote(currentConversationId, content, attachment))
+                        _uiState.value = _uiState.value.copy(error = context.getString(R.string.audio_listen_failed))
+                    } else {
+                        sendPrepared(content, attachment, hearing)
+                    }
+                } else if (answer) {
                     sendPrepared(content, attachment)
                 } else {
                     try {
@@ -1523,7 +1540,30 @@ class ChatViewModel(
         }
     }
 
-    private fun sendPrepared(content: String, audioAttachment: ChatRepository.AudioAttachment?) {
+    /** Whether this chat's model can hear a voice note itself: Gemini, or OpenAI through gpt-audio. */
+    fun canListen(): Boolean {
+        val id = _uiState.value.selectedProviderId
+        return id in app.maskan.chat.data.remote.Listener.PROVIDERS && !keyRepository.getApiKey(id).isNullOrBlank()
+    }
+
+    private fun hearingFor(audio: PendingAudio): ChatRepository.Hearing {
+        if (_uiState.value.selectedProviderId != "openai") {
+            return ChatRepository.Hearing(audio.bytes, audio.mimeType, "")
+        }
+        return when (audio.mimeType) {
+            "audio/mpeg" -> ChatRepository.Hearing(audio.bytes, audio.mimeType, "mp3")
+            "audio/wav", "audio/x-wav", "audio/wave" -> ChatRepository.Hearing(audio.bytes, audio.mimeType, "wav")
+            else -> ChatRepository.Hearing(
+                app.maskan.chat.util.AudioToWav.convert(getApplication(), audio.bytes), "audio/wav", "wav"
+            )
+        }
+    }
+
+    private fun sendPrepared(
+        content: String,
+        audioAttachment: ChatRepository.AudioAttachment?,
+        hearing: ChatRepository.Hearing? = null
+    ) {
         val imageData = _uiState.value.pendingImageBytes
         val imageMimeType = _uiState.value.pendingImageMimeType
 
@@ -1561,8 +1601,12 @@ class ChatViewModel(
                 error = null,
                 // A search can take a while before the first word; the empty bubble says what it
                 // is waiting for instead of looking stuck.
-                pendingKind = if (webSearch) "search" else null,
-                pendingSince = if (webSearch) System.currentTimeMillis() else _uiState.value.pendingSince
+                pendingKind = when {
+                    hearing != null -> "listen"
+                    webSearch -> "search"
+                    else -> null
+                },
+                pendingSince = if (webSearch || hearing != null) System.currentTimeMillis() else _uiState.value.pendingSince
             )
 
             chatRepository.sendMessageStreaming(
@@ -1572,7 +1616,8 @@ class ChatViewModel(
                 imageData = imageData,
                 imageMimeType = imageMimeType,
                 webSearch = webSearch,
-                audio = audioAttachment
+                audio = audioAttachment,
+                hearing = hearing
             ).catch { error ->
                 handleSendFailure(error)
             }.collect { event ->

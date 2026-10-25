@@ -146,7 +146,10 @@ internal fun PhotoQuestionChips(
 internal fun AudioActionChips(
     enabled: Boolean,
     onTranscribeOnly: () -> Unit,
-    onTranscribeAndAnswer: () -> Unit
+    onTranscribeAndAnswer: () -> Unit,
+    /** Gemini and OpenAI chats only: the model hears the file itself (layer C). */
+    canListen: Boolean = false,
+    onListenAndAnswer: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
@@ -174,6 +177,18 @@ internal fun AudioActionChips(
                 )
             }
         )
+        if (canListen) {
+            AssistChip(
+                onClick = onListenAndAnswer,
+                enabled = enabled,
+                label = {
+                    Text(
+                        text = stringResource(R.string.audio_chip_listen_answer),
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                }
+            )
+        }
     }
 }
 

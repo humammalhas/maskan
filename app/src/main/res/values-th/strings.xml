@@ -587,4 +587,10 @@
     <string name="transcribe_voice_notes_label">ข้อความเสียง</string>
     <string name="transcribe_own">%1$s ถอดเสียงเอง · %2$s</string>
     <string name="transcribe_sent_to">%1$s ถอดเสียงไม่ได้ จึงส่งไปที่ %2$s แตะเพื่อเปลี่ยน</string>
+    <string name="audio_chip_listen_answer">ฟังแล้วตอบ</string>
+    <string name="listening_audio">กำลังฟังเสียงที่บันทึก…</string>
+    <string name="audio_listen_failed">เตรียมเสียงนี้เพื่อฟังไม่ได้ บันทึกข้อความที่ถอดไว้แล้ว ถามเกี่ยวกับข้อความนั้น หรือเลือก \"ถอดเสียงแล้วตอบ\"</string>
+    <string name="audio_heard_by">ฟังและตอบโดย %1$s · %2$s</string>
+    <string name="audio_prompt_answer">ผู้พูดในข้อความเสียงนี้พูดว่าอะไร และต้องการอะไร ไม่ต้องตอบกลับผู้พูด</string>
+    <string name="audio_prompt_listen">ฟังข้อความเสียงนี้แล้วบอกสั้นๆ ว่า น้ำเสียงผู้พูดเป็นอย่างไร (สงบ โกรธ รีบร้อน…) มีกี่คนที่พูด เป็นภาษาถิ่นใด และพูดหรือขออะไร ไม่ต้องตอบกลับผู้พูด</string>
 </resources>
