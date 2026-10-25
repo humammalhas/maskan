@@ -1,0 +1,6 @@
+- Voice notes: attach one and Maskan writes out what was said, with every provider
+- A new model on your phone, Qwen3.5 0.8B, that reads photos offline
+- Web search, and changing provider and model inside a chat
+- Hide and reorder providers, edit a reply, fork a chat from any message
+- The model's thinking, folded under the reply
+- DeepSeek reads photos

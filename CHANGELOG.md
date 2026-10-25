@@ -2,6 +2,34 @@
 
 All notable changes to Maskan are documented here.
 
+## [2.7.1] — 2026-10-25
+
+2.7.0 was tagged but never published: its fastlane changelog was missing from the tag. 2.7.1 is the same code with the changelogs.
+
+### Added
+- **Voice notes** — attach an audio file (a WhatsApp voice note included) and Maskan writes out what was said, as it was said. The transcript is what the model reads, so it works with every provider and with the model on your phone. Chips under the note: **Transcribe only**, **Transcribe and answer**, **Listen and answer** (Gemini and OpenAI hear the audio itself; Opus is converted to WAV on the phone for OpenAI), and **Rewrite in…** (a dialect into Modern Standard Arabic or another dialect, both versions shown). Each provider transcribes its own chats; Settings picks a transcriber for the ones that cannot. Your own server transcribes when its `/health` says it can. Audio files stay out of backups; transcripts go in
+- **A new model on your phone** — Qwen3.5-0.8B-VL int8 (Apache 2.0) on LiteRT-LM replaces Qwen2.5 1.5B on MediaPipe. It reads photos, so the camera works offline with no key. 1.3 GB download, sha256-pinned; 2.6 users are told to download the new one
+- **Web search** — one switch, through each provider's own search
+- **Switch provider and model inside a chat**, and remove an API key from its own screen
+- **Hide and reorder providers**
+- **The model's thinking** in a folded row under the reply, with a switch that turns thinking off where the provider allows it
+- **Edit the AI's reply** (marked "edited") and **fork from any message** into a new chat
+- **DeepSeek reads photos**
+- Folder instructions and memory are offered when a folder is made; a new chat inside a folder; the folder shows in the chat header
+
+### Changed
+- Kotlin 2.3, AGP 8.13.2. The on-device engine's native library is smaller: the universal APK went from 58 MB to 36 MB
+- Room schema 10 → 13 (`messages.editedAt`, then the audio columns), additive only
+
+### Fixed
+- Math reads as math: `\frac{3}{7}` is 3/7, `\times` is ×, `\boxed{}` is bold
+- Chat titles from the on-device model came out in the wrong language
+- A 6 GB phone was told it needed 6 GB for the on-device model
+- The chat list had two writers; it now has one
+
+### Known
+- A reply whose language differs from the app's (an English reasoning in the Arabic app, for one) is laid out in the app's direction, not its own
+
 ## [2.6.1] — 2026-09-24
 
 ### Fixed
