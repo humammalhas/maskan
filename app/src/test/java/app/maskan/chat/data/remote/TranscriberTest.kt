@@ -70,6 +70,21 @@ class TranscriberTest {
         assertTrue(request.body.readUtf8().contains("filename=\"note.opus\""))
     }
 
+    /** Humam's AI PC proxy (transcribe_addon): a Custom base URL ending in /v1/, no key, the same call. */
+    @Test
+    fun aLocalServerGetsTheSameCallWithNoKey() {
+        server.enqueue(MockResponse().setBody("""{"text":"هلق جاي","language":"ar","duration":2.1}"""))
+        val backend = TranscribeBackends.Backend("custom", "whisper-large-v3", TranscribeBackends.Shape.MULTIPART)
+        val text = transcriber.transcribe(backend, base("/v1/"), "", audio, "note.opus", "audio/ogg")
+        assertEquals("هلق جاي", text)
+        val request = server.takeRequest()
+        assertEquals("/v1/audio/transcriptions", request.path)
+        assertEquals(null, request.getHeader("Authorization"))
+        val body = request.body.readUtf8()
+        assertTrue(body.contains("whisper-large-v3"))
+        assertTrue(body.contains("filename=\"note.opus\""))
+    }
+
     @Test
     fun geminiHearsTheFileInsideGenerateContentAndSkipsThoughtParts() {
         server.enqueue(

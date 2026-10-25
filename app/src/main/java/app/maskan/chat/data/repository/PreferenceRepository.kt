@@ -221,7 +221,8 @@ class PreferenceRepository(context: Context) {
         visionModels: Set<String> = emptySet(),
         freeModels: Set<String> = emptySet(),
         imageModels: List<String> = emptyList(),
-        videoModels: List<String> = emptyList()
+        videoModels: List<String> = emptyList(),
+        transcribeModels: List<String> = emptyList()
     ) {
         plainPreferences.edit()
             .putString(KEY_MODELS_PREFIX + providerId, models.joinToString("\n"))
@@ -229,6 +230,7 @@ class PreferenceRepository(context: Context) {
             .putStringSet(KEY_FREE_MODELS_PREFIX + providerId, freeModels)
             .putString(KEY_IMAGE_MODELS_PREFIX + providerId, imageModels.joinToString("\n"))
             .putString(KEY_VIDEO_MODELS_PREFIX + providerId, videoModels.joinToString("\n"))
+            .putString(KEY_TRANSCRIBE_MODELS_PREFIX + providerId, transcribeModels.joinToString("\n"))
             .putLong(KEY_MODELS_FETCHED_AT_PREFIX + providerId, System.currentTimeMillis())
             .apply()
     }
@@ -253,6 +255,16 @@ class PreferenceRepository(context: Context) {
     fun setVideoSeconds(seconds: Int) = plainPreferences.edit().putInt(KEY_VIDEO_SECONDS, seconds).apply()
     fun getImageSize(): String? = plainPreferences.getString(KEY_IMAGE_SIZE, null)
     fun setImageSize(size: String) = plainPreferences.edit().putString(KEY_IMAGE_SIZE, size).apply()
+
+    /**
+     * Models a local server says it TRANSCRIBES with (its /health, 2.7 plan item 3). Empty means
+     * "does not transcribe" or "not fetched since the server learned to" - Refresh model list.
+     */
+    fun getTranscribeModels(providerId: String): List<String> =
+        plainPreferences.getString(KEY_TRANSCRIBE_MODELS_PREFIX + providerId, null)
+            ?.split("\n")
+            ?.filter { it.isNotBlank() }
+            ?: emptyList()
 
     /** Models this provider can make VIDEO with. Same shape and caveats as [getImageModels]. */
     fun getVideoModels(providerId: String): List<String> =
@@ -342,6 +354,7 @@ class PreferenceRepository(context: Context) {
     companion object {
         private const val KEY_IMAGE_MODELS_PREFIX = "image_models_"
         private const val KEY_VIDEO_MODELS_PREFIX = "video_models_"
+        private const val KEY_TRANSCRIBE_MODELS_PREFIX = "transcribe_models_"
         private const val KEY_VIDEO_SIZE = "video_size"
         private const val KEY_VIDEO_SECONDS = "video_seconds"
         private const val KEY_IMAGE_SIZE = "image_size"

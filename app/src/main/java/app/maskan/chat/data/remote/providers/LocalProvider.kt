@@ -226,6 +226,8 @@ class LocalProvider(
             (health?.get(key) as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
 
         val videoIds = healthList("video_models") ?: emptyList()
+        // A server that transcribes says so (the Maskan proxy's transcribe_addon, 2.7).
+        val transcribeIds = healthList("transcribe_models") ?: emptyList()
         val imageIds = healthList("image_models") ?: run {
             val ollamaNames = ModelFilter.ollamaModelNames(ollamaTags)
             if (health != null && ollamaNames.isNotEmpty()) {
@@ -236,7 +238,7 @@ class LocalProvider(
                 ModelFilter.imageIdsFromNames(allIds)
             }
         }
-        val ids = ModelFilter.chatModelsOnly(allIds).filter { it !in imageIds && it !in videoIds }
+        val ids = ModelFilter.chatModelsOnly(allIds).filter { it !in imageIds && it !in videoIds && it !in transcribeIds }
 
         val visionIds = if (ollamaTags != null) ModelFilter.ollamaVisionIds(ollamaTags, ids) else emptySet()
         // Everything on the user's own machine is free by construction - tag it so the picker
@@ -246,7 +248,8 @@ class LocalProvider(
             visionIds = visionIds,
             freeIds = (ids + imageIds + videoIds).toSet(),
             imageIds = imageIds.sorted(),
-            videoIds = videoIds.sorted()
+            videoIds = videoIds.sorted(),
+            transcribeIds = transcribeIds
         )
     }
 

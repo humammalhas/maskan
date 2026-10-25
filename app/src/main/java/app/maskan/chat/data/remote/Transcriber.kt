@@ -91,7 +91,8 @@ class Transcriber(
                     )
                     .build()
                 Request.Builder().url("$root/v1/audio/transcriptions")
-                    .header("Authorization", "Bearer $apiKey")
+                    // A local server (the AI PC proxy) has no key; send no header rather than "Bearer ".
+                    .apply { if (apiKey.isNotBlank()) header("Authorization", "Bearer $apiKey") }
                     .post(body)
                     .build()
             }

@@ -821,9 +821,28 @@ class ChatRepository(
             preferenceRepository.getHiddenProviders()
         )
         return (arranged.visible + arranged.hidden).mapNotNull { id ->
-            TranscribeBackends.forProvider(id)?.let { it to !keyRepository.getApiKey(id).isNullOrBlank() }
+            transcribeBackendFor(id)?.let { it to canTranscribeWith(id) }
         }
     }
+
+    /**
+     * The backend [providerId] transcribes with: one of the seven measured cloud ones, or a local
+     * server (Custom, Ollama, LM Studio) whose /health listed `transcribe_models` - Humam's AI PC
+     * proxy with transcribe_addon. Null when it cannot.
+     */
+    fun transcribeBackendFor(providerId: String): TranscribeBackends.Backend? =
+        TranscribeBackends.forProvider(providerId)
+            ?: preferenceRepository.getTranscribeModels(providerId).firstOrNull()?.let {
+                TranscribeBackends.Backend(providerId, it, TranscribeBackends.Shape.MULTIPART)
+            }
+
+    /** A cloud backend needs its key; a local server needs only its address. */
+    private fun canTranscribeWith(providerId: String): Boolean =
+        if (TranscribeBackends.forProvider(providerId) != null) {
+            !keyRepository.getApiKey(providerId).isNullOrBlank()
+        } else {
+            !keyRepository.getBaseUrl(providerId).isNullOrBlank()
+        }
 
     /**
      * The backend that will write out the next audio file in a chat on [chatProviderId].
@@ -836,8 +855,8 @@ class ChatRepository(
      */
     fun transcribeBackend(chatProviderId: String? = null): TranscribeBackends.Backend? {
         chatProviderId?.let { id ->
-            TranscribeBackends.forProvider(id)?.let { own ->
-                if (!keyRepository.getApiKey(id).isNullOrBlank()) return own
+            transcribeBackendFor(id)?.let { own ->
+                if (canTranscribeWith(id)) return own
             }
         }
         val choices = transcribeChoices()

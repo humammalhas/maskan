@@ -25,7 +25,12 @@ data class FetchedModels(
      */
     val imageIds: List<String> = emptyList(),
     /** Models that produce VIDEO. Their own bucket for the same reason as [imageIds]. */
-    val videoIds: List<String> = emptyList()
+    val videoIds: List<String> = emptyList(),
+    /**
+     * Models that TRANSCRIBE audio, from a local server's /health `transcribe_models` (2.7, plan
+     * item 3). Present only when the server says so; no name is guessed.
+     */
+    val transcribeIds: List<String> = emptyList()
 )
 
 /**

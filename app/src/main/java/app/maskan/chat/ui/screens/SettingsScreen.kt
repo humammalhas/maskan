@@ -1207,8 +1207,7 @@ fun SettingsScreen(
             // Said about the provider chosen at the top of this screen (Humam, session 11): one that
             // transcribes does it for its own chats; one that cannot sends them to the choice here.
             val shownName = if (isArabic) selectedProvider.nameAr else selectedProvider.displayName
-            val ownBackend = TranscribeBackends.forProvider(selectedProvider.id)
-                ?.takeIf { selectedProvider.id in state.configuredProviderIds }
+            val ownBackend = state.configuredProviderIds.let { viewModel.ownTranscribeBackend(selectedProvider.id) }
             Column(
                 modifier = Modifier
                     .fillMaxWidth()

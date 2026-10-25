@@ -227,7 +227,10 @@ class SettingsViewModel(
                         }
                         // Cache it so the next Settings visit (or an offline one) still has a
                         // current list without hitting the network.
-                        preferenceRepository.saveCachedModels(providerId, models, fetched.visionIds, fetched.freeIds, fetched.imageIds, fetched.videoIds)
+                        preferenceRepository.saveCachedModels(
+                            providerId, models, fetched.visionIds, fetched.freeIds, fetched.imageIds, fetched.videoIds,
+                            fetched.transcribeIds
+                        )
                         _uiState.value.copy(
                             fetchedModels = models,
                             selectedModel = newSelected,
@@ -524,6 +527,13 @@ class SettingsViewModel(
 
     /** The backend shown as chosen: the saved choice while it has a key, else the default. */
     fun currentTranscribeBackend(): TranscribeBackends.Backend? = chatRepository.transcribeBackend()
+
+    /**
+     * The backend [providerId] uses for its own chats, when it has one it can use: a cloud key, or
+     * a local server whose /health advertised transcription (after Refresh model list).
+     */
+    fun ownTranscribeBackend(providerId: String): TranscribeBackends.Backend? =
+        chatRepository.transcribeBackend(providerId)?.takeIf { it.providerId == providerId }
 
     fun selectTranscribeBackend(providerId: String) {
         preferenceRepository.setTranscribeBackend(providerId)
